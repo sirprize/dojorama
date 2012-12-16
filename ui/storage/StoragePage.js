@@ -14,7 +14,7 @@ define([
     "dojo/_base/lang",
     "dojo/_base/json",
     "dojo/text!./template/StoragePage.html",
-    "./widget/ListItemWidget",
+    "./widget/RowWidget",
     "dojo/text!./css/StoragePage.css"
 ], function (
     declare,
@@ -30,7 +30,7 @@ define([
     lang,
     json,
     template,
-    ListItemWidget,
+    RowWidget,
     css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _FooterMixin], {
@@ -80,7 +80,7 @@ define([
             
             this.result.forEach(lang.hitch(this, function (item) {
                 var index = this.itemWidgets.length;
-                this.itemWidgets[index] = new ListItemWidget({}).placeAt(this.tbodyNode);
+                this.itemWidgets[index] = new RowWidget({}).placeAt(this.tbodyNode);
                 this.itemWidgets[index].set('id', this.store.getIdentity(item));
                 this.itemWidgets[index].set('data', json.toJson(item));
                 this.itemWidgets[index].startup();
@@ -94,7 +94,7 @@ define([
             
             this.itemWidgets = [];
         },
-        
+        /*
         _onNewObjClick: function (ev) {
             var newItem = {
                 id: 'someJsonStringItemId',
@@ -107,7 +107,7 @@ define([
         _onRemObjClick: function (ev) {
             this.store.remove('someJsonStringItemId');
         },
-        
+        */
         _onClearClick: function (ev) {
             localStorage.clear();
             this.destroyItemWidgets();
