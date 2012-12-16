@@ -7,7 +7,7 @@ dojoConfig['service/release-store'] = {
     callback: function (LocalStorage, ModelStore, ReleaseModel) {
         "use strict";
         return ModelStore(new LocalStorage({
-            subsetProperty: 'dojomatSubset',
+            subsetProperty: 'dojoramaSubset',
             subsetName: "release"
         }), ReleaseModel);
     }
