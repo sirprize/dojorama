@@ -1,0 +1,27 @@
+// https://gist.github.com/2595796
+
+{
+    "browser": true,
+    "dojo": true,
+    
+    "bitwise" : true, // Prohibit bitwise operators (&, |, ^, etc.).
+    "curly" : true, // Require {} for every new block or scope.
+    "eqeqeq" : true, // Require triple equals i.e. `===`.
+    "forin" : true, // Tolerate `for in` loops without `hasOwnPrototype`.
+    "immed" : true, // Require immediate invocations to be wrapped in parens e.g. `( function(){}() );`
+    "latedef" : true, // Prohibit variable use before definition.
+    "newcap" : false, // Require capitalization of all constructor functions e.g. `new F()`.
+    "noarg" : true, // Prohibit use of `arguments.caller` and `arguments.callee`.
+    "noempty" : true, // Prohibit use of empty blocks.
+    "nonew" : true, // Prohibit use of constructors for side-effects.
+    "plusplus" : true, // Prohibit use of `++` & `--`.
+    "regexp" : true, // Prohibit `.` and `[^...]` in regular expressions.
+    "undef" : true, // Require all non-global variables be declared before they are used.
+    "strict" : true, // Require `use strict` pragma in every file.
+    "trailing" : true, // Prohibit trailing whitespaces.
+    
+    "globals": {
+        "console": true,
+        "dojoConfig": true
+    }
+}
