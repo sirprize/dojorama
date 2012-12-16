@@ -1,0 +1,6 @@
+{
+    "name": "dojo-data-model",
+    "description": "Stateful Data Model Baseclass For Dojo Applications",
+    "version": 0.1,
+    "dojoBuild": "package.js"
+}

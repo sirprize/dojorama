@@ -1,0 +1,3 @@
+//>>built
+define("dobolo/ScrollSpy","dojo/_base/declare,./ScrollTopSpyHelper,dojo/_base/window,dojo/dom-class,dojo/dom-attr,dojo/query,dojo/on".split(","),function(c,e,f,g,h,d){return c([],{helper:null,handle:null,constructor:function(a,b){var a=a||{},b=!b||b&&"BODY"===b.tagName?f.doc:b,c=a.offsetsSelector?d(a.offsetsSelector,b):[],i=a.targetSelector?a.targetSelector:null;this.helper=new e(b,c,a.offsetTop||0,a.wait||100);this.handle=this.helper.on("active",function(a){d(i+" li").forEach(function(b){d("> a",
+b).forEach(function(c){c=(h.get(c,"href")||"").replace(/^#/,"");g[c===a.node.id?"add":"remove"](b,"active")})})})},destroy:function(){this.helper.destroy();this.handle&&this.handle.remove&&this.handle.remove()}})});

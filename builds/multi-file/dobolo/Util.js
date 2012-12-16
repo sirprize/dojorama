@@ -1,0 +1,2 @@
+//>>built
+define("dobolo/Util",[],function(){return{transition:function(){var a;a:{a=document.createElement("bootstrap");var c={WebkitTransition:"webkitTransitionEnd",MozTransition:"transitionend",OTransition:"oTransitionEnd",transition:"transitionend"},b;for(b in c)if(void 0!==a.style[b]){a=c[b];break a}a=void 0}return a&&{end:a}}(),throttle:function(a,c,b){var d=!0;return function(){d&&(d=!1,a.apply(b||a,arguments),setTimeout(function(){d=!0},c))}}}});

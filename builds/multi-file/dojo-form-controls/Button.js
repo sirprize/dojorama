@@ -1,0 +1,3 @@
+//>>built
+define("dojo-form-controls/Button","dojo/_base/declare,dojo/_base/lang,dojo/_base/event,dojo/dom-attr,dojo/on,./_FormWidget".split(","),function(c,b,d,e,f,g){return c([g],{label:"",type:"button",templateString:'<button ${!nameAttr} type="${type}" value="${value}"></button>',_fillContent:function(a){a&&e.has(a,"data-dojo-type")&&this.set("label",b.trim(a.innerHTML))},postCreate:function(){this.inherited(arguments);this.own(f(this.domNode,"click",b.hitch(this,function(a){if(this.disabled)return d.stop(a),
+!1;!1===this.onClick(a)&&a.preventDefault()})))},onClick:function(){return!0},_setLabelAttr:function(a){this.domNode.innerHTML=a;this._set("label",a)}})});

@@ -26,7 +26,9 @@
                         release: [
                             "dojorama/layers/release-widgets",
                             "dojorama/layers/release-pages"
-                        ]
+                        ],
+                        home: ["dojorama/layers/home"],
+                        storage: ["dojorama/layers/storage"]
                     }
                 }
             };

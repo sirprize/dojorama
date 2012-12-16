@@ -1,0 +1,2 @@
+//>>built
+define("dojorama/ui/storage/widget/RowWidget",["dojo/_base/declare","mijit/_WidgetBase","mijit/_TemplatedMixin"],function(b,c,d){return b([c,d],{templateString:'<tr><td data-dojo-attach-point="idNode"></td><td data-dojo-attach-point="dataNode"></td></tr>',_setIdAttr:function(a){this.idNode.innerHTML=a;this._set("id",a)},_setDataAttr:function(a){this.dataNode.innerHTML=a;this._set("data",a)}})});

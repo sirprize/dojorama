@@ -1,0 +1,3 @@
+//>>built
+define("xstyle/ext/bind",["dbind/bind","xstyle/elemental"],function(c,m){return module={onProperty:function(i,e,f){if("bind"==i)f.then=function(a){require(e[1].args,function(b){a(c(b))})};else{var b,g=[],n=0,h=0,j=1,l=function(){0==--j&&(b=k.length>h?c(new Function("return "+k)).to(g):g[0],m.addRenderer(i,e,f,function(a){c(a).to(b)}))},k=e.replace(/[\w_\.]+/g,function(a){for(var c=n++,d=a.split("."),a=f;!b&&(a=a.parent);)b=a.rules[d[0]];b||(b=window[d[0]]);j++;b.then(function(a){for(var b=1;b<d.length;b++)a=
+a.get(d[b]);g[c]=a;l()});a="arguments["+c+"]";h+=a.length;return a});l()}}}});

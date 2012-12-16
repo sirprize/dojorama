@@ -199,7 +199,6 @@ var releaseWidgets = [
     "dojorama/ui/release/mixin/_ReleaseBreadcrumbsMixin",
     "dojorama/ui/release/mixin/_ReleaseComponentTitleMixin",
     "dojorama/ui/release/widget/ReleaseCreateFormWidget",
-    "dojorama/ui/release/widget/ReleaseFilterWidget",
     "dojorama/ui/release/widget/ReleaseGridWidget",
     "dojorama/ui/release/widget/ReleaseUpdateFormWidget"
 ];
@@ -208,6 +207,15 @@ var releasePages = [
     "dojorama/ui/release/ReleaseCreatePage",
     "dojorama/ui/release/ReleaseIndexPage",
     "dojorama/ui/release/ReleaseUpdatePage"
+];
+
+var home = [
+    "dojorama/ui/home/HomePage"
+];
+
+var storage = [
+    "dojorama/ui/storage/widget/RowWidget",
+    "dojorama/ui/storage/StoragePage"
 ];
 
 
@@ -322,6 +330,14 @@ var profile = {
         "dojorama/layers/release-pages": {
             include: releasePages,
             exclude: [].concat(base, dgridCommon, dgridExtra, globalStuff, releaseWidgets)
+        },
+        "dojorama/layers/home": {
+            include: home,
+            exclude: [].concat(base)
+        },
+        "dojorama/layers/storage": {
+            include: storage,
+            exclude: [].concat(base)
         }
     },
 
