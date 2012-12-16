@@ -681,7 +681,7 @@ define("dojorama/routing-map", ["dojo/_base/config", "require"], function (confi
     
     return {
         home: {
-            schema: p + '/',
+            schema: p + '',
             widget: mid('./ui/home/HomePage'),
             layers: l.home || []
         },

@@ -8,7 +8,7 @@ define(["dojo/_base/config", "require"], function (config, require) {
     
     return {
         home: {
-            schema: p + '/',
+            schema: p + '',
             widget: mid('./ui/home/HomePage'),
             layers: l.home || []
         },
