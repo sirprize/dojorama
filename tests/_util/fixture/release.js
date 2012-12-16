@@ -26,7 +26,7 @@ define([
         
         createMany: function (count) {
             var i = 0;
-            count = count | 100;
+            count = count || 100;
             
             for (i = 0; i < count; i = i + 1) {
                 lang.hitch(this, this.createOne)();

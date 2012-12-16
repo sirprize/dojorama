@@ -107,7 +107,7 @@ define([
                         label: ' ',
                         sortable: false,
                         renderCell: lang.hitch(this, function (model, value, node, options) {
-                            cbNode = domConstruct.create('input', {
+                            var cbNode = domConstruct.create('input', {
                                 type: 'checkbox'
                             }, node, 'last');
                         
@@ -128,7 +128,7 @@ define([
                         field: "title",
                         sortable: true,
                         renderCell: lang.hitch(this, function (model, value, node, options) {
-                            aNode = domConstruct.create('a', {
+                            var aNode = domConstruct.create('a', {
                                 href: this.router.getRoute('releaseUpdate').assemble({ id: model.get('id') }),
                                 innerHTML: model.get('title')
                             }, node, 'last');
