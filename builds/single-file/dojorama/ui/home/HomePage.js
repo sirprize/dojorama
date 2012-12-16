@@ -1,0 +1,4 @@
+//>>built
+require({cache:{"url:dojorama/ui/home/template/HomePage.html":'<div>\n    <div data-dojo-attach-point="navigationNode"></div>\n    <h1>Home</h1>\n    <div data-dojo-attach-point="footerNode"></div>\n</div>',"url:dojorama/ui/home/css/HomePage.css":"body {background: yellow;}"}});
+define("dojorama/ui/home/HomePage","dojo/_base/declare,mijit/_WidgetBase,mijit/_TemplatedMixin,dojomat/_AppAware,dojomat/_StateAware,../_global/mixin/_NavigationMixin,../_global/mixin/_FooterMixin,dojo/text!./template/HomePage.html,dojo/text!./css/HomePage.css".split(","),function(b,c,d,e,f,g,h,i,j){return b([c,d,e,f,g,h],{router:null,request:null,templateString:i,constructor:function(a){this.router=a.router;this.request=a.request},postCreate:function(){this.inherited(arguments);this.setCss(j,"all");
+this.setTitle("Home")},startup:function(){this.inherited(arguments);this.showNavigation();this.showFooter()}})});

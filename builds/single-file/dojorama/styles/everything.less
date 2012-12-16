@@ -1,0 +1,90 @@
+/* bootstrap */
+
+// CSS Reset
+@import "../vendor/twitter/bootstrap/less/reset.less"; // 2kb
+
+// Core variables and mixins
+@import "./variables.less"; // Modify this for custom colors, font-sizes, etc
+
+// Mixins
+@import "../vendor/twitter/bootstrap/less/mixins.less";
+
+// Grid system and page structure
+@import "../vendor/twitter/bootstrap/less/scaffolding.less"; // 1kb
+@import "../vendor/twitter/bootstrap/less/grid.less"; // 5kb
+@import "../vendor/twitter/bootstrap/less/layouts.less"; // 1kb
+
+// Base CSS
+@import "../vendor/twitter/bootstrap/less/type.less"; // 3kb
+//@import "../vendor/twitter/bootstrap/less/code.less"; // 1kb
+@import "../vendor/twitter/bootstrap/less/forms.less"; // 20kb
+@import "../vendor/twitter/bootstrap/less/tables.less"; // 5kb
+
+// Components: common
+//@import "../vendor/twitter/bootstrap/less/sprites.less"; // 9kb
+@import "../vendor/twitter/bootstrap/less/dropdowns.less"; // 5kb
+@import "../vendor/twitter/bootstrap/less/wells.less"; // 1kb
+//@import "../vendor/twitter/bootstrap/less/component-animations.less"; // -
+@import "../vendor/twitter/bootstrap/less/close.less"; // -
+
+// Components: Buttons & Alerts
+@import "../vendor/twitter/bootstrap/less/buttons.less"; // 12kb
+@import "../vendor/twitter/bootstrap/less/button-groups.less"; // 5kb
+@import "../vendor/twitter/bootstrap/less/alerts.less"; // 1kb - Info: alerts share common CSS with buttons and thus have styles in buttons.less
+
+// Components: Nav
+@import "../vendor/twitter/bootstrap/less/navs.less"; // 7kb
+@import "../vendor/twitter/bootstrap/less/navbar.less"; // 14kb
+@import "../vendor/twitter/bootstrap/less/breadcrumbs.less"; // -
+//@import "../vendor/twitter/bootstrap/less/pagination.less"; // 3kb
+//@import "../vendor/twitter/bootstrap/less/pager.less"; // -
+
+// Components: Popovers
+//@import "../vendor/twitter/bootstrap/less/modals.less"; // 2kb
+//@import "../vendor/twitter/bootstrap/less/tooltip.less"; // 1kb
+//@import "../vendor/twitter/bootstrap/less/popovers.less"; // 2kb
+
+// Components: Misc
+//@import "../vendor/twitter/bootstrap/less/thumbnails.less"; // 1kb
+//@import "../vendor/twitter/bootstrap/less/labels-badges.less"; // 1kb
+//@import "../vendor/twitter/bootstrap/less/progress-bars.less"; // 11kb
+//@import "../vendor/twitter/bootstrap/less/accordion.less"; // -
+//@import "../vendor/twitter/bootstrap/less/carousel.less"; // 1kb
+//@import "../vendor/twitter/bootstrap/less/hero-unit.less"; // -
+
+// Utility classes
+@import "../vendor/twitter/bootstrap/less/utilities.less"; // 1kb - Has to be last to override when necessary
+
+
+/* dobolo */
+@import "../vendor/sirprize/dobolo/assets/calendar.less"; // 5kb
+
+
+/* dgrid */
+@import url("../vendor/SitePen/dgrid/css/dgrid.css"); // -
+@import url("../vendor/SitePen/dgrid/css/extensions/Pagination.css"); // -
+@import url("dgrid/dgrid.css");
+
+
+/* widgets */
+@import url("./ui/widget/ProgressWidget.css");
+
+
+/* footer */
+.footer {
+    padding: 20px;
+    margin-top: 50px;
+    border-top: 1px solid #e5e5e5;
+    background-color: #f5f5f5;
+}
+.footer p {
+    margin-bottom: 0;
+    color: #777;
+}
+.footer-links {
+    margin: 10px 0;
+}
+.footer-links li {
+    display: inline;
+    margin-right: 10px;
+}

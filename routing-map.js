@@ -9,11 +9,13 @@ define(["dojo/_base/config", "require"], function (config, require) {
     return {
         home: {
             schema: p + '/',
-            widget: mid('./ui/home/HomePage')
+            widget: mid('./ui/home/HomePage'),
+            layers: l.home || []
         },
         storage: {
             schema: p + '/storage',
-            widget: mid('./ui/storage/StoragePage')
+            widget: mid('./ui/storage/StoragePage'),
+            layers: l.storage || []
         },
         releaseIndex: {
             schema: p + '/releases',

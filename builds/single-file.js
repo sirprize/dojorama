@@ -123,7 +123,6 @@ var doscho = [
     "dgrid/OnDemandGrid",
 	"dgrid/Grid",
     "dgrid/Selection",
-    "dgrid/Keyboard",
     "dgrid/editor",
     // global widgets and stuff
     "dojorama/ui/_global/mixin/_FooterMixin",
@@ -138,12 +137,15 @@ var doscho = [
     "dojorama/ui/_global/widget/ProgressWidget"
 ];
 
+var home = [
+    "dojorama/ui/home/HomePage"
+];
+
 var release = [
     "dojorama/ui/release/mixin/_ReleaseActionsMixin",
     "dojorama/ui/release/mixin/_ReleaseBreadcrumbsMixin",
     "dojorama/ui/release/mixin/_ReleaseComponentTitleMixin",
     "dojorama/ui/release/widget/ReleaseCreateFormWidget",
-    "dojorama/ui/release/widget/ReleaseFilterWidget",
     "dojorama/ui/release/widget/ReleaseGridWidget",
     "dojorama/ui/release/widget/ReleaseUpdateFormWidget",
     "dojorama/ui/release/ReleaseCreatePage",
@@ -151,6 +153,10 @@ var release = [
     "dojorama/ui/release/ReleaseUpdatePage"
 ];
 
+var storage = [
+    "dojorama/ui/storage/widget/RowWidget",
+    "dojorama/ui/storage/StoragePage"
+];
 
 
 var profile = {
@@ -189,8 +195,14 @@ var profile = {
             // possible, so we configure it as a custom, bootable base.
             customBase: true
         },
+        "dojorama/layers/home": {
+            include: home
+        },
         "dojorama/layers/release": {
             include: release
+        },
+        "dojorama/layers/storage": {
+            include: storage
         }
     },
 

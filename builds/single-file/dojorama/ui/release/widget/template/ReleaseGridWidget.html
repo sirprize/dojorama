@@ -1,0 +1,19 @@
+<div>
+    <div class="clearfix">
+        <form class="form-search pull-right" data-dojo-attach-point="filterFormNode">
+            <div class="input-append">
+                <input data-dojo-attach-point="filterInputNode" class="search-query" />
+                <button data-dojo-attach-point="filterSubmitNode" class="btn"></button>
+            </div>
+        </form>
+    </div>
+    
+    <div data-dojo-attach-point="mainNode" style="display:none">
+        <div data-dojo-attach-point="gridNode"></div>
+    
+        <div class="btn-toolbar">
+            <button data-dojo-attach-point="gridSaveButtonNode" class="btn"></button>
+            <button data-dojo-attach-point="gridDeleteButtonNode" class="btn btn-danger"></button>
+        </div>
+    </div>
+</div>

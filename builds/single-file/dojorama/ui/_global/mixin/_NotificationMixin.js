@@ -1,0 +1,3 @@
+//>>built
+define("dojorama/ui/_global/mixin/_NotificationMixin",["dojo/_base/declare","dobolo/Alert","dojo/dom-construct"],function(d,e,c){return d([],{alertNode:null,alertWidget:null,showNotification:function(a){var b="alert-info";"ok"===a.type?b="alert-success":"error"===a.type&&(b="alert-error");this.hideNotification();this.alertNode&&c.destroy(this.alertNode);this.alertNode=c.create("div",{},this.notificationNode,"first");this.alertWidget=new e({"class":b+" fade in",content:a.message,closable:!0},this.alertNode);
+this.alertWidget.startup()},hideNotification:function(){this.alertWidget&&this.alertWidget.destroyRecursive()}})});

@@ -23,7 +23,9 @@
                 'routing-map': {
                     pathPrefix: '<?php echo $base; ?>/tests/app/single-file-build',
                     layers: {
-                        release: ["dojorama/layers/release"]
+                        home: ["dojorama/layers/home"],
+                        release: ["dojorama/layers/release"],
+                        storage: ["dojorama/layers/storage"]
                     }
                 }
             };

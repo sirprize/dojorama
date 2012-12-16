@@ -1,0 +1,26 @@
+{
+	"name": "mijit",
+	"version":"1.9.0dev",
+	"directories": {
+		"lib": "."
+	},
+	"main":"main",
+	"dependencies": {
+		"dojo": "1.9.0dev"
+	},
+	"description": "Micro Dijit - Just the basic widget infrastructure components",
+	"licenses": [
+		 {
+				 "type": "AFLv2.1",
+				 "url": "http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43"
+		 },
+		 {
+				 "type": "BSD",
+				 "url": "http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13"
+		 }
+	],
+	"bugs": "http://bugs.dojotoolkit.org/",
+	"keywords": ["JavaScript", "Dojo", "Widget"],
+	"homepage": "http://dojotoolkit.org/",
+	"dojoBuild": "package.js"
+}
