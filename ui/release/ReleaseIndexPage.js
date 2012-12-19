@@ -7,6 +7,7 @@ define([
     "dojomat/_AppAware",
     "dojomat/_StateAware",
     "../_global/mixin/_NavigationMixin",
+    "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_NotificationMixin",
     "../_global/mixin/_FooterMixin",
     "./mixin/_ReleaseBreadcrumbsMixin",
@@ -27,6 +28,7 @@ define([
     _AppAware,
     _StateAware,
     _NavigationMixin,
+    _PlayerMixin,
     _NotificationMixin,
     _FooterMixin,
     _ReleaseBreadcrumbsMixin,
@@ -41,10 +43,11 @@ define([
     css,
     nls
 ) {
-    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
+    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 
         router: null,
         request: null,
+        session: null,
         templateString: template,
         //filterWidget: null,
         gridWidget: null,
@@ -52,6 +55,7 @@ define([
         constructor: function (params) {
             this.router = params.router;
             this.request = params.request;
+            this.session = params.session;
         },
 
         postCreate: function () {
