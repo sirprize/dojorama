@@ -7,6 +7,7 @@ define([
     "dojomat/_AppAware",
     "dojomat/_StateAware",
     "../_global/mixin/_NavigationMixin",
+    "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_FooterMixin",
     "dojo-local-storage/LocalStorage",
     "dojo/store/Observable",
@@ -23,6 +24,7 @@ define([
     _AppAware,
     _StateAware,
     _NavigationMixin,
+    _PlayerMixin,
     _FooterMixin,
     LocalStorage,
     Observable,
@@ -33,10 +35,11 @@ define([
     RowWidget,
     css
 ) {
-    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _FooterMixin], {
+    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _FooterMixin], {
 
         router: null,
         request: null,
+        session: null,
         templateString: template,
         store: null,
         observer: null,
@@ -46,6 +49,7 @@ define([
         constructor: function (params) {
             this.router = params.router;
             this.request = params.request;
+            this.session = params.session;
             this.store = Observable(new LocalStorage());
         },
 

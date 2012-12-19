@@ -37,3 +37,9 @@
 [submodule "vendor/twitter/bootstrap"]
 	path = vendor/twitter/bootstrap
 	url = git://github.com/twitter/bootstrap.git
+[submodule "vendor/scottschiller/SoundManager2"]
+	path = vendor/scottschiller/SoundManager2
+	url = git://github.com/scottschiller/SoundManager2.git
+[submodule "vendor/sirprize/dojo-sm2-playlist"]
+	path = vendor/sirprize/dojo-sm2-playlist
+	url = git://github.com/sirprize/dojo-sm2-playlist.git

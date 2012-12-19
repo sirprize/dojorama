@@ -31,21 +31,22 @@ define([
         },
 
         postCreate: function () {
-            var setNode = function (node, label, url) {
-                node.innerHTML = label;
-                node.href = url;
+            var setNavItem = function (node, label, url) {
+                    node.innerHTML = label;
+                    node.href = url;
                 
-                this.own(on(node, 'click', lang.hitch(this, function (ev) {
-                    ev.preventDefault();
-                    this.push(url);
-                })));
-            };
+                    this.own(on(node, 'click', lang.hitch(this, function (ev) {
+                        ev.preventDefault();
+                        this.push(url);
+                    })));
+                }
+            ;
             
             this.inherited(arguments);
             this.hide();
-            lang.hitch(this, setNode)(this.homeNode, nls.labelHome, this.router.getRoute('home').assemble());
-            lang.hitch(this, setNode)(this.releaseIndexNode, nls.labelReleaseIndex, this.router.getRoute('releaseIndex').assemble());
-            lang.hitch(this, setNode)(this.storageNode, nls.labelStorage, this.router.getRoute('storage').assemble());
+            lang.hitch(this, setNavItem)(this.homeNode, nls.labelHome, this.router.getRoute('home').assemble());
+            lang.hitch(this, setNavItem)(this.releaseIndexNode, nls.labelReleaseIndex, this.router.getRoute('releaseIndex').assemble());
+            lang.hitch(this, setNavItem)(this.storageNode, nls.labelStorage, this.router.getRoute('storage').assemble());
         }
     });
 });

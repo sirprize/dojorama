@@ -27,11 +27,30 @@
             };
         </script>
         
+        <!--<script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2.js"></script>-->
+        <script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2-nodebug-jsmin.js"></script>
         <script src="<?php echo $base; ?>/tests/config-packages.js"></script>
         <script src="<?php echo $base; ?>/tests/config-services.js"></script>
         <script src="<?php echo $base; ?>/vendor/dojo/dojo/dojo.js"></script>
         
         <script>
+            var PLAYLIST = null;
+            
+            soundManager.setup({
+                url: '<?php echo $base; ?>/vendor/scottschiller/SoundManager2/swf/'/*,
+                onready: function() {
+                    var mySound = soundManager.createSound({
+                        id: 'aSound',
+                        //url: '<?php echo $base; ?>/vendor/scottschiller/SoundManager2/demo/_mp3/office_lobby.mp3'
+                        url: '<?php echo $base; ?>/vendor/scottschiller/SoundManager2/demo/_mp3/fancy-beer-bottle-pop.mp3'
+                    });
+                    mySound.play();
+                },
+                ontimeout: function() {
+                    // Hrmm, SM2 could not start. Missing SWF? Flash blocked? Show an error, etc.?
+                }*/
+            });
+            
             require(['dojorama/App'], function (App) { new App(); });
         </script>
     </body>

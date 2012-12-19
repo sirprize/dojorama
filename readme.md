@@ -13,7 +13,9 @@ Single page application based on Dojo, Twitter Bootstrap and history API
 + `git submodule add git://github.com/sirprize/dojo-form-controls.git vendor/sirprize/dojo-form-controls`
 + `git submodule add git://github.com/sirprize/dojo-local-storage.git vendor/sirprize/dojo-local-storage`
 + `git submodule add git://github.com/sirprize/dojomat.git vendor/sirprize/dojomat`
++ `git submodule add git://github.com/sirprize/dojo-sm2-playlist.git vendor/sirprize/dojo-sm2-playlist`
 + `git submodule add git://github.com/sirprize/mijit.git vendor/sirprize/mijit`
 + `git submodule add git://github.com/sirprize/routed.git vendor/sirprize/routed`
 + `git submodule add git://github.com/SitePen/dgrid.git vendor/SitePen/dgrid`
 + `git submodule add git://github.com/twitter/bootstrap.git vendor/twitter/bootstrap`
++ `git submodule add git://github.com/scottschiller/SoundManager2.git vendor/scottschiller/SoundManager2`
