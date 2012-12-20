@@ -84,6 +84,7 @@ define("dojomat/Application", [
     "dojo/topic",
     "dojo/dom-construct",
     "./Notification",
+    './Session',
     "dojo/domReady!"
 ], function (
     Request,
@@ -97,7 +98,8 @@ define("dojomat/Application", [
     query,
     topic,
     domConstruct,
-    Notification
+    Notification,
+    Session
 ) {
     "use strict";
 
@@ -148,6 +150,7 @@ define("dojomat/Application", [
     return declare([], {
 
         router: new Router(),
+        session: new Session(),
         notification: new Notification(),
         stylesheetNodes: [],
         cssNode: null,
@@ -269,6 +272,7 @@ define("dojomat/Application", [
                 var page = new Page({
                     request: request,
                     router: this.router,
+                    session: this.session,
                     notification: this.notification.get()
                 }, this.pageNodeId);
                 
@@ -623,6 +627,42 @@ define("dojomat/Notification", [
                 localStorage.setItem(this.id, json.toJson(notification));
             } else {
                 cookie(this.id, json.toJson(notification), { expires: 1, path: '/' });
+            }
+        }
+    });
+});
+},
+'dojomat/Session':function(){
+/*jslint browser: true */
+/*global define: true */
+
+define("dojomat/Session", [
+    "dojo/_base/declare"
+], function (
+    declare
+) {
+    "use strict";
+
+    return declare([], {
+        props: {},
+        
+        get: function (name) {
+            return this.props[name];
+        },
+
+        set: function (name, item) {
+            this.props[name] = item;
+        },
+        
+        destroy: function (name) {
+            if (this.props[name] && this.props[name].remove) {
+                this.props[name].remove();
+                delete this.props[name];
+            }
+            
+            if (this.props[name] && this.props[name].destroy) {
+                this.props[name].destroy();
+                delete this.props[name];
             }
         }
     });

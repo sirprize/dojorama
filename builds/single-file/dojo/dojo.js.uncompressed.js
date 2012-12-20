@@ -1950,6 +1950,10 @@
 					 name:"dojo-local-storage"
 				},
 				{
+					 location:"../dojo-sm2-playlist",
+					 name:"dojo-sm2-playlist"
+				},
+				{
 					 location:"../dojomat",
 					 name:"dojomat"
 				},
@@ -22156,6 +22160,7 @@ define([
     "dojo/topic",
     "dojo/dom-construct",
     "./Notification",
+    './Session',
     "dojo/domReady!"
 ], function (
     Request,
@@ -22169,7 +22174,8 @@ define([
     query,
     topic,
     domConstruct,
-    Notification
+    Notification,
+    Session
 ) {
     "use strict";
 
@@ -22220,6 +22226,7 @@ define([
     return declare([], {
 
         router: new Router(),
+        session: new Session(),
         notification: new Notification(),
         stylesheetNodes: [],
         cssNode: null,
@@ -22341,6 +22348,7 @@ define([
                 var page = new Page({
                     request: request,
                     router: this.router,
+                    session: this.session,
                     notification: this.notification.get()
                 }, this.pageNodeId);
                 
@@ -22695,6 +22703,42 @@ define([
                 localStorage.setItem(this.id, json.toJson(notification));
             } else {
                 cookie(this.id, json.toJson(notification), { expires: 1, path: '/' });
+            }
+        }
+    });
+});
+},
+'dojomat/Session':function(){
+/*jslint browser: true */
+/*global define: true */
+
+define([
+    "dojo/_base/declare"
+], function (
+    declare
+) {
+    "use strict";
+
+    return declare([], {
+        props: {},
+        
+        get: function (name) {
+            return this.props[name];
+        },
+
+        set: function (name, item) {
+            this.props[name] = item;
+        },
+        
+        destroy: function (name) {
+            if (this.props[name] && this.props[name].remove) {
+                this.props[name].remove();
+                delete this.props[name];
+            }
+            
+            if (this.props[name] && this.props[name].destroy) {
+                this.props[name].destroy();
+                delete this.props[name];
             }
         }
     });
@@ -25338,6 +25382,119 @@ lang.extend(NodeList, {
 return NodeList;
 });
 
+},
+'dojo-sm2-playlist/Playlist':function(){
+define([
+    "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/Evented"
+], function (
+    declare,
+    lang,
+    Evented
+) {
+    "use strict";
+    
+    var Track = declare([Evented], {
+        
+        id: null,
+        
+        constructor: function (trackInfo, soundOptions) {
+            var self = this, i = 0;
+            
+            var events = [
+                'onbufferchange',
+                'onconnect',
+                'ondataerror',
+                'onfinish',
+                'onload',
+                'onpause',
+                'onplay',
+                'onresume',
+                'onsuspend',
+                'onstop',
+                'onid3',
+                'whileloading',
+                'whileplaying'
+            ];
+            
+            lang.mixin(this, trackInfo);
+            
+            for (i = 0; i < events.length; i += 1) {
+                soundOptions[events[i]] = (function (ev) {
+                    return function () {
+                        self.emit(ev, { track: self });
+                    }
+                }(events[i]));
+            }
+            
+            this.id = soundOptions.id;
+            soundManager.createSound(soundOptions);
+        }
+    });
+    
+    return declare([], {
+        
+        tracks: [],
+        index: -1,
+        
+        onready: function () {
+            soundManager.onready.apply(soundManager, arguments);
+        },
+        
+        addTrack: function (trackInfo, soundOptions) {
+            this.tracks.push(new Track(trackInfo, soundOptions));
+            this.index = (this.index < 0) ? 0 : this.index;
+        },
+        
+        getTrack: function (idx) {
+            return this.tracks[idx];
+        },
+        
+        getTracks: function () {
+            return this.tracks;
+        },
+        
+        play: function () {
+            if (!this.tracks.length) { return; }
+            this.getCurrentSound().play();
+        },
+        
+        previous: function () {
+            if (!this.tracks.length) { return; }
+            this.getCurrentSound().stop();
+            this.index = (this.index === 0) ? this.tracks.length - 1 : this.index - 1;
+            this.getCurrentSound().play();
+        },
+        
+        next: function () {
+            if (!this.tracks.length) { return; }
+            this.getCurrentSound().stop();
+            this.index = (this.index === this.tracks.length - 1) ? 0 : this.index + 1;
+            this.getCurrentSound().play();
+        },
+        
+        pause: function () {
+            if (!this.tracks.length) { return; }
+            this.getCurrentSound().pause();
+        },
+        
+        isPlaying: function () {
+            var sound = this.getCurrentSound();
+            return (sound) ? (sound.playState && !sound.paused) : false;
+        },
+        
+        getCurrentSound: function () {
+            if (!this.tracks.length) { return; }
+            return soundManager.getSoundById(this.getCurrentTrack().id);
+        },
+        
+        getCurrentTrack: function () {
+            if (!this.tracks.length) { return; }
+            return this.getTrack(this.index);
+        }
+    });
+});
 },
 'put-selector/put':function(){
 (function(define){
@@ -28696,26 +28853,27 @@ define([
         },
 
         postCreate: function () {
-            var setNode = function (node, label, url) {
-                node.innerHTML = label;
-                node.href = url;
+            var setNavItem = function (node, label, url) {
+                    node.innerHTML = label;
+                    node.href = url;
                 
-                this.own(on(node, 'click', lang.hitch(this, function (ev) {
-                    ev.preventDefault();
-                    this.push(url);
-                })));
-            };
+                    this.own(on(node, 'click', lang.hitch(this, function (ev) {
+                        ev.preventDefault();
+                        this.push(url);
+                    })));
+                }
+            ;
             
             this.inherited(arguments);
             this.hide();
-            lang.hitch(this, setNode)(this.homeNode, nls.labelHome, this.router.getRoute('home').assemble());
-            lang.hitch(this, setNode)(this.releaseIndexNode, nls.labelReleaseIndex, this.router.getRoute('releaseIndex').assemble());
-            lang.hitch(this, setNode)(this.storageNode, nls.labelStorage, this.router.getRoute('storage').assemble());
+            lang.hitch(this, setNavItem)(this.homeNode, nls.labelHome, this.router.getRoute('home').assemble());
+            lang.hitch(this, setNavItem)(this.releaseIndexNode, nls.labelReleaseIndex, this.router.getRoute('releaseIndex').assemble());
+            lang.hitch(this, setNavItem)(this.storageNode, nls.labelStorage, this.router.getRoute('storage').assemble());
         }
     });
 });
 },
-'url:dojorama/ui/_global/widget/template/NavigationWidget.html':"<div class=\"navbar navbar-inverse\">\n    <div class=\"navbar-inner\">\n        <div class=\"container\">\n            <!-- Be sure to leave the brand out there if you want it shown -->\n            <a class=\"brand\" href=\"#\" data-dojo-attach-point=\"homeNode\"></a>\n            \n            <ul class=\"nav\">\n                <li><a href=\"#\" data-dojo-attach-point=\"releaseIndexNode\"></a></li>\n                <li><a href=\"#\" data-dojo-attach-point=\"storageNode\"></a></li>\n            </ul>\n\n            <!-- Everything you want hidden at 940px or less, place within here -->\n            <div class=\"nav-collapse\">\n            <!-- .nav, .navbar-search, .navbar-form, etc -->\n            </div>\n            \n            <ul class=\"nav pull-right\">\n                <li><a href=\"#\">Log out</a></li>\n            </ul>\n        </div>\n    </div>\n</div>",
+'url:dojorama/ui/_global/widget/template/NavigationWidget.html':"<div class=\"navbar navbar-inverse\">\n    <div class=\"navbar-inner\">\n        <div class=\"container\">\n            <!-- Be sure to leave the brand out there if you want it shown -->\n            <a class=\"brand\" href=\"#\" data-dojo-attach-point=\"homeNode\"></a>\n            \n            <ul class=\"nav\">\n                <li><a href=\"#\" data-dojo-attach-point=\"releaseIndexNode\"></a></li>\n                <li><a href=\"#\" data-dojo-attach-point=\"storageNode\"></a></li>\n            </ul>\n\n            <!-- Everything you want hidden at 940px or less, place within here -->\n            <div class=\"nav-collapse\">\n            <!-- .nav, .navbar-search, .navbar-form, etc -->\n            </div>\n            <!--\n            <ul class=\"nav pull-right\">\n                <li>asdf</li>\n            </ul>\n            -->\n        </div>\n    </div>\n</div>",
 'dojorama/ui/_global/mixin/_NotificationMixin':function(){
 define([
     "dojo/_base/declare",
@@ -28772,6 +28930,187 @@ define([
     });
 });
 },
+'dojorama/ui/_global/mixin/_PlayerMixin':function(){
+/*jshint strict:false */
+
+define([
+    "dojo/_base/declare",
+    "../widget/PlayerWidget"
+], function (
+    declare,
+    PlayerWidget
+) {
+    return declare([], {
+        // summary:
+        //      Adds a PlayerWidget to a page-widget
+        // description:
+        //      This mixin can be used with any mijit/_TemplatedMixin-based widget which has
+        //      a data-dojo-attach-point="playerNode" in the template
+
+        playerWidget: null,
+
+        postCreate: function () {
+            this.inherited(arguments);
+            this.playerWidget = new PlayerWidget({
+                session: this.session
+            }, this.playerNode);
+        },
+
+        startup: function () {
+            this.inherited(arguments);
+            this.playerWidget.startup();
+        },
+        
+        showPlayer: function () {
+            this.playerWidget.show();
+        }
+    });
+});
+},
+'dojorama/ui/_global/widget/PlayerWidget':function(){
+/*jshint strict:false */
+
+define([
+    "dojo/_base/declare",
+    "mijit/_WidgetBase",
+    "mijit/_TemplatedMixin",
+    "dojomat/_StateAware",
+    "../mixin/_ToggleMixin",
+    "dojo/dom-style",
+    "dojo/dom-class",
+    "dojo/on",
+    "dojo/query",
+    "dojo/_base/lang",
+    "dojo/_base/array",
+    "dojo-sm2-playlist/Playlist",
+    "dojo/text!./template/PlayerWidget.html"
+], function (
+    declare,
+    _WidgetBase,
+    _TemplatedMixin,
+    _StateAware,
+    _ToggleMixin,
+    domStyle,
+    domClass,
+    on,
+    query,
+    lang,
+    array,
+    Playlist,
+    template
+) {
+    return declare([_WidgetBase, _TemplatedMixin, _StateAware, _ToggleMixin], {
+
+        session: null,
+        templateString: template,
+        
+        constructor: function (params) {
+            this.session = params.session;
+        },
+
+        postCreate: function () {
+            this.inherited(arguments);
+            
+            var playlist = this.session.get('playlist'),
+                playIconNode = query('i', this.playNode)[0],
+                setPlayIcon = function () {
+                    domClass.remove(playIconNode, 'icon-pause');
+                    domClass.add(playIconNode, 'icon-play');
+                },
+                setPauseIcon = function () {
+                    domClass.remove(playIconNode, 'icon-play');
+                    domClass.add(playIconNode, 'icon-pause');
+                },
+                setTrackInfo = function () {
+                    this.trackTitleNode.innerHTML = playlist.getCurrentTrack().title;
+                    this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
+                }
+            ;
+            
+            if (!playlist) {
+                playlist = new Playlist();
+                
+                playlist.onready(function () {
+                    playlist.addTrack({
+                            title: 'The River',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'theRiver',
+                            url: 'http://sirprize.me/chrigu/dojorama/pachanga-boys-the-river.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'Is this power',
+                            artist: 'The Field',
+                            cover: ''
+                        }, {
+                            id: 'isThisPower',
+                            url: 'http://sirprize.me/chrigu/dojorama/the-field-is-this-power.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'Geffen (Philipp Gorbatchev Remix)',
+                            artist: 'Barnt',
+                            cover: ''
+                        }, {
+                            id: 'geffen',
+                            url: 'http://sirprize.me/chrigu/dojorama/barnt-geffen-philipp-gorbatchev-remix.mp3'
+                    });
+                });
+                
+                this.session.set('playlist', playlist);
+            }
+            
+            playlist.onready(lang.hitch(this, function () {
+                if (playlist.isPlaying()) {
+                    lang.hitch(this, setPauseIcon)();
+                } else {
+                    lang.hitch(this, setPlayIcon)();
+                }
+
+                lang.hitch(this, setTrackInfo)();
+            }));
+            
+            array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
+                this.own(on(track, 'onfinish', function (ev) {
+                    playlist.next();
+                    lang.hitch(this, setPauseIcon)();
+                    lang.hitch(this, setTrackInfo)();
+                }));
+            }));
+            
+            this.own(on(this.playNode, 'click', lang.hitch(this, function (ev) {
+                ev.preventDefault();
+                
+                if (playlist.isPlaying()) {
+                    playlist.pause();
+                    lang.hitch(this, setPlayIcon)();
+                } else {
+                    playlist.play();
+                    lang.hitch(this, setPauseIcon)();
+                    lang.hitch(this, setTrackInfo)();
+                }
+            })));
+            
+            this.own(on(this.prevNode, 'click', lang.hitch(this, function (ev) {
+                ev.preventDefault();
+                playlist.previous();
+                lang.hitch(this, setPauseIcon)();
+                lang.hitch(this, setTrackInfo)();
+            })));
+            
+            this.own(on(this.nextNode, 'click', lang.hitch(this, function (ev) {
+                ev.preventDefault();
+                playlist.next();
+                lang.hitch(this, setPauseIcon)();
+                lang.hitch(this, setTrackInfo)();
+            })));
+        }
+    });
+});
+},
+'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large\">\n    <p>Listen to some music while you play with this app</p>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\">\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>\n    </div>\n</div>",
 'dojorama/ui/_global/widget/ActionsWidget':function(){
 /*jshint strict:false */
 

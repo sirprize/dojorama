@@ -1,5 +1,5 @@
 require({cache:{
-'url:dojorama/ui/storage/template/StoragePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n\n    <div data-dojo-attach-point=\"mainNode\">\n        <h1>Storage</h1>\n        <!--<button class=\"btn\" data-dojo-attach-event=\"onclick:_onNewObjClick\">New Obj</button>\n        <button class=\"btn\" data-dojo-attach-event=\"onclick:_onRemObjClick\">Remove Obj</button>-->\n        <button class=\"btn\" data-dojo-attach-event=\"onclick:_onClearClick\">Clear</button>\n        \n        <hr />\n        \n        <table class=\"table table-striped\">\n            <thead>\n                <th>Id</th>\n                <th>Data</th>\n            </thead>\n            <tbody data-dojo-attach-point=\"tbodyNode\"></tbody>\n        </table>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/ui/storage/template/StoragePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n\n    <div data-dojo-attach-point=\"mainNode\">\n        <h1>Storage</h1>\n        <!--<button class=\"btn\" data-dojo-attach-event=\"onclick:_onNewObjClick\">New Obj</button>\n        <button class=\"btn\" data-dojo-attach-event=\"onclick:_onRemObjClick\">Remove Obj</button>-->\n        <button class=\"btn\" data-dojo-attach-event=\"onclick:_onClearClick\">Clear</button>\n        \n        <hr />\n        \n        <table class=\"table table-striped local-storage-data\">\n            <thead>\n                <th>Id</th>\n                <th>Data</th>\n            </thead>\n            <tbody data-dojo-attach-point=\"tbodyNode\"></tbody>\n        </table>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
 'url:dojorama/ui/storage/css/StoragePage.css':"body {background: white;}"}});
 /*jshint strict:false */
 
@@ -10,6 +10,7 @@ define("dojorama/ui/storage/StoragePage", [
     "dojomat/_AppAware",
     "dojomat/_StateAware",
     "../_global/mixin/_NavigationMixin",
+    "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_FooterMixin",
     "dojo-local-storage/LocalStorage",
     "dojo/store/Observable",
@@ -26,6 +27,7 @@ define("dojorama/ui/storage/StoragePage", [
     _AppAware,
     _StateAware,
     _NavigationMixin,
+    _PlayerMixin,
     _FooterMixin,
     LocalStorage,
     Observable,
@@ -36,10 +38,11 @@ define("dojorama/ui/storage/StoragePage", [
     RowWidget,
     css
 ) {
-    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _FooterMixin], {
+    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _FooterMixin], {
 
         router: null,
         request: null,
+        session: null,
         templateString: template,
         store: null,
         observer: null,
@@ -49,6 +52,7 @@ define("dojorama/ui/storage/StoragePage", [
         constructor: function (params) {
             this.router = params.router;
             this.request = params.request;
+            this.session = params.session;
             this.store = Observable(new LocalStorage());
         },
 

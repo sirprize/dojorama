@@ -14,6 +14,7 @@ define("dojomat/Application", [
     "dojo/topic",
     "dojo/dom-construct",
     "./Notification",
+    './Session',
     "dojo/domReady!"
 ], function (
     Request,
@@ -27,7 +28,8 @@ define("dojomat/Application", [
     query,
     topic,
     domConstruct,
-    Notification
+    Notification,
+    Session
 ) {
     "use strict";
 
@@ -78,6 +80,7 @@ define("dojomat/Application", [
     return declare([], {
 
         router: new Router(),
+        session: new Session(),
         notification: new Notification(),
         stylesheetNodes: [],
         cssNode: null,
@@ -199,6 +202,7 @@ define("dojomat/Application", [
                 var page = new Page({
                     request: request,
                     router: this.router,
+                    session: this.session,
                     notification: this.notification.get()
                 }, this.pageNodeId);
                 

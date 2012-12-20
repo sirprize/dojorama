@@ -7,7 +7,7 @@ var profile = (function () {
         amdExcludes = {},
         isTestRe = /\/tests\//,
         isBuildRe = /\/builds\//,
-        isVendorRe = /\/vendor\//
+        isVendorRe = /dojorama\/vendor\//
     ;
 
     return {

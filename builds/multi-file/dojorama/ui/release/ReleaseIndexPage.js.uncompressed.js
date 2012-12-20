@@ -1,5 +1,5 @@
 require({cache:{
-'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <!--<div data-dojo-attach-point=\"filterNode\"></div>-->\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
 'url:dojorama/ui/release/css/ReleaseIndexPage.css':"body {background: white;}.field-title {}"}});
 /*jshint strict:false */
 
@@ -10,6 +10,7 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     "dojomat/_AppAware",
     "dojomat/_StateAware",
     "../_global/mixin/_NavigationMixin",
+    "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_NotificationMixin",
     "../_global/mixin/_FooterMixin",
     "./mixin/_ReleaseBreadcrumbsMixin",
@@ -30,6 +31,7 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     _AppAware,
     _StateAware,
     _NavigationMixin,
+    _PlayerMixin,
     _NotificationMixin,
     _FooterMixin,
     _ReleaseBreadcrumbsMixin,
@@ -44,10 +46,11 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     css,
     nls
 ) {
-    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
+    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 
         router: null,
         request: null,
+        session: null,
         templateString: template,
         //filterWidget: null,
         gridWidget: null,
@@ -55,6 +58,7 @@ define("dojorama/ui/release/ReleaseIndexPage", [
         constructor: function (params) {
             this.router = params.router;
             this.request = params.request;
+            this.session = params.session;
         },
 
         postCreate: function () {

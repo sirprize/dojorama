@@ -93,7 +93,9 @@ var d09 = [
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
-    "dojo/store/util/SimpleQueryEngine"
+    "dojo/store/util/SimpleQueryEngine",
+    // dojo-sm2-playlist
+    "dojo-sm2-playlist/Playlist",
 ];
 
 var mijit = [
@@ -111,6 +113,7 @@ var app = [
     "dojomat/Application",
     "dojomat/Notification",
     "dojomat/populateRouter",
+    "dojomat/Session",
     "dojorama/routing-map",
     "dojorama/App"
 ];
@@ -185,12 +188,14 @@ var globalStuff = [
     "dojorama/ui/_global/mixin/_FooterMixin",
     "dojorama/ui/_global/mixin/_NavigationMixin",
     "dojorama/ui/_global/mixin/_NotificationMixin",
+    "dojorama/ui/_global/mixin/_PlayerMixin",
     "dojorama/ui/_global/mixin/_ToggleMixin",
     "dojorama/ui/_global/widget/ActionsWidget",
     "dojorama/ui/_global/widget/BreadcrumbsWidget",
     "dojorama/ui/_global/widget/ControlGroupWidget",
     "dojorama/ui/_global/widget/FooterWidget",
     "dojorama/ui/_global/widget/NavigationWidget",
+    "dojorama/ui/_global/widget/PlayerWidget",
     "dojorama/ui/_global/widget/ProgressWidget"
 ];
 
@@ -239,6 +244,7 @@ var profile = {
         { name: 'dojo-data-model', location: '../vendor/sirprize/dojo-data-model' },
         { name: "dojo-form-controls", location: "../vendor/sirprize/dojo-form-controls" },
         { name: 'dojo-local-storage', location: '../vendor/sirprize/dojo-local-storage' },
+        { name: 'dojo-sm2-playlist', location: '../vendor/sirprize/dojo-sm2-playlist' },
         { name: "dojomat", location: "../vendor/sirprize/dojomat" },
         { name: "mijit", location: "../vendor/sirprize/mijit" },
         { name: "routed", location: "../vendor/sirprize/routed" },

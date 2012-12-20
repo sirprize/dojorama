@@ -1950,6 +1950,10 @@
 					 name:"dojo-local-storage"
 				},
 				{
+					 location:"../dojo-sm2-playlist",
+					 name:"dojo-sm2-playlist"
+				},
+				{
 					 location:"../dojomat",
 					 name:"dojomat"
 				},

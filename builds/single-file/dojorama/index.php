@@ -47,6 +47,7 @@
             };
         </script>
         
+        <script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2-nodebug-jsmin.js"></script>
         <script src="<?php echo $base; ?>/builds/single-file/dojo/dojo.js"></script>
 
         <script>

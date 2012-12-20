@@ -41,8 +41,7 @@ define([
         postCreate: function () {
             this.inherited(arguments);
             
-            var sessionId = 'ui/_global/widget/PlayerWidget/playlist',
-                playlist = this.session.get(sessionId),
+            var playlist = this.session.get('playlist'),
                 playIconNode = query('i', this.playNode)[0],
                 setPlayIcon = function () {
                     domClass.remove(playIconNode, 'icon-pause');
@@ -90,16 +89,18 @@ define([
                     });
                 });
                 
-                this.session.set(sessionId, playlist);
+                this.session.set('playlist', playlist);
             }
             
-            if (playlist.isPlaying()) {
-                lang.hitch(this, setPauseIcon)();
-            } else {
-                lang.hitch(this, setPlayIcon)();
-            }
-            
-            lang.hitch(this, setTrackInfo)();
+            playlist.onready(lang.hitch(this, function () {
+                if (playlist.isPlaying()) {
+                    lang.hitch(this, setPauseIcon)();
+                } else {
+                    lang.hitch(this, setPlayIcon)();
+                }
+
+                lang.hitch(this, setTrackInfo)();
+            }));
             
             array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
                 this.own(on(track, 'onfinish', function (ev) {
