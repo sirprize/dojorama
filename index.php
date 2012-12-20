@@ -51,6 +51,10 @@
         <script src="<?php echo $base; ?>/builds/single-file/dojo/dojo.js"></script>
 
         <script>
+            soundManager.setup({
+                url: '<?php echo $base; ?>/vendor/scottschiller/SoundManager2/swf/'
+            });
+            
             require(['dojorama/App'], function (App) { new App(); });
         </script>
     </body>
