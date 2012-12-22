@@ -52,8 +52,32 @@ define([
                     domClass.add(playIconNode, 'icon-pause');
                 },
                 setTrackInfo = function () {
+                    this.trackNrNode.innerHTML = playlist.getCurrentPosition();
+                    this.numTracksNode.innerHTML = playlist.getTracks().length;
                     this.trackTitleNode.innerHTML = playlist.getCurrentTrack().title;
                     this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
+                },
+                showPlayInfo = function () {
+                    domStyle.set(this.positionOuterNode, 'display', 'inline');
+                },
+                setPlayInfo = function () {
+                    this.positionNode.innerHTML = formatTime(Math.round(playlist.getCurrentSound().position / 1000));
+                },
+                resetPlayInfo = function () {
+                    this.positionNode.innerHTML = '0:00';
+                },
+                formatTime = function(seconds) {
+                    var seconds = parseInt(seconds, 10),
+                        h = (seconds >= 3600) ? Math.floor(seconds / 3600) : 0,
+                        m = ((seconds - h * 3600) >= 60) ? Math.floor((seconds - h * 3600) / 60) : 0,
+                        s = seconds - (h * 3600) - (m * 60),
+                        hh = (h < 10) ? '0' + h : h,
+                        mm = (m < 10) ? '0' + m : m,
+                        ss = (s < 10) ? '0' + s : s
+                    ;
+                    
+                    if(seconds < 3600) { return m + ':' + ss; }
+                    return h + ':' + mm + ':' + ss;
                 }
             ;
             
@@ -95,6 +119,7 @@ define([
             playlist.onready(lang.hitch(this, function () {
                 if (playlist.isPlaying()) {
                     lang.hitch(this, setPauseIcon)();
+                    lang.hitch(this, showPlayInfo)();
                 } else {
                     lang.hitch(this, setPlayIcon)();
                 }
@@ -103,11 +128,20 @@ define([
             }));
             
             array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
-                this.own(on(track, 'onfinish', function (ev) {
+                this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
+                    lang.hitch(this, showPlayInfo)();
+                    lang.hitch(this, resetPlayInfo)();
+                })));
+                
+                this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
                     playlist.next();
                     lang.hitch(this, setPauseIcon)();
                     lang.hitch(this, setTrackInfo)();
-                }));
+                })));
+                
+                this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
+                    lang.hitch(this, setPlayInfo)();
+                })));
             }));
             
             this.own(on(this.playNode, 'click', lang.hitch(this, function (ev) {
@@ -128,6 +162,7 @@ define([
                 playlist.previous();
                 lang.hitch(this, setPauseIcon)();
                 lang.hitch(this, setTrackInfo)();
+                lang.hitch(this, resetPlayInfo)();
             })));
             
             this.own(on(this.nextNode, 'click', lang.hitch(this, function (ev) {
@@ -135,6 +170,7 @@ define([
                 playlist.next();
                 lang.hitch(this, setPauseIcon)();
                 lang.hitch(this, setTrackInfo)();
+                lang.hitch(this, resetPlayInfo)();
             })));
         }
     });
