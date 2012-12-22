@@ -1,4 +1,7 @@
-<?php $base = dirname(dirname(dirname(dirname($_SERVER['SCRIPT_NAME'])))); ?>
+<?php
+    $base = dirname(dirname(dirname(dirname($_SERVER['SCRIPT_NAME']))));
+    $base = ($base === '/') ? '' : $base;
+?>
 
 <!DOCTYPE html>
 <html>
