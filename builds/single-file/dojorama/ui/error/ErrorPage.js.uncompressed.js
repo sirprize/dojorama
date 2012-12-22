@@ -27,12 +27,14 @@ define("dojorama/ui/error/ErrorPage", [
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _FooterMixin], {
 
         router: null,
+        request: null,
         session: null,
         error: null,
         templateString: template,
         
         constructor: function (params) {
             this.router = params.router;
+            this.request = params.request;
             this.session = params.session;
             this.error = params.error;
         },

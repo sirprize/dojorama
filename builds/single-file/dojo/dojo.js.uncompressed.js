@@ -22430,10 +22430,14 @@ define([], function () {
             var pathname = url.split('?')[0].split('#')[0].replace(/\w+:\/\/[\w\d\._\-]*/, '');
             return (pathname.match(/^\//)) ? pathname : ''; // only allow absolute urls
         },
+        
+        getQueryString = function (url) {
+            return url.split('?')[1] || '';
+        },
 
         getQueryParams = function (url) {
             var queryParams = {},
-                queryString = url.split('?')[1] || '',
+                queryString = getQueryString(url),
                 nameVals = null,
                 i = null,
                 nameVal = null;
@@ -22452,6 +22456,7 @@ define([], function () {
 
     return function (url) {
         var pathname = getPathname(trim(decodeURIComponent(url))),
+            queryString = getQueryString(url),
             queryParams = getQueryParams(url),
             pathParams = {};
 
@@ -22460,6 +22465,10 @@ define([], function () {
                 return pathname;
             },
 
+            getQueryString: function () {
+                return queryString;
+            },
+            
             getQueryParams: function () {
                 return queryParams;
             },
@@ -22825,11 +22834,14 @@ define(["dojo/_base/config", "require"], function (config, require) {
 });
 },
 'dojorama/App':function(){
+/*jshint strict:false */
+
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/query",
+    "routed/Request",
     "dojomat/Application",
     "dojomat/populateRouter",
     "./routing-map",
@@ -22840,12 +22852,21 @@ define([
     lang,
     array,
     query,
+    Request,
     Application,
     populateRouter,
     routingMap,
     require
 ) {
-    "use strict";
+    var trackPage = function (request) {
+        var q = request.getQueryString(),
+            r = request.getPathname() + ((q !== '') ? '?' : '') + q
+        ;
+        
+        if (window._gaq) {
+            window._gaq.push(['_trackPageview', r]);
+        }
+    };
     
     return declare([Application], {
         
@@ -22855,38 +22876,51 @@ define([
         },
 
         makeNotFoundPage: function () {
-            var makePage = function (Page) {
-                this.setStylesheets();
-                this.setCss();
-                this.setPageNode();
+            var request = new Request(window.location.href),
+                makePage = function (Page) {
+                    this.setStylesheets();
+                    this.setCss();
+                    this.setPageNode();
 
-                var page = new Page({
-                    router: this.router
-                }, this.pageNodeId);
+                    var page = new Page({
+                        request: request,
+                        router: this.router
+                    }, this.pageNodeId);
                 
-                page.startup();
-                this.notification.clear();
-            };
+                    page.startup();
+                    this.notification.clear();
+                }
+            ;
             
             require(['./ui/error/NotFoundPage'], lang.hitch(this, makePage));
+            trackPage(request);
         },
 
         makeErrorPage: function (error) {
-            var makePage = function (Page) {
-                this.setStylesheets();
-                this.setCss();
-                this.setPageNode();
+            var request = new Request(window.location.href),
+                makePage = function (Page) {
+                    this.setStylesheets();
+                    this.setCss();
+                    this.setPageNode();
 
-                var page = new Page({
-                    router: this.router,
-                    error: error
-                }, this.pageNodeId);
+                    var page = new Page({
+                        request: request,
+                        router: this.router,
+                        error: error
+                    }, this.pageNodeId);
                 
-                page.startup();
-                this.notification.clear();
-            };
+                    page.startup();
+                    this.notification.clear();
+                }
+            ;
 
             require(['./ui/error/ErrorPage'], lang.hitch(this, makePage));
+            trackPage(request);
+        },
+        
+        makePage: function (request, widget, layers, stylesheets) {
+            this.inherited(arguments);
+            trackPage(request);
         }
     });
 });
@@ -25492,6 +25526,11 @@ define([
         getCurrentTrack: function () {
             if (!this.tracks.length) { return; }
             return this.getTrack(this.index);
+        },
+        
+        getCurrentPosition: function () {
+            if (!this.tracks.length) { return; }
+            return this.index + 1;
         }
     });
 });
@@ -29022,8 +29061,32 @@ define([
                     domClass.add(playIconNode, 'icon-pause');
                 },
                 setTrackInfo = function () {
+                    this.trackNrNode.innerHTML = playlist.getCurrentPosition();
+                    this.numTracksNode.innerHTML = playlist.getTracks().length;
                     this.trackTitleNode.innerHTML = playlist.getCurrentTrack().title;
                     this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
+                },
+                showPlayInfo = function () {
+                    domStyle.set(this.positionOuterNode, 'display', 'inline');
+                },
+                setPlayInfo = function () {
+                    this.positionNode.innerHTML = formatTime(Math.round(playlist.getCurrentSound().position / 1000));
+                },
+                resetPlayInfo = function () {
+                    this.positionNode.innerHTML = '0:00';
+                },
+                formatTime = function(seconds) {
+                    var seconds = parseInt(seconds, 10),
+                        h = (seconds >= 3600) ? Math.floor(seconds / 3600) : 0,
+                        m = ((seconds - h * 3600) >= 60) ? Math.floor((seconds - h * 3600) / 60) : 0,
+                        s = seconds - (h * 3600) - (m * 60),
+                        hh = (h < 10) ? '0' + h : h,
+                        mm = (m < 10) ? '0' + m : m,
+                        ss = (s < 10) ? '0' + s : s
+                    ;
+                    
+                    if(seconds < 3600) { return m + ':' + ss; }
+                    return h + ':' + mm + ':' + ss;
                 }
             ;
             
@@ -29065,6 +29128,7 @@ define([
             playlist.onready(lang.hitch(this, function () {
                 if (playlist.isPlaying()) {
                     lang.hitch(this, setPauseIcon)();
+                    lang.hitch(this, showPlayInfo)();
                 } else {
                     lang.hitch(this, setPlayIcon)();
                 }
@@ -29073,11 +29137,20 @@ define([
             }));
             
             array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
-                this.own(on(track, 'onfinish', function (ev) {
+                this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
+                    lang.hitch(this, showPlayInfo)();
+                    lang.hitch(this, resetPlayInfo)();
+                })));
+                
+                this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
                     playlist.next();
                     lang.hitch(this, setPauseIcon)();
                     lang.hitch(this, setTrackInfo)();
-                }));
+                })));
+                
+                this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
+                    lang.hitch(this, setPlayInfo)();
+                })));
             }));
             
             this.own(on(this.playNode, 'click', lang.hitch(this, function (ev) {
@@ -29098,6 +29171,7 @@ define([
                 playlist.previous();
                 lang.hitch(this, setPauseIcon)();
                 lang.hitch(this, setTrackInfo)();
+                lang.hitch(this, resetPlayInfo)();
             })));
             
             this.own(on(this.nextNode, 'click', lang.hitch(this, function (ev) {
@@ -29105,12 +29179,13 @@ define([
                 playlist.next();
                 lang.hitch(this, setPauseIcon)();
                 lang.hitch(this, setTrackInfo)();
+                lang.hitch(this, resetPlayInfo)();
             })));
         }
     });
 });
 },
-'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large\">\n    <p>Listen to some music while you play with this app</p>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\">\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>\n    </div>\n</div>",
+'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large\">\n    <p>Listen to some music while you play with this app</p>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>\n    </div>\n</div>",
 'dojorama/ui/_global/widget/ActionsWidget':function(){
 /*jshint strict:false */
 

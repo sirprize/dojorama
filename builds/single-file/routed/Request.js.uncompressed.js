@@ -11,10 +11,14 @@ define("routed/Request", [], function () {
             var pathname = url.split('?')[0].split('#')[0].replace(/\w+:\/\/[\w\d\._\-]*/, '');
             return (pathname.match(/^\//)) ? pathname : ''; // only allow absolute urls
         },
+        
+        getQueryString = function (url) {
+            return url.split('?')[1] || '';
+        },
 
         getQueryParams = function (url) {
             var queryParams = {},
-                queryString = url.split('?')[1] || '',
+                queryString = getQueryString(url),
                 nameVals = null,
                 i = null,
                 nameVal = null;
@@ -33,6 +37,7 @@ define("routed/Request", [], function () {
 
     return function (url) {
         var pathname = getPathname(trim(decodeURIComponent(url))),
+            queryString = getQueryString(url),
             queryParams = getQueryParams(url),
             pathParams = {};
 
@@ -41,6 +46,10 @@ define("routed/Request", [], function () {
                 return pathname;
             },
 
+            getQueryString: function () {
+                return queryString;
+            },
+            
             getQueryParams: function () {
                 return queryParams;
             },
