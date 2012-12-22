@@ -1,8 +1,11 @@
+/*jshint strict:false */
+
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/query",
+    "routed/Request",
     "dojomat/Application",
     "dojomat/populateRouter",
     "./routing-map",
@@ -13,12 +16,21 @@ define([
     lang,
     array,
     query,
+    Request,
     Application,
     populateRouter,
     routingMap,
     require
 ) {
-    "use strict";
+    var trackPage = function (request) {
+        var q = request.getQueryString(),
+            r = request.getPathname() + ((q !== '') ? '?' : '') + q
+        ;
+        
+        if (window._gaq) {
+            window._gaq.push(['_trackPageview', r]);
+        }
+    };
     
     return declare([Application], {
         
@@ -28,38 +40,51 @@ define([
         },
 
         makeNotFoundPage: function () {
-            var makePage = function (Page) {
-                this.setStylesheets();
-                this.setCss();
-                this.setPageNode();
+            var request = new Request(window.location.href),
+                makePage = function (Page) {
+                    this.setStylesheets();
+                    this.setCss();
+                    this.setPageNode();
 
-                var page = new Page({
-                    router: this.router
-                }, this.pageNodeId);
+                    var page = new Page({
+                        request: request,
+                        router: this.router
+                    }, this.pageNodeId);
                 
-                page.startup();
-                this.notification.clear();
-            };
+                    page.startup();
+                    this.notification.clear();
+                }
+            ;
             
             require(['./ui/error/NotFoundPage'], lang.hitch(this, makePage));
+            trackPage(request);
         },
 
         makeErrorPage: function (error) {
-            var makePage = function (Page) {
-                this.setStylesheets();
-                this.setCss();
-                this.setPageNode();
+            var request = new Request(window.location.href),
+                makePage = function (Page) {
+                    this.setStylesheets();
+                    this.setCss();
+                    this.setPageNode();
 
-                var page = new Page({
-                    router: this.router,
-                    error: error
-                }, this.pageNodeId);
+                    var page = new Page({
+                        request: request,
+                        router: this.router,
+                        error: error
+                    }, this.pageNodeId);
                 
-                page.startup();
-                this.notification.clear();
-            };
+                    page.startup();
+                    this.notification.clear();
+                }
+            ;
 
             require(['./ui/error/ErrorPage'], lang.hitch(this, makePage));
+            trackPage(request);
+        },
+        
+        makePage: function (request, widget, layers, stylesheets) {
+            this.inherited(arguments);
+            trackPage(request);
         }
     });
 });
