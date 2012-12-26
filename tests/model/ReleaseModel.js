@@ -9,9 +9,9 @@ require([
 ) {
     "use strict";
     
-    doh.register("model/DataModel", [
+    doh.register("serialisation, deserilisation and validation", [
         {
-            name: 'deserialize()',
+            name: "deserialize() should instantiate Date object from formatted string",
             runTest: function () {
                 var model = new ReleaseModel({
                     props: { releaseDate: null }
@@ -26,7 +26,7 @@ require([
             }
         },
         {
-            name: 'serialize()',
+            name: 'serialize() should create formatted string from Date object',
             runTest: function () {
                 var model = new ReleaseModel({
                     props: { releaseDate: null }
@@ -37,7 +37,7 @@ require([
             }
         },
         {
-            name: 'validate()',
+            name: 'validate() should throw an exception',
             runTest: function () {
                 var model = new ReleaseModel({
                         props: { title: null }
@@ -58,9 +58,9 @@ require([
         }
     ]);
 
-    doh.register("model/DataModel (create/save() tests)", [
+    doh.register("client-side validation", [
         {
-            name: 'Client-Side Validation',
+            name: 'error callback should be called because model does not validate',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -84,9 +84,9 @@ require([
         }
     ]);
 
-    doh.register("model/DataModel (create/save() tests)", [
+    doh.register("saving a new release", [
         {
-            name: 'Created ok',
+            name: 'server should report success',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -113,7 +113,7 @@ require([
             }
         },
         {
-            name: 'Invalid input',
+            name: 'server should report validation error',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -137,9 +137,9 @@ require([
         }
     ]);
 
-    doh.register("model/DataModel (update/save() tests)", [
+    doh.register("updating a release", [
         {
-            name: 'Updated ok',
+            name: 'server should report success',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -167,7 +167,7 @@ require([
             }
         },
         {
-            name: 'Not found',
+            name: 'server should report not-found',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -196,7 +196,7 @@ require([
             }
         },
         {
-            name: 'Invalid input',
+            name: 'server should report validation error',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -224,9 +224,9 @@ require([
         }
     ]);
 
-    doh.register("model/DataModel (remove() tests)", [
+    doh.register("deleting a release", [
         {
-            name: 'Removed ok',
+            name: 'server should report success',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),
@@ -252,7 +252,7 @@ require([
             }
         },
         {
-            name: 'Not found',
+            name: 'server should report not-found',
             timeout: 3000,
             runTest: function () {
                 var d = new doh.Deferred(),

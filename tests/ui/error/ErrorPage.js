@@ -14,16 +14,16 @@ require([
 ) {
     "use strict";
     
-    doh.register("ui/error/ErrorPage", [
+    doh.register("page destruction", [
         {
-            name: 'Destruction',
+            name: 'all widgets should be destroyed',
             timeout: 10000,
             runTest: function () {
                 var d = new doh.Deferred(),
                     request = new Request(''),
                     page = new ErrorPage({
                         router: router,
-                        error: { message: 'Something bad happened' }
+                        error: { message: 'Some error message' }
                     }, 'page');
 
                 page.startup();

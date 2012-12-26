@@ -2,6 +2,7 @@ require([
     "doh",
     "../../_util/router.js",
     "routed/Request",
+    "dojomat/Session",
     "mijit/registry",
     'dojorama/ui/release/ReleaseCreatePage',
     "dojo/domReady!"
@@ -9,20 +10,23 @@ require([
     doh,
     router,
     Request,
+    Session,
     registry,
     ReleaseCreatePage
 ) {
     "use strict";
     
-    doh.register("ui/release/ReleaseCreatePage", [
+    doh.register("page destruction", [
         {
-            name: 'Destruction',
+            name: 'all widgets should be destroyed',
             timeout: 10000,
             runTest: function () {
                 var d = new doh.Deferred(),
                     request = new Request(''),
+                    session = new Session(),
                     page = new ReleaseCreatePage({
                         request: request,
+                        session: session,
                         router: router
                     }, 'page');
 

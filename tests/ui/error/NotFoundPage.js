@@ -14,9 +14,9 @@ require([
 ) {
     "use strict";
     
-    doh.register("ui/error/NotFoundPage", [
+    doh.register("page destruction", [
         {
-            name: 'Destruction',
+            name: 'all widgets should be destroyed',
             timeout: 10000,
             runTest: function () {
                 var d = new doh.Deferred(),

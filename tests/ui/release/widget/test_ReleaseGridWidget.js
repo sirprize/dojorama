@@ -1,6 +1,6 @@
 require([
     "../../../_util/router.js",
-    "../../../_util/fixture/release.js",
+    "../../../_util/data/release-creator.js",
     "routed/Request",
     "dojo/on",
     "dojorama/service/release-store",
@@ -8,7 +8,7 @@ require([
     "dojo/domReady!"
 ], function (
     router,
-    release,
+    releaseCreator,
     Request,
     on,
     releaseStore,
@@ -16,7 +16,7 @@ require([
 ) {
     "use strict";
     
-    var releaseId = release.createOne();
+    var releaseId = releaseCreator.createOne();
 
     var w1 = new ReleaseGridWidget({
         router: router,

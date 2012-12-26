@@ -1,18 +1,18 @@
 require([
-    "../../../_util/fixture/release.js",
+    "../../../_util/data/release-creator.js",
     "dojo/on",
     "dojorama/service/release-store",
     "dojorama/ui/release/widget/ReleaseUpdateFormWidget",
     "dojo/domReady!"
 ], function (
-    release,
+    releaseCreator,
     on,
     releaseStore,
     ReleaseUpdateFormWidget
 ) {
     "use strict";
     
-    var releaseId = release.createOne();
+    var releaseId = releaseCreator.createOne();
 
     var w1 = new ReleaseUpdateFormWidget({
         store: releaseStore,
