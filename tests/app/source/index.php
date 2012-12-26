@@ -7,7 +7,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="<?php echo $base; ?>/styles/everything.css">
+        <link rel="stylesheet" href="<?php echo $base; ?>/styles/global.css">
         <title>Browse Source</title>
         <script>
             document.write('<style media="all">#static { display: none; }</style>');

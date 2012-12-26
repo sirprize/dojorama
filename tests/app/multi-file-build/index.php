@@ -7,7 +7,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="<?php echo $base; ?>/builds/multi-file/dojorama/styles/everything.css">
+        <link rel="stylesheet" href="<?php echo $base; ?>/builds/multi-file/dojorama/styles/global.css">
         <title>Browse Build</title>
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
