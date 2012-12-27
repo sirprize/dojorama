@@ -1,6 +1,6 @@
 require({cache:{
-'url:dojorama/ui/release/template/ReleaseCreatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseCreatePage.css':"body {background: white;}"}});
+'url:dojorama/ui/release/template/ReleaseCreatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"formNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseCreatePage.css':"body {background: white;}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/ReleaseCreatePage", [
@@ -21,8 +21,8 @@ define("dojorama/ui/release/ReleaseCreatePage", [
     "dojo/topic",
     "dojo/_base/lang",
     "dojo/text!./template/ReleaseCreatePage.html",
-    "dojo/text!./css/ReleaseCreatePage.css",
-    "dojo/i18n!./nls/ReleaseCreatePage"
+    "dojo/i18n!./nls/ReleaseCreatePage",
+    "dojo/text!../../styles/inline/ui/release/ReleaseCreatePage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -41,8 +41,8 @@ define("dojorama/ui/release/ReleaseCreatePage", [
     topic,
     lang,
     template,
-    css,
-    nls
+    nls,
+    css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 

@@ -4,7 +4,7 @@ define([
 ], function (require, doh) {
     "use strict";
     
-    if(doh.isBrowser) {
+    if(doh.isBrowser) { // paths are relative to vendor/dojo/util/doh/runner.html
         doh.register("model/ReleaseModel", "../../../../tests/model/ReleaseModel.html", 10000);
         doh.register("ui/error/ErrorPage", "../../../../tests/ui/error/ErrorPage.html", 30000);
         doh.register("ui/error/NotFoundPage", "../../../../tests/ui/error/NotFoundPage.html", 30000);

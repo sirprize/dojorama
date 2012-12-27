@@ -829,8 +829,8 @@ define("dojorama/ui/release/widget/ReleaseUpdateFormWidget", [
 'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>",
 'dojorama/ui/release/ReleaseCreatePage':function(){
 require({cache:{
-'url:dojorama/ui/release/template/ReleaseCreatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseCreatePage.css':"body {background: white;}"}});
+'url:dojorama/ui/release/template/ReleaseCreatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"formNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseCreatePage.css':"body {background: white;}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/ReleaseCreatePage", [
@@ -851,8 +851,8 @@ define("dojorama/ui/release/ReleaseCreatePage", [
     "dojo/topic",
     "dojo/_base/lang",
     "dojo/text!./template/ReleaseCreatePage.html",
-    "dojo/text!./css/ReleaseCreatePage.css",
-    "dojo/i18n!./nls/ReleaseCreatePage"
+    "dojo/i18n!./nls/ReleaseCreatePage",
+    "dojo/text!../../styles/inline/ui/release/ReleaseCreatePage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -871,8 +871,8 @@ define("dojorama/ui/release/ReleaseCreatePage", [
     topic,
     lang,
     template,
-    css,
-    nls
+    nls,
+    css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 
@@ -933,12 +933,12 @@ define(
     require.rawConfig['service/release-store'].callback
 );
 },
-'url:dojorama/ui/release/template/ReleaseCreatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseCreatePage.css':"body {background: white;}",
+'url:dojorama/ui/release/template/ReleaseCreatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"formNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseCreatePage.css':"body {background: white;}",
 'dojorama/ui/release/ReleaseIndexPage':function(){
 require({cache:{
-'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseIndexPage.css':"body {background: white;}.field-title {}"}});
+'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"gridNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseIndexPage.css':"body {background: white;}.dgrid {height: auto; border: 0; background: transparent;}.dgrid .dgrid-scroller {position: relative; overflow: visible;}.dgrid .dgrid-scroller {position: relative; max-height: 20em; overflow: auto;}.dgrid-column-selector {width: 3em;}.dgrid-column-publish,.dgrid-column-releaseDate,.dgrid-column-releaseDate input {text-align: right;}.dgrid-cell {border: none;}.dgrid-header,.dgrid-header-row,.dgrid-footer {background: transparent;}.dgrid-selected {background: #eee !important;}.dgrid-row-even {}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/ReleaseIndexPage", [
@@ -960,8 +960,8 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     "dojo/_base/lang",
     "dojo/topic",
     "dojo/text!./template/ReleaseIndexPage.html",
-    "dojo/text!./css/ReleaseIndexPage.css",
-    "dojo/i18n!./nls/ReleaseIndexPage"
+    "dojo/i18n!./nls/ReleaseIndexPage",
+    "dojo/text!../../styles/inline/ui/release/ReleaseIndexPage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -981,8 +981,8 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     lang,
     topic,
     template,
-    css,
-    nls
+    nls,
+    css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 
@@ -1056,12 +1056,12 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     });
 });
 },
-'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseIndexPage.css':"body {background: white;}.field-title {}",
+'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"gridNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseIndexPage.css':"body {background: white;}.dgrid {height: auto; border: 0; background: transparent;}.dgrid .dgrid-scroller {position: relative; overflow: visible;}.dgrid .dgrid-scroller {position: relative; max-height: 20em; overflow: auto;}.dgrid-column-selector {width: 3em;}.dgrid-column-publish,.dgrid-column-releaseDate,.dgrid-column-releaseDate input {text-align: right;}.dgrid-cell {border: none;}.dgrid-header,.dgrid-header-row,.dgrid-footer {background: transparent;}.dgrid-selected {background: #eee !important;}.dgrid-row-even {}",
 'dojorama/ui/release/ReleaseUpdatePage':function(){
 require({cache:{
-'url:dojorama/ui/release/template/ReleaseUpdatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseUpdatePage.css':"body {background: white;}"}});
+'url:dojorama/ui/release/template/ReleaseUpdatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"formNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseUpdatePage.css':"body {background: white;}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/ReleaseUpdatePage", [
@@ -1082,8 +1082,8 @@ define("dojorama/ui/release/ReleaseUpdatePage", [
     "dojo/topic",
     "dojo/_base/lang",
     "dojo/text!./template/ReleaseUpdatePage.html",
-    "dojo/text!./css/ReleaseUpdatePage.css",
-    "dojo/i18n!./nls/ReleaseUpdatePage"
+    "dojo/i18n!./nls/ReleaseUpdatePage",
+    "dojo/text!../../styles/inline/ui/release/ReleaseUpdatePage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -1102,8 +1102,8 @@ define("dojorama/ui/release/ReleaseUpdatePage", [
     topic,
     lang,
     template,
-    css,
-    nls
+    nls,
+    css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 
@@ -1175,8 +1175,8 @@ define("dojorama/ui/release/ReleaseUpdatePage", [
     });
 });
 },
-'url:dojorama/ui/release/template/ReleaseUpdatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseUpdatePage.css':"body {background: white;}",
+'url:dojorama/ui/release/template/ReleaseUpdatePage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"formNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseUpdatePage.css':"body {background: white;}",
 '*now':function(r){r(['dojo/i18n!*preload*dojorama/layers/nls/release*["ar","ca","cs","da","de","el","en-gb","en-us","es-es","fi-fi","fr-fr","he-il","hu","it-it","ja-jp","ko-kr","nl-nl","nb","pl","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh-tw","zh-cn","ROOT"]']);}
 }});
 define("dojorama/layers/release", [], 1);

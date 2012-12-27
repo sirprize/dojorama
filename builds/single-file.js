@@ -9,8 +9,7 @@
 
 ////////////////////////////////////////////////////
 // Define arrays of layer contents to facilitate including and excluding for individual layers.
-// The dojo base stuff is split into separate layers - each layer should be smaller than 25k uncompressed
-// (iPhone won't cache components bigger than 25K)
+// The dojo base stuff is and other global stuff is packed into a single file
 
 var doscho = [
     "dojo/sniff",
@@ -19,7 +18,6 @@ var doscho = [
     "dojo/_base/declare",
     "dojo/_base/kernel",
     "dojo/_base/lang",
-
     "dojo/_base/connect",
     "dojo/on",
     "dojo/topic",
@@ -33,25 +31,19 @@ var doscho = [
     "dojo/mouse",
     "dojo/_base/sniff",
     "dojo/keys",
-
     "dojo/Deferred",
     "dojo/promise/all",
     "dojo/promise/first",
     "dojo/promise/Promise",
     "dojo/when",
-
     "dojo/ready",
     "dojo/_base/unload",
     "dojo/_base/window",
-
     "dojo/_base/xhr",
-
     "dojo/_base/array",
     "dojo/_base/html",
-
     "dojo/_base/NodeList",
     "dojo/query",
-
     "dojo/window",
     "dojo/touch",
     "dojo/Stateful",
@@ -61,15 +53,12 @@ var doscho = [
     "dojo/regexp",
     "dojo/string",
     "dojo/text",
-    //"dojo/parser",
     "dojo/_base/url",
-
     "dojo/date/locale",
     "dojo/date/stamp",
 	"dojo/date",
 	"dojo/cldr/supplemental",
 	"dojo/cldr/nls/gregorian",
-
     "dojo/store/Cache",
     "dojo/store/JsonRest",
     "dojo/store/Memory",

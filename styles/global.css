@@ -1,10 +1,10 @@
 @import url("../vendor/SitePen/dgrid/css/dgrid.css");
 
-@import url("../vendor/SitePen/dgrid/css/extensions/Pagination.css");
+@import url("./global/ui/_global/widget/FooterWidget.css");
 
-@import url("dgrid/dgrid.css");
+@import url("./global/ui/_global/widget/NavigationWidget.css");
 
-@import url("./ui/widget/ProgressWidget.css");
+@import url("./global/ui/_global/widget/ProgressWidget.css");
 /* bootstrap */
 article,
 aside,
@@ -4230,21 +4230,7 @@ input[type="submit"].btn.btn-mini {
 }
 /* dgrid */
 /* widgets */
-/* footer */
-.footer {
-  padding: 20px;
+/* misc */
+.main {
   margin-top: 20px;
-  border-top: 1px solid #e5e5e5;
-  background-color: #f5f5f5;
-}
-.footer p {
-  margin-bottom: 0;
-  color: #777;
-}
-.footer-links {
-  margin: 10px 0;
-}
-.footer-links li {
-  display: inline;
-  margin-right: 10px;
 }

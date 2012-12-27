@@ -14,7 +14,7 @@
         </script>
     </head>
 
-    <body class="container">
+    <body>
         <div id="static">
             Please enable JavaScript in your browser
         </div>

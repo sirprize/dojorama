@@ -9,7 +9,7 @@ define([
     "../_global/mixin/_NavigationMixin",
     "../_global/mixin/_FooterMixin",
     "dojo/text!./template/NotFoundPage.html",
-    "dojo/text!./css/NotFoundPage.css"
+    "dojo/text!../../styles/inline/ui/error/NotFoundPage.css"
 ], function (
     declare,
     _WidgetBase,

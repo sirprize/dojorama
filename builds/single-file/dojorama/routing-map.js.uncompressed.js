@@ -2,7 +2,7 @@ define("dojorama/routing-map", ["dojo/_base/config", "require"], function (confi
     "use strict";
     
     var p = config['routing-map'].pathPrefix,
-        l = config['routing-map'].layers,
+        l = config['routing-map'].layers || {},
         mid = require.toAbsMid
     ;
     

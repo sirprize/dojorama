@@ -9,7 +9,7 @@ define([
     "../_global/mixin/_NavigationMixin",
     "../_global/mixin/_FooterMixin",
     "dojo/text!./template/ErrorPage.html",
-    "dojo/text!./css/ErrorPage.css"
+    "dojo/text!../../styles/inline/ui/error/ErrorPage.css"
 ], function (
     declare,
     _WidgetBase,

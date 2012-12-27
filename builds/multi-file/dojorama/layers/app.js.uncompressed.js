@@ -724,7 +724,7 @@ define("dojorama/routing-map", ["dojo/_base/config", "require"], function (confi
     "use strict";
     
     var p = config['routing-map'].pathPrefix,
-        l = config['routing-map'].layers,
+        l = config['routing-map'].layers || {},
         mid = require.toAbsMid
     ;
     
@@ -763,8 +763,6 @@ define("dojorama/routing-map", ["dojo/_base/config", "require"], function (confi
 define("dojorama/App", [
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/array",
-    "dojo/query",
     "routed/Request",
     "dojomat/Application",
     "dojomat/populateRouter",
@@ -774,8 +772,6 @@ define("dojorama/App", [
 ], function (
     declare,
     lang,
-    array,
-    query,
     Request,
     Application,
     populateRouter,

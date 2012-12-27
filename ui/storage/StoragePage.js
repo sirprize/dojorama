@@ -9,6 +9,7 @@ define([
     "../_global/mixin/_NavigationMixin",
     "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_FooterMixin",
+    "./mixin/_StorageBreadcrumbsMixin",
     "dojo-local-storage/LocalStorage",
     "dojo/store/Observable",
     "dojo/_base/array",
@@ -16,7 +17,7 @@ define([
     "dojo/_base/json",
     "dojo/text!./template/StoragePage.html",
     "./widget/RowWidget",
-    "dojo/text!./css/StoragePage.css"
+    "dojo/text!../../styles/inline/ui/storage/StoragePage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -26,6 +27,7 @@ define([
     _NavigationMixin,
     _PlayerMixin,
     _FooterMixin,
+    _StorageBreadcrumbsMixin,
     LocalStorage,
     Observable,
     array,
@@ -35,7 +37,7 @@ define([
     RowWidget,
     css
 ) {
-    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _FooterMixin], {
+    return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _FooterMixin, _StorageBreadcrumbsMixin], {
 
         router: null,
         request: null,
@@ -57,6 +59,9 @@ define([
             this.inherited(arguments);
             this.setCss(css, 'all');
             this.setTitle('Storage');
+            
+            // set breadcrumbs items
+            this.setStorageIndexBreadcrumbsItems();
         },
         
         startup: function () {
@@ -64,6 +69,7 @@ define([
             this.showNavigation();
             this.showFooter();
             this.fetchItems();
+            this.showStorageBreadcrumbs();
         },
         
         fetchItems: function () {

@@ -3,8 +3,6 @@
 define("dojorama/App", [
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/array",
-    "dojo/query",
     "routed/Request",
     "dojomat/Application",
     "dojomat/populateRouter",
@@ -14,8 +12,6 @@ define("dojorama/App", [
 ], function (
     declare,
     lang,
-    array,
-    query,
     Request,
     Application,
     populateRouter,

@@ -1,6 +1,6 @@
 require({cache:{
-'url:dojorama/ui/error/template/NotFoundPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <h1 data-dojo-attach-point=\"messageNode\"></h1>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/error/css/NotFoundPage.css':"body {background: red;}"}});
+'url:dojorama/ui/error/template/NotFoundPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <h1 data-dojo-attach-point=\"messageNode\"></h1>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/error/NotFoundPage.css':"body {background: red;}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/error/NotFoundPage", [
@@ -12,7 +12,7 @@ define("dojorama/ui/error/NotFoundPage", [
     "../_global/mixin/_NavigationMixin",
     "../_global/mixin/_FooterMixin",
     "dojo/text!./template/NotFoundPage.html",
-    "dojo/text!./css/NotFoundPage.css"
+    "dojo/text!../../styles/inline/ui/error/NotFoundPage.css"
 ], function (
     declare,
     _WidgetBase,

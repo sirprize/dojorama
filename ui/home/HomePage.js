@@ -10,7 +10,7 @@ define([
     "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_FooterMixin",
     "dojo/text!./template/HomePage.html",
-    "dojo/text!./css/HomePage.css"
+    "dojo/text!../../styles/inline/ui/home/HomePage.css"
 ], function (
     declare,
     _WidgetBase,

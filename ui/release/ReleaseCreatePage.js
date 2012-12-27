@@ -18,8 +18,8 @@ define([
     "dojo/topic",
     "dojo/_base/lang",
     "dojo/text!./template/ReleaseCreatePage.html",
-    "dojo/text!./css/ReleaseCreatePage.css",
-    "dojo/i18n!./nls/ReleaseCreatePage"
+    "dojo/i18n!./nls/ReleaseCreatePage",
+    "dojo/text!../../styles/inline/ui/release/ReleaseCreatePage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -38,8 +38,8 @@ define([
     topic,
     lang,
     template,
-    css,
-    nls
+    nls,
+    css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 

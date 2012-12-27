@@ -22800,7 +22800,7 @@ define(["dojo/_base/config", "require"], function (config, require) {
     "use strict";
     
     var p = config['routing-map'].pathPrefix,
-        l = config['routing-map'].layers,
+        l = config['routing-map'].layers || {},
         mid = require.toAbsMid
     ;
     
@@ -22839,8 +22839,6 @@ define(["dojo/_base/config", "require"], function (config, require) {
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/array",
-    "dojo/query",
     "routed/Request",
     "dojomat/Application",
     "dojomat/populateRouter",
@@ -22850,8 +22848,6 @@ define([
 ], function (
     declare,
     lang,
-    array,
-    query,
     Request,
     Application,
     populateRouter,
@@ -28912,7 +28908,7 @@ define([
     });
 });
 },
-'url:dojorama/ui/_global/widget/template/NavigationWidget.html':"<div class=\"navbar navbar-inverse\">\n    <div class=\"navbar-inner\">\n        <div class=\"container\">\n            <!-- Be sure to leave the brand out there if you want it shown -->\n            <a class=\"brand\" href=\"#\" data-dojo-attach-point=\"homeNode\"></a>\n            \n            <ul class=\"nav\">\n                <li><a href=\"#\" data-dojo-attach-point=\"releaseIndexNode\"></a></li>\n                <li><a href=\"#\" data-dojo-attach-point=\"storageNode\"></a></li>\n            </ul>\n\n            <!-- Everything you want hidden at 940px or less, place within here -->\n            <div class=\"nav-collapse\">\n            <!-- .nav, .navbar-search, .navbar-form, etc -->\n            </div>\n            <!--\n            <ul class=\"nav pull-right\">\n                <li>asdf</li>\n            </ul>\n            -->\n        </div>\n    </div>\n</div>",
+'url:dojorama/ui/_global/widget/template/NavigationWidget.html':"<div class=\"navbar navbar-inverse navbar-fixed-top\">\n    <div class=\"navbar-inner\">\n        <div class=\"container\">\n            <!-- Be sure to leave the brand out there if you want it shown -->\n            <a class=\"brand\" href=\"#\" data-dojo-attach-point=\"homeNode\"></a>\n            \n            <ul class=\"nav\">\n                <li><a href=\"#\" data-dojo-attach-point=\"releaseIndexNode\"></a></li>\n                <li><a href=\"#\" data-dojo-attach-point=\"storageNode\"></a></li>\n            </ul>\n\n            <!-- Everything you want hidden at 940px or less, place within here -->\n            <div class=\"nav-collapse\">\n            <!-- .nav, .navbar-search, .navbar-form, etc -->\n            </div>\n            <!--\n            <ul class=\"nav pull-right\">\n                <li>asdf</li>\n            </ul>\n            -->\n        </div>\n    </div>\n</div>",
 'dojorama/ui/_global/mixin/_NotificationMixin':function(){
 define([
     "dojo/_base/declare",

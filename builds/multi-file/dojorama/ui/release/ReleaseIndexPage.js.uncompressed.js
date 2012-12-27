@@ -1,6 +1,6 @@
 require({cache:{
-'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n    <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n    <ul data-dojo-attach-point=\"actionsNode\"></ul>\n    <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n    <div class=\"well well-large\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"playerNode\"></div>\n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/ui/release/css/ReleaseIndexPage.css':"body {background: white;}.field-title {}"}});
+'url:dojorama/ui/release/template/ReleaseIndexPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <ul data-dojo-attach-point=\"breadcrumbsNode\"></ul>\n        <h1 data-dojo-attach-point=\"sectionTitleNode\"></h1>\n        <ul data-dojo-attach-point=\"actionsNode\"></ul>\n        <div data-dojo-attach-point=\"notificationNode\"></div>\n    \n        <div class=\"well well-large\">\n            <div data-dojo-attach-point=\"gridNode\"></div>\n        </div>\n    \n        <div data-dojo-attach-point=\"playerNode\"></div>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/release/ReleaseIndexPage.css':"body {background: white;}.dgrid {height: auto; border: 0; background: transparent;}.dgrid .dgrid-scroller {position: relative; overflow: visible;}.dgrid .dgrid-scroller {position: relative; max-height: 20em; overflow: auto;}.dgrid-column-selector {width: 3em;}.dgrid-column-publish,.dgrid-column-releaseDate,.dgrid-column-releaseDate input {text-align: right;}.dgrid-cell {border: none;}.dgrid-header,.dgrid-header-row,.dgrid-footer {background: transparent;}.dgrid-selected {background: #eee !important;}.dgrid-row-even {}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/ReleaseIndexPage", [
@@ -22,8 +22,8 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     "dojo/_base/lang",
     "dojo/topic",
     "dojo/text!./template/ReleaseIndexPage.html",
-    "dojo/text!./css/ReleaseIndexPage.css",
-    "dojo/i18n!./nls/ReleaseIndexPage"
+    "dojo/i18n!./nls/ReleaseIndexPage",
+    "dojo/text!../../styles/inline/ui/release/ReleaseIndexPage.css"
 ], function (
     declare,
     _WidgetBase,
@@ -43,8 +43,8 @@ define("dojorama/ui/release/ReleaseIndexPage", [
     lang,
     topic,
     template,
-    css,
-    nls
+    nls,
+    css
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _AppAware, _StateAware, _NavigationMixin, _PlayerMixin, _NotificationMixin, _FooterMixin, _ReleaseBreadcrumbsMixin, _ReleaseActionsMixin, _ReleaseComponentTitleMixin], {
 

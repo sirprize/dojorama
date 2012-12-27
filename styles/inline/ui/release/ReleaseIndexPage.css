@@ -1,0 +1,71 @@
+body {
+  background: white;
+}
+.dgrid {
+  height: auto;
+  border: 0;
+  background: transparent;
+}
+.dgrid .dgrid-scroller {
+  position: relative;
+  overflow: visible;
+}
+.dgrid .dgrid-scroller {
+  position: relative;
+  max-height: 20em;
+  overflow: auto;
+}
+.dgrid-column-selector {
+  width: 3em;
+}
+.dgrid-column-publish,
+.dgrid-column-releaseDate,
+.dgrid-column-releaseDate input {
+  text-align: right;
+}
+.dgrid-cell {
+  border: none;
+}
+.dgrid-header,
+.dgrid-header-row,
+.dgrid-footer {
+  background: transparent;
+}
+.dgrid-selected {
+  background: #eee !important;
+  /*-webkit-border-radius: 1em;
+       -moz-border-radius: 1em;
+            border-radius: 1em;*/
+
+}
+.dgrid-row-even {
+  /*background: white;*/
+
+}
+/*
+.dgrid {
+    /*font-size: 1.5em;* /
+}
+
+.dgrid-cell {
+    border: none;
+    border-bottom: 0px dashed green;
+}
+
+.dgrid-row-even {
+    background: white;
+}
+
+.dgrid-row-odd {
+    background: #eee !important;
+}
+
+.dgrid-selected {
+    background: yellow !important;
+}
+
+.grid-tooltip-content {
+    background: pink;
+    padding: .3em;
+}
+*/

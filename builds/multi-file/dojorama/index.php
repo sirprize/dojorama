@@ -7,14 +7,14 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file/dojorama/styles/everything.css">
+        <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file/dojorama/styles/global.css">
         <title>Browse Build</title>
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
         </script>
     </head>
 
-    <body class="container">
+    <body>
         <div id="static">
             Please enable JavaScript in your browser
         </div>
@@ -32,6 +32,14 @@
                 })();
             </script>
         <?php endif; ?>
+        
+        <script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2-nodebug-jsmin.js"></script>
+        
+        <script>
+            soundManager.setup({
+                url: '<?php echo $base; ?>/vendor/scottschiller/SoundManager2/swf/'
+            });
+        </script>
         
         <script>
             var dojoConfig = {
@@ -61,14 +69,9 @@
             };
         </script>
         
-        <script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2-nodebug-jsmin.js"></script>
         <script src="<?php echo $base; ?>/builds/single-file/dojo/dojo.js"></script>
 
         <script>
-            soundManager.setup({
-                url: '<?php echo $base; ?>/vendor/scottschiller/SoundManager2/swf/'
-            });
-            
             require(['dojorama/App'], function (App) { new App(); });
         </script>
     </body>
