@@ -9,6 +9,10 @@ define([
     "../_global/mixin/_NavigationMixin",
     "../_global/mixin/_PlayerMixin",
     "../_global/mixin/_FooterMixin",
+    "dojo/_base/lang",
+    "dojo/dom-attr",
+    "dojo/query",
+    "dojo/on",
     "dojo/text!./template/HomePage.html",
     "dojo/text!../../styles/inline/ui/home/HomePage.css"
 ], function (
@@ -20,6 +24,10 @@ define([
     _NavigationMixin,
     _PlayerMixin,
     _FooterMixin,
+    lang,
+    domAttr,
+    query,
+    on,
     template,
     css
 ) {
@@ -40,6 +48,19 @@ define([
             this.inherited(arguments);
             this.setCss(css, 'all');
             this.setTitle('Home');
+            
+            query('a.push', this.domNode).forEach(lang.hitch(this, function (node) {
+                var url, route = this.router.getRoute(domAttr.get(node, 'data-dojorama-route')); // valid route name in data-dojo-props attribute of node?
+                if (!route) { return; }
+                
+                url = route.assemble();
+                node.href = url;
+                
+                this.own(on(node, 'click', lang.hitch(this, function (ev) {
+                    ev.preventDefault();
+                    this.push(url);
+                })));
+            }));
         },
 
         startup: function () {
