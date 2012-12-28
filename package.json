@@ -1,6 +1,6 @@
 {
     "name": "dojorama",
-    "description": "Single page application based on Dojo, Twitter Bootstrap and history API",
+    "description": "Single page demo application based on Dojo, Twitter Bootstrap and history API",
     "version": 0.1,
     "dojoBuild": "package.js"
 }

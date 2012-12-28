@@ -5,6 +5,9 @@
   padding: 40px 0;
   color: #333;
   text-align: center;
+  background: #F5F5F5;
+  /* Old browsers */
+
   /*
   background: -moz-linear-gradient(45deg,  #020031 0%, #6d3353 100%); /* FF3.6+ * /
   background: -webkit-gradient(linear, left bottom, right top, color-stop(0%,#020031), color-stop(100%,#6d3353)); /* Chrome,Safari4+ * /
@@ -44,7 +47,7 @@
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
 }
 /* Download button */
-.masthead .btn {
+.jumbotron .btn {
   padding: 14px 24px;
   font-size: 24px;
   font-weight: 200;
@@ -121,6 +124,7 @@
   text-align: center;
   background-color: #f5f5f5;
   border-top: 1px solid #fff;
+  border-bottom: 1px solid #ddd;
 }
 /* Quick links on Home */
 .bs-docs-social-buttons {
@@ -138,9 +142,6 @@
 }
 /* Subhead (other pages)
 ------------------------- */
-.subhead {
-  text-align: left;
-}
 .subhead h1 {
   font-size: 60px;
 }

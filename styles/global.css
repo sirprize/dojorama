@@ -4,6 +4,8 @@
 
 @import url("./global/ui/_global/widget/NavigationWidget.css");
 
+@import url("./global/ui/_global/widget/PlayerWidget.css");
+
 @import url("./global/ui/_global/widget/ProgressWidget.css");
 /* bootstrap */
 article,
@@ -197,7 +199,7 @@ textarea {
 .input-block-level {
   display: block;
   width: 100%;
-  min-height: 30px;
+  min-height: 31px;
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
@@ -205,8 +207,8 @@ textarea {
 body {
   margin: 0;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 16px;
+  line-height: 21px;
   color: #333333;
   background-color: #ffffff;
 }
@@ -349,7 +351,7 @@ a:hover {
 .row-fluid [class*="span"] {
   display: block;
   width: 100%;
-  min-height: 30px;
+  min-height: 31px;
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
@@ -544,13 +546,13 @@ a:hover {
   clear: both;
 }
 p {
-  margin: 0 0 10px;
+  margin: 0 0 10.5px;
 }
 .lead {
-  margin-bottom: 20px;
-  font-size: 21px;
+  margin-bottom: 21px;
+  font-size: 24px;
   font-weight: 200;
-  line-height: 30px;
+  line-height: 31.5px;
 }
 small {
   font-size: 85%;
@@ -600,10 +602,10 @@ h3,
 h4,
 h5,
 h6 {
-  margin: 10px 0;
+  margin: 10.5px 0;
   font-family: inherit;
   font-weight: bold;
-  line-height: 20px;
+  line-height: 21px;
   color: inherit;
   text-rendering: optimizelegibility;
 }
@@ -620,47 +622,47 @@ h6 small {
 h1,
 h2,
 h3 {
-  line-height: 40px;
+  line-height: 42px;
 }
 h1 {
-  font-size: 38.5px;
+  font-size: 44px;
 }
 h2 {
-  font-size: 31.5px;
+  font-size: 36px;
 }
 h3 {
-  font-size: 24.5px;
+  font-size: 28px;
 }
 h4 {
-  font-size: 17.5px;
+  font-size: 20px;
 }
 h5 {
-  font-size: 14px;
+  font-size: 16px;
 }
 h6 {
-  font-size: 11.9px;
+  font-size: 13.6px;
 }
 h1 small {
-  font-size: 24.5px;
+  font-size: 28px;
 }
 h2 small {
-  font-size: 17.5px;
+  font-size: 20px;
 }
 h3 small {
-  font-size: 14px;
+  font-size: 16px;
 }
 h4 small {
-  font-size: 14px;
+  font-size: 16px;
 }
 .page-header {
-  padding-bottom: 9px;
-  margin: 20px 0 30px;
+  padding-bottom: 9.5px;
+  margin: 21px 0 31.5px;
   border-bottom: 1px solid #eeeeee;
 }
 ul,
 ol {
   padding: 0;
-  margin: 0 0 10px 25px;
+  margin: 0 0 10.5px 25px;
 }
 ul ul,
 ul ol,
@@ -669,7 +671,7 @@ ol ul {
   margin-bottom: 0;
 }
 li {
-  line-height: 20px;
+  line-height: 21px;
 }
 ul.unstyled,
 ol.unstyled {
@@ -688,17 +690,17 @@ ol.inline > li {
   padding-right: 5px;
 }
 dl {
-  margin-bottom: 20px;
+  margin-bottom: 21px;
 }
 dt,
 dd {
-  line-height: 20px;
+  line-height: 21px;
 }
 dt {
   font-weight: bold;
 }
 dd {
-  margin-left: 10px;
+  margin-left: 10.5px;
 }
 .dl-horizontal {
   *zoom: 1;
@@ -725,7 +727,7 @@ dd {
   margin-left: 180px;
 }
 hr {
-  margin: 20px 0;
+  margin: 21px 0;
   border: 0;
   border-top: 1px solid #eeeeee;
   border-bottom: 1px solid #ffffff;
@@ -741,18 +743,18 @@ abbr.initialism {
 }
 blockquote {
   padding: 0 0 0 15px;
-  margin: 0 0 20px;
+  margin: 0 0 21px;
   border-left: 5px solid #eeeeee;
 }
 blockquote p {
   margin-bottom: 0;
   font-size: 16px;
   font-weight: 300;
-  line-height: 25px;
+  line-height: 26.25px;
 }
 blockquote small {
   display: block;
-  line-height: 20px;
+  line-height: 21px;
   color: #999999;
 }
 blockquote small:before {
@@ -783,12 +785,12 @@ blockquote:after {
 }
 address {
   display: block;
-  margin-bottom: 20px;
+  margin-bottom: 21px;
   font-style: normal;
-  line-height: 20px;
+  line-height: 21px;
 }
 form {
-  margin: 0 0 20px;
+  margin: 0 0 21px;
 }
 fieldset {
   padding: 0;
@@ -799,15 +801,15 @@ legend {
   display: block;
   width: 100%;
   padding: 0;
-  margin-bottom: 20px;
-  font-size: 21px;
-  line-height: 40px;
+  margin-bottom: 21px;
+  font-size: 24px;
+  line-height: 42px;
   color: #333333;
   border: 0;
   border-bottom: 1px solid #e5e5e5;
 }
 legend small {
-  font-size: 15px;
+  font-size: 15.75px;
   color: #999999;
 }
 label,
@@ -815,9 +817,9 @@ input,
 button,
 select,
 textarea {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: normal;
-  line-height: 20px;
+  line-height: 21px;
 }
 input,
 button,
@@ -847,11 +849,11 @@ input[type="tel"],
 input[type="color"],
 .uneditable-input {
   display: inline-block;
-  height: 20px;
+  height: 21px;
   padding: 4px 6px;
-  margin-bottom: 10px;
-  font-size: 14px;
-  line-height: 20px;
+  margin-bottom: 10.5px;
+  font-size: 16px;
+  line-height: 21px;
   color: #555555;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
@@ -939,13 +941,13 @@ input[type="checkbox"] {
 }
 select,
 input[type="file"] {
-  height: 30px;
+  height: 31px;
   /* In IE7, the height of the select element cannot be changed by height, only font-size */
 
   *margin-top: 4px;
   /* For IE7, add top margin to align select with labels */
 
-  line-height: 30px;
+  line-height: 31px;
 }
 select {
   width: 220px;
@@ -996,7 +998,7 @@ textarea::-webkit-input-placeholder {
 }
 .radio,
 .checkbox {
-  min-height: 20px;
+  min-height: 21px;
   padding-left: 20px;
 }
 .radio input[type="radio"],
@@ -1290,9 +1292,9 @@ select:focus:invalid:focus {
   box-shadow: 0 0 6px #f8b9b7;
 }
 .form-actions {
-  padding: 19px 20px 20px;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  padding: 20px 20px 21px;
+  margin-top: 21px;
+  margin-bottom: 21px;
   background-color: #f5f5f5;
   border-top: 1px solid #e5e5e5;
   *zoom: 1;
@@ -1312,7 +1314,7 @@ select:focus:invalid:focus {
 }
 .help-block {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 10.5px;
 }
 .help-inline {
   display: inline-block;
@@ -1337,7 +1339,7 @@ select:focus:invalid:focus {
 .input-prepend .uneditable-input,
 .input-append .dropdown-menu,
 .input-prepend .dropdown-menu {
-  font-size: 14px;
+  font-size: 16px;
 }
 .input-append input,
 .input-prepend input,
@@ -1365,12 +1367,12 @@ select:focus:invalid:focus {
 .input-prepend .add-on {
   display: inline-block;
   width: auto;
-  height: 20px;
+  height: 21px;
   min-width: 16px;
   padding: 4px 5px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: normal;
-  line-height: 20px;
+  line-height: 21px;
   text-align: center;
   text-shadow: 0 1px 0 #ffffff;
   background-color: #eeeeee;
@@ -1561,14 +1563,14 @@ input.search-query {
   margin-left: 0;
 }
 .control-group {
-  margin-bottom: 10px;
+  margin-bottom: 10.5px;
 }
 legend + .control-group {
-  margin-top: 20px;
+  margin-top: 21px;
   -webkit-margin-top-collapse: separate;
 }
 .form-horizontal .control-group {
-  margin-bottom: 20px;
+  margin-bottom: 21px;
   *zoom: 1;
 }
 .form-horizontal .control-group:before,
@@ -1604,7 +1606,7 @@ legend + .control-group {
 .form-horizontal .uneditable-input + .help-block,
 .form-horizontal .input-prepend + .help-block,
 .form-horizontal .input-append + .help-block {
-  margin-top: 10px;
+  margin-top: 10.5px;
 }
 .form-horizontal .form-actions {
   padding-left: 180px;
@@ -1617,12 +1619,12 @@ table {
 }
 .table {
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 21px;
 }
 .table th,
 .table td {
   padding: 8px;
-  line-height: 20px;
+  line-height: 21px;
   text-align: left;
   vertical-align: top;
   border-top: 1px solid #dddddd;
@@ -2348,7 +2350,7 @@ table th[class*="span"],
 .dropdown-menu .divider {
   *width: 100%;
   height: 1px;
-  margin: 9px 1px;
+  margin: 9.5px 1px;
   *margin: -5px 0 5px;
   overflow: hidden;
   background-color: #e5e5e5;
@@ -2359,7 +2361,7 @@ table th[class*="span"],
   padding: 3px 20px;
   clear: both;
   font-weight: normal;
-  line-height: 20px;
+  line-height: 21px;
   color: #333333;
   white-space: nowrap;
 }
@@ -2518,7 +2520,7 @@ table th[class*="span"],
   float: right;
   font-size: 20px;
   font-weight: bold;
-  line-height: 20px;
+  line-height: 21px;
   color: #000000;
   text-shadow: 0 1px 0 #ffffff;
   opacity: 0.2;
@@ -2546,8 +2548,8 @@ button.close {
   *zoom: 1;
   padding: 4px 12px;
   margin-bottom: 0;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 16px;
+  line-height: 21px;
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
@@ -2628,7 +2630,7 @@ button.close {
 }
 .btn-large {
   padding: 11px 19px;
-  font-size: 17.5px;
+  font-size: 20px;
   -webkit-border-radius: 6px;
   -moz-border-radius: 6px;
   border-radius: 6px;
@@ -2639,7 +2641,7 @@ button.close {
 }
 .btn-small {
   padding: 2px 10px;
-  font-size: 11.9px;
+  font-size: 13.6px;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   border-radius: 3px;
@@ -2654,7 +2656,7 @@ button.close {
 }
 .btn-mini {
   padding: 1px 6px;
-  font-size: 10.5px;
+  font-size: 12px;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   border-radius: 3px;
@@ -2945,8 +2947,8 @@ input[type="submit"].btn.btn-mini {
 }
 .btn-toolbar {
   font-size: 0;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 10.5px;
+  margin-bottom: 10.5px;
 }
 .btn-toolbar > .btn + .btn,
 .btn-toolbar > .btn-group + .btn,
@@ -2965,16 +2967,16 @@ input[type="submit"].btn.btn-mini {
 .btn-group > .btn,
 .btn-group > .dropdown-menu,
 .btn-group > .popover {
-  font-size: 14px;
+  font-size: 16px;
 }
 .btn-group > .btn-mini {
-  font-size: 10.5px;
+  font-size: 12px;
 }
 .btn-group > .btn-small {
-  font-size: 11.9px;
+  font-size: 13.6px;
 }
 .btn-group > .btn-large {
-  font-size: 17.5px;
+  font-size: 20px;
 }
 .btn-group > .btn:first-child {
   margin-left: 0;
@@ -3141,7 +3143,7 @@ input[type="submit"].btn.btn-mini {
 }
 .alert {
   padding: 8px 35px 8px 14px;
-  margin-bottom: 20px;
+  margin-bottom: 21px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
   background-color: #fcf8e3;
   border: 1px solid #fbeed5;
@@ -3160,7 +3162,7 @@ input[type="submit"].btn.btn-mini {
   position: relative;
   top: -2px;
   right: -21px;
-  line-height: 20px;
+  line-height: 21px;
 }
 .alert-success {
   background-color: #dff0d8;
@@ -3201,7 +3203,7 @@ input[type="submit"].btn.btn-mini {
 }
 .nav {
   margin-left: 0;
-  margin-bottom: 20px;
+  margin-bottom: 21px;
   list-style: none;
 }
 .nav > li > a {
@@ -3222,7 +3224,7 @@ input[type="submit"].btn.btn-mini {
   padding: 3px 15px;
   font-size: 11px;
   font-weight: bold;
-  line-height: 20px;
+  line-height: 21px;
   color: #999999;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
@@ -3257,7 +3259,7 @@ input[type="submit"].btn.btn-mini {
 .nav-list .divider {
   *width: 100%;
   height: 1px;
-  margin: 9px 1px;
+  margin: 9.5px 1px;
   *margin: -5px 0 5px;
   overflow: hidden;
   background-color: #e5e5e5;
@@ -3299,7 +3301,7 @@ input[type="submit"].btn.btn-mini {
 .nav-tabs > li > a {
   padding-top: 8px;
   padding-bottom: 8px;
-  line-height: 20px;
+  line-height: 21px;
   border: 1px solid transparent;
   -webkit-border-radius: 4px 4px 0 0;
   -moz-border-radius: 4px 4px 0 0;
@@ -3529,7 +3531,7 @@ input[type="submit"].btn.btn-mini {
 }
 .navbar {
   overflow: visible;
-  margin-bottom: 20px;
+  margin-bottom: 21px;
   *position: relative;
   *z-index: 2;
 }
@@ -3573,7 +3575,7 @@ input[type="submit"].btn.btn-mini {
 .navbar .brand {
   float: left;
   display: block;
-  padding: 10px 20px 10px;
+  padding: 9.5px 20px 9.5px;
   margin-left: -20px;
   font-size: 20px;
   font-weight: 200;
@@ -3735,7 +3737,7 @@ input[type="submit"].btn.btn-mini {
 }
 .navbar .nav > li > a {
   float: none;
-  padding: 10px 15px 10px;
+  padding: 9.5px 15px 9.5px;
   color: #777777;
   text-decoration: none;
   text-shadow: 0 1px 0 #ffffff;
@@ -4025,7 +4027,7 @@ input[type="submit"].btn.btn-mini {
 }
 .breadcrumb {
   padding: 8px 15px;
-  margin: 0 0 20px;
+  margin: 0 0 21px;
   list-style: none;
   background-color: #f5f5f5;
   -webkit-border-radius: 4px;

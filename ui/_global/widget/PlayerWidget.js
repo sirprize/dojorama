@@ -55,7 +55,7 @@ define([
                     this.trackNrNode.innerHTML = playlist.getCurrentPosition();
                     this.numTracksNode.innerHTML = playlist.getTracks().length;
                     this.trackTitleNode.innerHTML = playlist.getCurrentTrack().title;
-                    this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
+                    //this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
                 },
                 showPlayInfo = function () {
                     domStyle.set(this.positionOuterNode, 'display', 'inline');
@@ -86,6 +86,42 @@ define([
                 
                 playlist.onready(function () {
                     playlist.addTrack({
+                            title: 'Pachanga Voice',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'pachangaVoice',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-pachanga-voice.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'The River',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'theRiver',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-the-river.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'Vampiros Hermanos',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'vampirosHermanos',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-vampiros-hermanos.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'Fiesta Forever (Reprise)',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'fiestaForever',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-fiesta-forever.mp3'
+                    });
+                    /*
+                    playlist.addTrack({
                             title: 'The River',
                             artist: 'Pachanga Boys',
                             cover: ''
@@ -111,6 +147,7 @@ define([
                             id: 'geffen',
                             url: 'http://sirprize.me/chrigu/dojorama/barnt-geffen-philipp-gorbatchev-remix.mp3'
                     });
+                    */
                 });
                 
                 this.session.set('playlist', playlist);
