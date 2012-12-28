@@ -297,7 +297,7 @@ define("dojorama/ui/_global/mixin/_PlayerMixin", [
 },
 'dojorama/ui/_global/widget/PlayerWidget':function(){
 require({cache:{
-'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large\">\n    <p>Listen to some music while you play with this app</p>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>\n    </div>\n</div>"}});
+'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large player\">\n    <h2>Play &amp; Browse</h2>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\" class=\"info\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <!--<p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>-->\n    </div>\n    \n    <p><a href=\"http://www.kompakt.fm/releases/we_are_really_sorry_880319606335\">We are really sorry</a>! That's right, thanks <a href=\"http://www.facebook.com/pages/Pachanga-Boys-Hippie-Dance/315216318504660\">Pachanga Boys</a></p>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/PlayerWidget", [
@@ -355,7 +355,7 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                     this.trackNrNode.innerHTML = playlist.getCurrentPosition();
                     this.numTracksNode.innerHTML = playlist.getTracks().length;
                     this.trackTitleNode.innerHTML = playlist.getCurrentTrack().title;
-                    this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
+                    //this.trackArtistNode.innerHTML = playlist.getCurrentTrack().artist;
                 },
                 showPlayInfo = function () {
                     domStyle.set(this.positionOuterNode, 'display', 'inline');
@@ -386,6 +386,42 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                 
                 playlist.onready(function () {
                     playlist.addTrack({
+                            title: 'Pachanga Voice',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'pachangaVoice',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-pachanga-voice.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'The River',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'theRiver',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-the-river.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'Vampiros Hermanos',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'vampirosHermanos',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-vampiros-hermanos.mp3'
+                    });
+                    
+                    playlist.addTrack({
+                            title: 'Fiesta Forever (Reprise)',
+                            artist: 'Pachanga Boys',
+                            cover: ''
+                        }, {
+                            id: 'fiestaForever',
+                            url: 'http://media.kompakt.fm/dojorama/pachanga-boys-fiesta-forever.mp3'
+                    });
+                    /*
+                    playlist.addTrack({
                             title: 'The River',
                             artist: 'Pachanga Boys',
                             cover: ''
@@ -411,6 +447,7 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                             id: 'geffen',
                             url: 'http://sirprize.me/chrigu/dojorama/barnt-geffen-philipp-gorbatchev-remix.mp3'
                     });
+                    */
                 });
                 
                 this.session.set('playlist', playlist);
@@ -476,7 +513,7 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
     });
 });
 },
-'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large\">\n    <p>Listen to some music while you play with this app</p>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>\n    </div>\n</div>",
+'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large player\">\n    <h2>Play &amp; Browse</h2>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\" class=\"info\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <!--<p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>-->\n    </div>\n    \n    <p><a href=\"http://www.kompakt.fm/releases/we_are_really_sorry_880319606335\">We are really sorry</a>! That's right, thanks <a href=\"http://www.facebook.com/pages/Pachanga-Boys-Hippie-Dance/315216318504660\">Pachanga Boys</a></p>\n</div>",
 'dojorama/ui/_global/widget/ActionsWidget':function(){
 require({cache:{
 'url:dojorama/ui/_global/widget/template/ActionsWidget.html':"<ul class=\"nav nav-pills\"></ul>"}});

@@ -1,21 +1,40 @@
 ## Dojorama
 
-Single page application based on Dojo, Twitter Bootstrap and history API
+Single page demo application based on Dojo, Twitter Bootstrap and history API
 
-## Submodules
+## Documentation
 
-+ `git submodule add git://github.com/dojo/dojo.git vendor/dojo/dojo`
-+ `git submodule add git://github.com/dojo/util.git vendor/dojo/util`
-+ `git submodule add git://github.com/kriszyp/put-selector.git vendor/kriszyp/put-selector`
-+ `git submodule add git://github.com/kriszyp/xstyle.git vendor/kriszyp/xstyle`
-+ `git submodule add git://github.com/sirprize/dobolo.git vendor/sirprize/dobolo`
-+ `git submodule add git://github.com/sirprize/dojo-data-model.git vendor/sirprize/dojo-data-model`
-+ `git submodule add git://github.com/sirprize/dojo-form-controls.git vendor/sirprize/dojo-form-controls`
-+ `git submodule add git://github.com/sirprize/dojo-local-storage.git vendor/sirprize/dojo-local-storage`
-+ `git submodule add git://github.com/sirprize/dojomat.git vendor/sirprize/dojomat`
-+ `git submodule add git://github.com/sirprize/dojo-sm2-playlist.git vendor/sirprize/dojo-sm2-playlist`
-+ `git submodule add git://github.com/sirprize/mijit.git vendor/sirprize/mijit`
-+ `git submodule add git://github.com/sirprize/routed.git vendor/sirprize/routed`
-+ `git submodule add git://github.com/SitePen/dgrid.git vendor/SitePen/dgrid`
-+ `git submodule add git://github.com/twitter/bootstrap.git vendor/twitter/bootstrap`
-+ `git submodule add git://github.com/scottschiller/SoundManager2.git vendor/scottschiller/SoundManager2`
+Check out the [live demo](http://dojorama.org) and the series of blog posts explaining the concepts behind this application - [Building a Dojo single page application](http://sirprize.me/scribble/dojorama-introduction-building-a-dojo-single-page-application/)
+
+## Quick Start
+
++ `git clone git://github.com/sirprize/dojorama.git`
++ `cd dojorama`
++ `git submodule init`
++ `git submodule update`
++ Create a virtual host with root pointing to `dojorama` (project root == www root)
++ Point your browser to `/` or `/tests`
+
+## Ingredients
+
+Dojorama is built on top of these fine libraries:
+
++ [dojo/dojo](http://github.com/dojo/dojo) - The Dojo Toolkit
++ [dojo/utils](http://github.com/dojo/util) - Dojo build tool and unit testing (DOH)
++ [SitePen/dgrid](http://github.com/SitePen/dgrid) - Dojo grid widget
++ [kriszyp/put-selector](http://github.com/kriszyp/put-selector) - DOM manipulation (dependency of dgrid)
++ [kriszyp/xstyle](http://github.com/kriszyp/xstyle) - CSS loader (dependency of dgrid)
++ [twitter/bootstrap](http://github.com/twitter/bootstrap) - Frontend framework (CSS only)
++ [scottschiller/SoundManager2](http://github.com/scottschiller/SoundManager2) - JavaScript sound API
++ [sirprize/mijit](http://github.com/sirprize/mijit) - Essential Dijit stuff (`_WidgetBase`, `_TemplatedMixin` and `registry`)
++ [sirprize/dojomat](http://github.com/sirprize/dojomat) - Application controller
++ [sirprize/routed](http://github.com/sirprize/routed) - Routing
++ [sirprize/dobolo](http://github.com/sirprize/dobolo) - Dojo port of some Twitter Bootstrap JavaScript components
++ [sirprize/dojo-data-model](http://github.com/sirprize/dojo-data-model) - Data model for Dojo Applications
++ [sirprize/dojo-form-controls](http://github.com/sirprize/dojo-form-controls) - Dojo widgets for native form controls
++ [sirprize/dojo-local-storage](http://github.com/sirprize/dojo-local-storage) - LocalStorage wrapper providing dojo/store interface
++ [sirprize/dojo-sm2-playlist](http://github.com/sirprize/dojo-sm2-playlist) - Dojo/SoundManager2 playlist
+
+## License
+
+See LICENSE.
