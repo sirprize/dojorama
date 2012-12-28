@@ -55,10 +55,7 @@ define("routed/Router", ["./Route"], function (Route) {
             },
 
             getRoute: function (name) {
-                if (!routes[name]) {
-                    throw new Error('Route does not exist: ' + name);
-                }
-                return routes[name];
+                return routes[name] || undefined;
             }
         };
     };
