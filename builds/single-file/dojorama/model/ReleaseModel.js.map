@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"ReleaseModel.js",
+"lineCount":2,
+"mappings":"A,SAAAA,MAAA,+BAAsC,uIAAA,MAAA,KAAtC,CAQG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,CAMCC,CAND,CAOCC,CAPD,QAWQN,EAAA,EAASK,CAAT,yGAYsBE,QAAAA,CAAUC,CAAVD,EACrBE,QAAA,eAAwBN,CAAAO,cAAA,CAAoBF,CAApB,CAAxB,CADqBD,CAZtB,uBAgBoBI,QAAAA,UACdC,QAAA,eADcD,MAEZR,CAAAU,YAAA,CAAkBD,QAAA,eAAlB,mBAFYD,CAhBpB;uBAqBqBG,QAAAA,GACpBL,QAAA,oBADoBK,CArBrB,gBAyBaC,QAAAA,eACRH,QAAA,SADQG,IAC2BH,QAAA,SAAAI,OAD3BD,eAGKT,CAAAW,aAHLF,GAzBb,qCAiCkCG,QAAAA,CAAUC,CAAVD,EAC7BE,CAD6BF,CACtBd,CAAAiB,MAAA,CAAWF,CAAAG,SAAAF,KAAX,CAEXnB,EAAAsB,QAAA,CAAcH,CAAAI,OAAd,CAA2BtB,CAAAuB,MAAA,MAAiB,QAAA,CAAUN,CAAV,EACpCO,UAAA,CAAWP,CAAAQ,MAAX,CADoC,eAEhCR,CAAAS,KAFgC,CAGhCC,eAAApB,IAAA,CAAoBU,CAAAQ,MAApB,CAAiCrB,CAAAwB,aAAjC,CAHgC,CAKhCD,eAAApB,IAAA,CAAoBU,CAAAQ,MAApB,CAAiCrB,CAAAW,aAAjC,CALgC,EAAjB,CAA3B,CAHiCC,CAjClC,EAXR,CARH;",
+"sources":["ReleaseModel.js.uncompressed.js"],
+"names":["define","declare","array","lang","stamp","json","CrudModel","nls","releaseDateDeserializer","val","set","fromISOString","releaseDateSerializer","get","toISOString","releaseDateInitializer","titleValidator","length","titleInvalid","normalizeServerSideValidationErrors","error","data","parse","response","forEach","errors","hitch","props","field","code","errorModel","titleMissing"]
+}

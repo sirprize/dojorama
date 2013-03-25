@@ -351,7 +351,7 @@ define("routed/Request", [], function () {
         },
 
         getPathname = function (url) {
-            var pathname = url.split('?')[0].split('#')[0].replace(/\w+:\/\/[\w\d\._\-]*/, '');
+            var pathname = url.split('?')[0].split('#')[0].replace(/\w+:\/\/[\w\d\._\-]*:?\d*/, '');
             return (pathname.match(/^\//)) ? pathname : ''; // only allow absolute urls
         },
         

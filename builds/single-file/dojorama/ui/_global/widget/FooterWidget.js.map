@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"FooterWidget.js",
+"lineCount":2,
+"mappings":"A,SAAAA,OAAA,SACA,2DADA,4uBAIAC;MAAA,2CAAkD,0KAAA,MAAA,KAAlD,CAQG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,CAMCC,CAND,CAOCC,CAPD,QASQN,EAAA,EAASC,CAAT,CAAsBC,CAAtB,CAAuCC,CAAvC,CAAoDC,CAApD,8BAGaC,CAHb,aAKUE,QAAAA,CAAUC,CAAVD,EACTE,WADSF,CACKC,CAAAC,OADLF,CALV,YASSG,QAAAA,GACRC,cAAA,CAAeC,SAAf,CACAC,UAAA,EAFQH,CATT,EATR,CARH;",
+"sources":["FooterWidget.js.uncompressed.js"],
+"names":["require","define","declare","_WidgetBase","_TemplatedMixin","_StateAware","_ToggleMixin","template","nls","constructor","params","router","postCreate","inherited","arguments","hide"]
+}

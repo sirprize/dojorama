@@ -62,6 +62,7 @@ define("dojo/i18n", ["./_base/kernel", "require", "./has", "./_base/array", "./_
 				current += (current ? "-" : "") + localeParts[i];
 				if(!root || root[current]){
 					result.push(bundlePath + current + "/" + bundleName);
+					result.specificity = current;
 				}
 			}
 			return result;
@@ -95,6 +96,7 @@ define("dojo/i18n", ["./_base/kernel", "require", "./has", "./_base/array", "./_
 					// target may not have been resolve (e.g., maybe only "fr" exists when "fr-ca" was requested)
 					var target = bundlePathAndName + "/" + locale;
 					cache[target] = current;
+					current.$locale = availableLocales.specificity;
 					load();
 				});
 			});
@@ -545,6 +547,7 @@ define("dojo/i18n", ["./_base/kernel", "require", "./has", "./_base/array", "./_
 		dynamic:true,
 		normalize:normalize,
 		load:load,
-		cache:cache
+		cache:cache,
+		getL10nName: getL10nName
 	});
 });

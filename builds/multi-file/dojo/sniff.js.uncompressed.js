@@ -17,15 +17,24 @@ define("dojo/sniff", ["./has"], function(has){
 			tv = parseFloat(dav);
 
 		has.add("air", dua.indexOf("AdobeAIR") >= 0);
-		has.add("win8app", typeof Windows !== "undefined");	// Windows 8 Store App
+		has.add("msapp", parseFloat(dua.split("MSAppHost/")[1]) || undefined);
 		has.add("khtml", dav.indexOf("Konqueror") >= 0 ? tv : undefined);
 		has.add("webkit", parseFloat(dua.split("WebKit/")[1]) || undefined);
 		has.add("chrome", parseFloat(dua.split("Chrome/")[1]) || undefined);
 		has.add("safari", dav.indexOf("Safari")>=0 && !has("chrome") ? parseFloat(dav.split("Version/")[1]) : undefined);
 		has.add("mac", dav.indexOf("Macintosh") >= 0);
 		has.add("quirks", document.compatMode == "BackCompat");
-		has.add("ios", /iPhone|iPod|iPad/.test(dua));
+		if(dua.match(/(iPhone|iPod|iPad)/)){
+			var p = RegExp.$1.replace(/P/, "p");
+			var v = dua.match(/OS ([\d_]+)/) ? RegExp.$1 : "1";
+			var os = parseFloat(v.replace(/_/, ".").replace(/_/g, ""));
+			has.add(p, os);		// "iphone", "ipad" or "ipod"
+			has.add("ios", os);
+		}
 		has.add("android", parseFloat(dua.split("Android ")[1]) || undefined);
+		has.add("bb", (dua.indexOf("BlackBerry") >= 0 || dua.indexOf("BB10")) && parseFloat(dua.split("Version/")[1]) || undefined);
+
+		has.add("svg", typeof SVGAngle !== "undefined");
 
 		if(!has("webkit")){
 			// Opera

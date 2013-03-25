@@ -89,7 +89,7 @@
 
 		forEach = function(vector, callback){
 			if(vector){
-				for(var i = 0; i < vector.length;){
+				for(var i = 0; vector[i];){
 					callback(vector[i++]);
 				}
 			}
@@ -1206,8 +1206,7 @@
 				// read/write/replace this object. Notice that so long as the object isn't replaced, any
 				// reference taken earlier while walking the deps list is still valid.
 				module.executed = executing;
-				while(i < deps.length){
-					arg = deps[i++];
+				while((arg = deps[i++])){
 					argResult = ((arg === cjsRequireModule) ? createRequire(module) :
 									((arg === cjsExportsModule) ? module.cjs.exports :
 										((arg === cjsModuleModule) ? module.cjs :
@@ -1276,7 +1275,7 @@
 			// This is useful for testing frameworks (at least).
 			var module = getModule(moduleId, referenceModule);
 			setArrived(module);
-			delete modules[module.mid];
+			mix(module, {def:0, executed:0, injected:0, node:0, url:0});
 		};
 	}
 
@@ -1401,6 +1400,10 @@
 						// nothing was added to the defQ (so it wasn't an AMD module) and the module
 						// wasn't marked as arrived by dojo.provide (so it wasn't a v1.6- module);
 						// therefore, it must not have been a module; adjust state accordingly
+						if(has("dojo-enforceDefine")){
+							signal(error, makeError("noDefine", module));
+							return;
+						}
 						setArrived(module);
 						mix(module, nonModuleProps);
 						req.trace("loader-define-nonmodule", [module.url]);
@@ -1539,7 +1542,7 @@
 				});
 
 				// resolve deps with respect to this module
-				for(var i = 0; i < deps.length; i++){
+				for(var i = 0; deps[i]; i++){
 					deps[i] = getModule(deps[i], module);
 				}
 
@@ -1639,8 +1642,14 @@
 			// getting its parent and then doing insertBefore solves the "Operation Aborted"
 			// error in IE from appending to a node that isn't properly closed; see
 			// dojo/tests/_base/loader/requirejs/simple-badbase.html for an example
-			var sibling = doc.getElementsByTagName("script")[0],
-				insertPoint= sibling.parentNode;
+			// don't use scripts with type dojo/... since these may be removed; see #15809
+			var scripts = doc.getElementsByTagName("script"), i = 0, sibling, insertPoint;
+			while(1){
+				if(!/^dojo/.test((sibling = scripts[i++]) && sibling.type)){
+					insertPoint= sibling.parentNode;
+					break;
+				}
+			}
 			req.injectUrl = function(url, callback, owner){
 				// insert a script element to the insert-point element with src=url;
 				// apply callback upon detecting the script has loaded.
@@ -1664,7 +1673,6 @@
 
 				node.type = "text/javascript";
 				node.charset = "utf-8";
-				node.lang = "ja";
 				node.src = url;
 				insertPoint.insertBefore(node, sibling);
 				return node;
@@ -1991,15 +1999,24 @@ define(["./has"], function(has){
 			tv = parseFloat(dav);
 
 		has.add("air", dua.indexOf("AdobeAIR") >= 0);
-		has.add("win8app", typeof Windows !== "undefined");	// Windows 8 Store App
+		has.add("msapp", parseFloat(dua.split("MSAppHost/")[1]) || undefined);
 		has.add("khtml", dav.indexOf("Konqueror") >= 0 ? tv : undefined);
 		has.add("webkit", parseFloat(dua.split("WebKit/")[1]) || undefined);
 		has.add("chrome", parseFloat(dua.split("Chrome/")[1]) || undefined);
 		has.add("safari", dav.indexOf("Safari")>=0 && !has("chrome") ? parseFloat(dav.split("Version/")[1]) : undefined);
 		has.add("mac", dav.indexOf("Macintosh") >= 0);
 		has.add("quirks", document.compatMode == "BackCompat");
-		has.add("ios", /iPhone|iPod|iPad/.test(dua));
+		if(dua.match(/(iPhone|iPod|iPad)/)){
+			var p = RegExp.$1.replace(/P/, "p");
+			var v = dua.match(/OS ([\d_]+)/) ? RegExp.$1 : "1";
+			var os = parseFloat(v.replace(/_/, ".").replace(/_/g, ""));
+			has.add(p, os);		// "iphone", "ipad" or "ipod"
+			has.add("ios", os);
+		}
 		has.add("android", parseFloat(dua.split("Android ")[1]) || undefined);
+		has.add("bb", (dua.indexOf("BlackBerry") >= 0 || dua.indexOf("BB10")) && parseFloat(dua.split("Version/")[1]) || undefined);
+
+		has.add("svg", typeof SVGAngle !== "undefined");
 
 		if(!has("webkit")){
 			// Opera
@@ -2146,7 +2163,7 @@ define(["require", "module"], function(require, module){
 	if( 1 ){
 		// Common application level tests
 		has.add("dom-addeventlistener", !!document.addEventListener);
-		has.add("touch", "ontouchstart" in document);
+		has.add("touch", "ontouchstart" in document || window.navigator.msMaxTouchPoints > 0);
 		// I don't know if any of these tests are really correct, just a rough guess
 		has.add("device-width", screen.availWidth || innerWidth);
 
@@ -2406,6 +2423,12 @@ return {
 		adviseHas(result, "config", 1);
 		adviseHas(result.has, "", 1);
 	}
+
+	if(!result.locale){
+		// Default locale for browsers.
+		result.locale = (navigator.language || navigator.userLanguage).toLowerCase();
+	}
+
 	return result;
 });
 
@@ -2740,8 +2763,8 @@ define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 		return this;
 	}
 
-	function createSubclass(mixins){
-		return declare([this].concat(mixins));
+	function createSubclass(mixins, props){
+		return declare([this].concat(mixins), props || {});
 	}
 
 	// chained constructor compatible with the legacy declare()
@@ -3447,6 +3470,50 @@ define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 			//	|		f1: true,
 			//	|		d1: 42
 			//	|	});
+		},
+		
+		createSubclass: function(mixins, props){
+			// summary:
+			//		Create a subclass of the declared class from a list of base classes.
+			// mixins: Function[]
+			//		Specifies a list of bases (the left-most one is the most deepest
+			//		base).
+			// props: Object?
+			//		An optional object whose properties are copied to the created prototype.
+			// returns: dojo/_base/declare.__DeclareCreatedObject
+			//		New constructor function.
+			// description:
+			//		Create a constructor using a compact notation for inheritance and
+			//		prototype extension.
+			//
+			//		Mixin ancestors provide a type of multiple inheritance.
+			//		Prototypes of mixin ancestors are copied to the new class:
+			//		changes to mixin prototypes will not affect classes to which
+			//		they have been mixed in.
+			//
+			// example:
+			//	|	var A = declare(null, {
+			//	|		m1: function(){},
+			//	|		s1: "bar"
+			//	|	});
+			//	|	var B = declare(null, {
+			//	|		m2: function(){},
+			//	|		s2: "foo"
+			//	|	});
+			//	|	var C = declare(null, {
+			//	|	});
+			//	|	var D1 = A.createSubclass([B, C], {
+			//	|		m1: function(){},
+			//	|		d1: 42
+			//	|	});
+			//	|	var d1 = new D1();
+			//	|
+			//	|	// this is equivalent to:
+			//	|	var D2 = declare([A, B, C], {
+			//	|		m1: function(){},
+			//	|		d1: 42
+			//	|	});
+			//	|	var d2 = new D2();
 		}
 	};
 	=====*/

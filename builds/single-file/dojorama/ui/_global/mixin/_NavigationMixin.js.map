@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"_NavigationMixin.js",
+"lineCount":1,
+"mappings":"A,SAEAA,MAAA,kGAGG,QAAA,CACCC,CADD,CAECC,CAFD,QAIQD,EAAA,sCASSE,QAAAA,GACRC,cAAA,CAAeC,SAAf,CAEAC,sBAHQH,CAGgB,IAAID,CAAJ,SACZK,WADY,EAErBC,mBAFqB,CAHhBL,CATT,SAiBMM,QAAAA,GACLL,cAAA,CAAeC,SAAf,CACAC,sBAAAG,QAAA,EAFKA,CAjBN,gBAsBaC,QAAAA,GACZJ,qBAAAK,KAAA,EADYD,CAtBb,EAJR,CAHH;",
+"sources":["_NavigationMixin.js.uncompressed.js"],
+"names":["define","declare","NavigationWidget","postCreate","inherited","arguments","navigationWidget","router","navigationNode","startup","showNavigation","show"]
+}

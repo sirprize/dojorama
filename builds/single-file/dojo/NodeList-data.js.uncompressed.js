@@ -83,7 +83,7 @@ define("dojo/NodeList-data", [
 		}
 	};
 
-	dojo._gcNodeData = function(){
+	NodeList._gcNodeData = dojo._gcNodeData = function(){
 		// summary:
 		//		super expensive: GC all data in the data for nodes that no longer exist in the dom.
 		// description:
@@ -169,7 +169,7 @@ define("dojo/NodeList-data", [
 	 });
 	 =====*/
 
-// TODO: this is the basic implementation of adaptWithCondtionAndWhenMappedConsiderLength, for lack of a better API name
+// TODO: this is the basic implementation of adaptWithConditionAndWhenMappedConsiderLength, for lack of a better API name
 // it conflicts with the the `dojo/NodeList` way: always always return an arrayLike thinger. Consider for 2.0:
 //
 //	NodeList.prototype.data = function(key, value){

@@ -68,8 +68,8 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                 resetPlayInfo = function () {
                     this.positionNode.innerHTML = '0:00';
                 },
-                formatTime = function(seconds) {
-                    var seconds = parseInt(seconds, 10),
+                formatTime = function(sec) {
+                    var seconds = parseInt(sec, 10),
                         h = (seconds >= 3600) ? Math.floor(seconds / 3600) : 0,
                         m = ((seconds - h * 3600) >= 60) ? Math.floor((seconds - h * 3600) / 60) : 0,
                         s = seconds - (h * 3600) - (m * 60),

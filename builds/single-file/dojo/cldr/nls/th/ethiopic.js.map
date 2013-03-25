@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"ethiopic.js",
+"lineCount":5,
+"mappings":"A,SAAAA,MAAA,8BAGC,oBAHD,CAGuB,0fAAA,MAAA,KAHvB;AAkBC,oBAlBD,CAkBuB,0fAAA,MAAA,KAlBvB;AAiCC,sBAjCD,CAiCyB,+BAAA,MAAA,KAjCzB,CAgDC,wBAhDD,CAgD2B,0fAAA,MAAA,KAhD3B;AA+DC,wBA/DD,CA+D2B,0fAAA,MAAA,KA/D3B;AA8EC,0BA9ED,CA8E6B,+BAAA,MAAA,KA9E7B;",
+"sources":["ethiopic.js.uncompressed.js"],
+"names":["define"]
+}

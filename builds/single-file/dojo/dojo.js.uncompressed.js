@@ -89,7 +89,7 @@
 
 		forEach = function(vector, callback){
 			if(vector){
-				for(var i = 0; i < vector.length;){
+				for(var i = 0; vector[i];){
 					callback(vector[i++]);
 				}
 			}
@@ -1206,8 +1206,7 @@
 				// read/write/replace this object. Notice that so long as the object isn't replaced, any
 				// reference taken earlier while walking the deps list is still valid.
 				module.executed = executing;
-				while(i < deps.length){
-					arg = deps[i++];
+				while((arg = deps[i++])){
 					argResult = ((arg === cjsRequireModule) ? createRequire(module) :
 									((arg === cjsExportsModule) ? module.cjs.exports :
 										((arg === cjsModuleModule) ? module.cjs :
@@ -1276,7 +1275,7 @@
 			// This is useful for testing frameworks (at least).
 			var module = getModule(moduleId, referenceModule);
 			setArrived(module);
-			delete modules[module.mid];
+			mix(module, {def:0, executed:0, injected:0, node:0, url:0});
 		};
 	}
 
@@ -1401,6 +1400,10 @@
 						// nothing was added to the defQ (so it wasn't an AMD module) and the module
 						// wasn't marked as arrived by dojo.provide (so it wasn't a v1.6- module);
 						// therefore, it must not have been a module; adjust state accordingly
+						if(has("dojo-enforceDefine")){
+							signal(error, makeError("noDefine", module));
+							return;
+						}
 						setArrived(module);
 						mix(module, nonModuleProps);
 						req.trace("loader-define-nonmodule", [module.url]);
@@ -1539,7 +1542,7 @@
 				});
 
 				// resolve deps with respect to this module
-				for(var i = 0; i < deps.length; i++){
+				for(var i = 0; deps[i]; i++){
 					deps[i] = getModule(deps[i], module);
 				}
 
@@ -1639,8 +1642,14 @@
 			// getting its parent and then doing insertBefore solves the "Operation Aborted"
 			// error in IE from appending to a node that isn't properly closed; see
 			// dojo/tests/_base/loader/requirejs/simple-badbase.html for an example
-			var sibling = doc.getElementsByTagName("script")[0],
-				insertPoint= sibling.parentNode;
+			// don't use scripts with type dojo/... since these may be removed; see #15809
+			var scripts = doc.getElementsByTagName("script"), i = 0, sibling, insertPoint;
+			while(1){
+				if(!/^dojo/.test((sibling = scripts[i++]) && sibling.type)){
+					insertPoint= sibling.parentNode;
+					break;
+				}
+			}
 			req.injectUrl = function(url, callback, owner){
 				// insert a script element to the insert-point element with src=url;
 				// apply callback upon detecting the script has loaded.
@@ -1664,7 +1673,6 @@
 
 				node.type = "text/javascript";
 				node.charset = "utf-8";
-				node.lang = "ja";
 				node.src = url;
 				insertPoint.insertBefore(node, sibling);
 				return node;
@@ -1991,15 +1999,24 @@ define(["./has"], function(has){
 			tv = parseFloat(dav);
 
 		has.add("air", dua.indexOf("AdobeAIR") >= 0);
-		has.add("win8app", typeof Windows !== "undefined");	// Windows 8 Store App
+		has.add("msapp", parseFloat(dua.split("MSAppHost/")[1]) || undefined);
 		has.add("khtml", dav.indexOf("Konqueror") >= 0 ? tv : undefined);
 		has.add("webkit", parseFloat(dua.split("WebKit/")[1]) || undefined);
 		has.add("chrome", parseFloat(dua.split("Chrome/")[1]) || undefined);
 		has.add("safari", dav.indexOf("Safari")>=0 && !has("chrome") ? parseFloat(dav.split("Version/")[1]) : undefined);
 		has.add("mac", dav.indexOf("Macintosh") >= 0);
 		has.add("quirks", document.compatMode == "BackCompat");
-		has.add("ios", /iPhone|iPod|iPad/.test(dua));
+		if(dua.match(/(iPhone|iPod|iPad)/)){
+			var p = RegExp.$1.replace(/P/, "p");
+			var v = dua.match(/OS ([\d_]+)/) ? RegExp.$1 : "1";
+			var os = parseFloat(v.replace(/_/, ".").replace(/_/g, ""));
+			has.add(p, os);		// "iphone", "ipad" or "ipod"
+			has.add("ios", os);
+		}
 		has.add("android", parseFloat(dua.split("Android ")[1]) || undefined);
+		has.add("bb", (dua.indexOf("BlackBerry") >= 0 || dua.indexOf("BB10")) && parseFloat(dua.split("Version/")[1]) || undefined);
+
+		has.add("svg", typeof SVGAngle !== "undefined");
 
 		if(!has("webkit")){
 			// Opera
@@ -2146,7 +2163,7 @@ define(["require", "module"], function(require, module){
 	if( 1 ){
 		// Common application level tests
 		has.add("dom-addeventlistener", !!document.addEventListener);
-		has.add("touch", "ontouchstart" in document);
+		has.add("touch", "ontouchstart" in document || window.navigator.msMaxTouchPoints > 0);
 		// I don't know if any of these tests are really correct, just a rough guess
 		has.add("device-width", screen.availWidth || innerWidth);
 
@@ -2406,6 +2423,12 @@ return {
 		adviseHas(result, "config", 1);
 		adviseHas(result.has, "", 1);
 	}
+
+	if(!result.locale){
+		// Default locale for browsers.
+		result.locale = (navigator.language || navigator.userLanguage).toLowerCase();
+	}
+
 	return result;
 });
 
@@ -2740,8 +2763,8 @@ define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 		return this;
 	}
 
-	function createSubclass(mixins){
-		return declare([this].concat(mixins));
+	function createSubclass(mixins, props){
+		return declare([this].concat(mixins), props || {});
 	}
 
 	// chained constructor compatible with the legacy declare()
@@ -3447,6 +3470,50 @@ define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 			//	|		f1: true,
 			//	|		d1: 42
 			//	|	});
+		},
+		
+		createSubclass: function(mixins, props){
+			// summary:
+			//		Create a subclass of the declared class from a list of base classes.
+			// mixins: Function[]
+			//		Specifies a list of bases (the left-most one is the most deepest
+			//		base).
+			// props: Object?
+			//		An optional object whose properties are copied to the created prototype.
+			// returns: dojo/_base/declare.__DeclareCreatedObject
+			//		New constructor function.
+			// description:
+			//		Create a constructor using a compact notation for inheritance and
+			//		prototype extension.
+			//
+			//		Mixin ancestors provide a type of multiple inheritance.
+			//		Prototypes of mixin ancestors are copied to the new class:
+			//		changes to mixin prototypes will not affect classes to which
+			//		they have been mixed in.
+			//
+			// example:
+			//	|	var A = declare(null, {
+			//	|		m1: function(){},
+			//	|		s1: "bar"
+			//	|	});
+			//	|	var B = declare(null, {
+			//	|		m2: function(){},
+			//	|		s2: "foo"
+			//	|	});
+			//	|	var C = declare(null, {
+			//	|	});
+			//	|	var D1 = A.createSubclass([B, C], {
+			//	|		m1: function(){},
+			//	|		d1: 42
+			//	|	});
+			//	|	var d1 = new D1();
+			//	|
+			//	|	// this is equivalent to:
+			//	|	var D2 = declare([A, B, C], {
+			//	|		m1: function(){},
+			//	|		d1: 42
+			//	|	});
+			//	|	var d2 = new D2();
 		}
 	};
 	=====*/
@@ -4788,8 +4855,10 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 		//		|	obj.onfoo({key:"value"});
 		//		If you use on.emit on a DOM node, it will use native event dispatching when possible.
 
-		if(typeof target.on == "function" && typeof type != "function"){
-			// delegate to the target's on() method, so it can handle it's own listening if it wants
+		if(typeof target.on == "function" && typeof type != "function" && !target.nodeType){
+			// delegate to the target's on() method, so it can handle it's own listening if it wants (unless it 
+			// is DOM node and we may be dealing with jQuery or Prototype's incompatible addition to the
+			// Element prototype 
 			return target.on(type, listener);
 		}
 		// delegate to main listener code
@@ -5061,7 +5130,6 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 				nativeEvent.initEvent(type, !!event.bubbles, !!event.cancelable);
 				// and copy all our properties over
 				for(var i in event){
-					var value = event[i];
 					if(!(i in nativeEvent)){
 						nativeEvent[i] = event[i];
 					}
@@ -5086,8 +5154,9 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 			}
 			if(!evt){return evt;}
 			try{
-				if(lastEvent && evt.type == lastEvent.type  && evt.target == lastEvent.target){
-					// should be same event, reuse event object (so it can be augmented)
+				if(lastEvent && evt.type == lastEvent.type  && evt.srcElement == lastEvent.target){
+					// should be same event, reuse event object (so it can be augmented);
+					// accessing evt.srcElement rather than evt.target since evt.target not set on IE until fixup below
 					evt = lastEvent;
 				}
 			}catch(e){
@@ -5227,8 +5296,17 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 					}catch(e){} 
 					if(originalEvent.type){
 						// deleting properties doesn't work (older iOS), have to use delegation
-						Event.prototype = originalEvent;
-						var event = new Event;
+						if(has('mozilla')){
+							// Firefox doesn't like delegated properties, so we have to copy
+							var event = {};
+							for(var name in originalEvent){
+								event[name] = originalEvent[name];
+							}
+						}else{
+							// old iOS branch
+							Event.prototype = originalEvent;
+							var event = new Event;
+						}
 						// have to delegate methods to make them work
 						event.preventDefault = function(){
 							originalEvent.preventDefault();
@@ -5379,18 +5457,22 @@ define("dojo/aspect", [], function(){
 			// create the remove handler
 			signal = {
 				remove: function(){
-					var previous = signal.previous;
-					var next = signal.next;
-					if(!next && !previous){
-						delete dispatcher[type];
-					}else{
-						if(previous){
-							previous.next = next;
+					if(this.advice){
+						// remove the advice to signal that this signal has been removed
+						this.advice = null;
+						var previous = signal.previous;
+						var next = signal.next;
+						if(!next && !previous){
+							delete dispatcher[type];
 						}else{
-							dispatcher[type] = next;
-						}
-						if(next){
-							next.previous = previous;
+							if(previous){
+								previous.next = next;
+							}else{
+								dispatcher[type] = next;
+							}
+							if(next){
+								next.previous = previous;
+							}
 						}
 					}
 				},
@@ -7117,8 +7199,8 @@ define(["./kernel", "./lang", "../sniff"], function(dojo, lang, has){
 		//		True if the client runs on Mac
 		isMac: has("mac"),
 
-		// isIos: Boolean
-		//		True if client is iPhone, iPod, or iPad
+		// isIos: Number|undefined
+		//		Version as a Number if client is iPhone, iPod, or iPad. undefined otherwise.
 		isIos: has("ios"),
 
 		// isAndroid: Number|undefined
@@ -7137,9 +7219,6 @@ define(["./kernel", "./lang", "../sniff"], function(dojo, lang, has){
 		//		True if client is Adobe Air
 		isAir: has("air")
 	});
-
-
-	dojo.locale = dojo.locale || (has("ie") ? navigator.userLanguage : navigator.language).toLowerCase();
 
 	return has;
 });
@@ -8084,15 +8163,19 @@ define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 			//		locates the first index of the provided value in the
 			//		passed array. If the value is not found, -1 is returned.
 			// description:
-			//		This method corresponds to the JavaScript 1.6 Array.indexOf method, with one difference: when
-			//		run over sparse arrays, the Dojo function invokes the callback for every index whereas JavaScript
-			//		1.6's indexOf skips the holes in the sparse array.
+			//		This method corresponds to the JavaScript 1.6 Array.indexOf method, with two differences:
+			//
+			//		1. when run over sparse arrays, the Dojo function invokes the callback for every index
+			//		   whereas JavaScript 1.6's indexOf skips the holes in the sparse array.
+			//		2. uses equality (==) rather than strict equality (===)
+			//
 			//		For details on this method, see:
 			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/indexOf
 			// arr: Array
 			// value: Object
 			// fromIndex: Integer?
 			// findLast: Boolean?
+			//		Makes indexOf() work like lastIndexOf().  Used internally; not meant for external usage.
 			// returns: Number
 		},
 		=====*/
@@ -8104,11 +8187,14 @@ define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 			//		locates the last index of the provided value in the passed
 			//		array. If the value is not found, -1 is returned.
 			// description:
-			//		This method corresponds to the JavaScript 1.6 Array.lastIndexOf method, with one difference: when
-			//		run over sparse arrays, the Dojo function invokes the callback for every index whereas JavaScript
-			//		1.6's lastIndexOf skips the holes in the sparse array.
-			//		For details on this method, see:
-			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/lastIndexOf
+		 	//		This method corresponds to the JavaScript 1.6 Array.lastIndexOf method, with two differences:
+		 	//
+		 	//		1. when run over sparse arrays, the Dojo function invokes the callback for every index
+		 	//		   whereas JavaScript 1.6's lasIndexOf skips the holes in the sparse array.
+		 	//		2. uses equality (==) rather than strict equality (===)
+		 	//
+		 	//		For details on this method, see:
+		 	//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/lastIndexOf
 			// arr: Array,
 			// value: Object,
 			// fromIndex: Integer?
@@ -8404,8 +8490,8 @@ define([
 		var nativePromise = receivedPromise && valueOrPromise instanceof Promise;
 
 		if(!receivedPromise){
-			if(callback){
-				return callback(valueOrPromise);
+			if(arguments.length > 1){
+				return callback ? callback(valueOrPromise) : valueOrPromise;
 			}else{
 				return new Deferred().resolve(valueOrPromise);
 			}
@@ -8486,9 +8572,6 @@ define(["./_base/kernel", "./has", "require", "./domReady", "./_base/lang"], fun
 		// truthy if DOMContentLoaded or better (e.g., window.onload fired) has been achieved
 		isDomReady = 0,
 
-		// a function to call to cause onLoad to be called when all requested modules have been loaded
-		requestCompleteSignal,
-
 		// The queue of functions waiting to execute as soon as dojo.ready conditions satisfied
 		loadQ = [],
 
@@ -8498,46 +8581,58 @@ define(["./_base/kernel", "./has", "require", "./domReady", "./_base/lang"], fun
 		handleDomReady = function(){
 			isDomReady = 1;
 			dojo._postLoad = dojo.config.afterOnLoad = true;
-			if(loadQ.length){
-				requestCompleteSignal(onLoad);
-			}
+			onEvent();
 		},
 
-		// run the next function queued with dojo.ready
-		onLoad = function(){
-			if(isDomReady && !onLoadRecursiveGuard && loadQ.length){
-				//guard against recursions into this function
-				onLoadRecursiveGuard = 1;
+		onEvent = function(){
+			// Called when some state changes:
+			//		- dom ready
+			//		- dojo/domReady has finished processing everything in its queue
+			//		- task added to loadQ
+			//		- require() has finished loading all currently requested modules
+			//
+			// Run the functions queued with dojo.ready if appropriate.
+
+
+			//guard against recursions into this function
+			if(onLoadRecursiveGuard){
+				return;
+			}
+			onLoadRecursiveGuard = 1;
+
+			// Run tasks in queue if require() is finished loading modules, the dom is ready, and there are no
+			// pending tasks registered via domReady().
+			// The last step is necessary so that a user defined dojo.ready() callback is delayed until after the
+			// domReady() calls inside of dojo.	  Failure can be seen on dijit/tests/robot/Dialog_ally.html on IE8
+			// because the dijit/focus.js domReady() callback doesn't execute until after the test starts running.
+			while(isDomReady && (!domReady || domReady._Q.length == 0) && require.idle() && loadQ.length){
 				var f = loadQ.shift();
 				try{
-					// Call domReady() again to yield to any tasks registered directly via domReady().
-					// This is necessary so that a user defined dojo.ready() callback is delayed until after the
-					// domReady() calls inside of dojo.   Failure can be seen on dijit/tests/Dialog.html because the
-					// dijit/focus.js domReady() callback doesn't execute until after the test starts running.
-					domReady(f);
-				}
-				// FIXME: signal the error via require.on
-				finally{
-					onLoadRecursiveGuard = 0;
-				}
-				onLoadRecursiveGuard = 0;
-				if(loadQ.length){
-					requestCompleteSignal(onLoad);
+					f();
+				}catch(e){
+					// force the dojo.js on("error") handler do display the message
+					e.info = e.message;
+					require.signal("error", e);
 				}
 			}
+
+			onLoadRecursiveGuard = 0;
 		};
 
-	require.on("idle", onLoad);
-	requestCompleteSignal = function(){
-		if(require.idle()){
-			onLoad();
-		} // else do nothing, onLoad will be called with the next idle signal
-	};
+	// Check if we should run the next queue operation whenever require() finishes loading modules or domReady
+	// finishes processing it's queue.
+	require.on("idle", onEvent);
+	if(domReady){
+		domReady._onQEmpty = onEvent;
+	}
 
 	var ready = dojo.ready = dojo.addOnLoad = function(priority, context, callback){
 		// summary:
 		//		Add a function to execute on DOM content loaded and all requested modules have arrived and been evaluated.
 		//		In most cases, the `domReady` plug-in should suffice and this method should not be needed.
+		//
+		//		When called in a non-browser environment, just checks that all requested modules have arrived and been
+		//		evaluated.
 		// priority: Integer?
 		//		The order in which to exec this callback relative to other callbacks, defaults to 1000
 		// context: Object?|Function
@@ -8588,7 +8683,7 @@ define(["./_base/kernel", "./has", "require", "./domReady", "./_base/lang"], fun
 		callback.priority = priority;
 		for(var i = 0; i < loadQ.length && priority >= loadQ[i].priority; i++){}
 		loadQ.splice(i, 0, callback);
-		requestCompleteSignal();
+		onEvent();
 	};
 
 	 1 || has.add("dojo-config-addOnLoad", 1);
@@ -8608,7 +8703,7 @@ define(["./_base/kernel", "./has", "require", "./domReady", "./_base/lang"], fun
 		});
 	}
 
-	if( 1 ){
+	if(domReady){
 		domReady(handleDomReady);
 	}else{
 		handleDomReady();
@@ -8628,6 +8723,25 @@ define(['./has'], function(has){
 		readyQ = [],
 		recursiveGuard;
 
+	function domReady(callback){
+		// summary:
+		//		Plugin to delay require()/define() callback from firing until the DOM has finished loading.
+		readyQ.push(callback);
+		if(ready){ processQ(); }
+	}
+	domReady.load = function(id, req, load){
+		domReady(load);
+	};
+
+	// Export queue so that ready() can check if it's empty or not.
+	domReady._Q = readyQ;
+	domReady._onQEmpty = function(){
+		// summary:
+		//		Private method overridden by dojo/ready, to notify when everything in the
+		//		domReady queue has been processed.  Do not use directly.
+		//		Will be removed in 2.0, along with domReady._Q.
+	};
+
 	// For FF <= 3.5
 	if(fixReadyState){ doc.readyState = "loading"; }
 
@@ -8646,6 +8760,10 @@ define(['./has'], function(has){
 		}
 
 		recursiveGuard = false;
+
+		// Notification for dojo/ready.  Remove for 2.0.
+		// Note that this could add more tasks to the ready queue.
+		domReady._onQEmpty();
 	}
 
 	if(!ready){
@@ -8657,8 +8775,8 @@ define(['./has'], function(has){
 				// For FF <= 3.5
 				if(fixReadyState){ doc.readyState = "complete"; }
 
-				processQ();
 				ready = 1;
+				processQ();
 			},
 			on = function(node, event){
 				node.addEventListener(event, detectReady, false);
@@ -8717,16 +8835,6 @@ define(['./has'], function(has){
 			poller();
 		}
 	}
-
-	function domReady(callback){
-		// summary:
-		//		Plugin to delay require()/define() callback from firing until the DOM has finished loading.
-		readyQ.push(callback);
-		if(ready){ processQ(); }
-	}
-	domReady.load = function(id, req, load){
-		domReady(load);
-	};
 
 	return domReady;
 });
@@ -9849,7 +9957,7 @@ define(["./has"], function(has){
 		};
 		return {
 			parse: has("json-parse") ? JSON.parse : function(str, strict){
-				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])+"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
+				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
 					throw new SyntaxError("Invalid characters in JSON");
 				}
 				return eval('(' + str + ')');
@@ -10546,8 +10654,9 @@ define([
 	'../Deferred',
 	'../io-query',
 	'../_base/array',
-	'../_base/lang'
-], function(exports, RequestError, CancelError, Deferred, ioQuery, array, lang){
+	'../_base/lang',
+	'../promise/Promise'
+], function(exports, RequestError, CancelError, Deferred, ioQuery, array, lang, Promise){
 	exports.deepCopy = function deepCopy(target, source){
 		for(var name in source){
 			var tval = target[name],
@@ -10582,6 +10691,9 @@ define([
 	function okHandler(response){
 		return freeze(response);
 	}
+	function dataHandler (response) {
+		return response.data || response.text;
+	}
 
 	exports.deferred = function deferred(response, cancel, isValid, isReady, handleResponse, last){
 		var def = new Deferred(function(reason){
@@ -10611,13 +10723,22 @@ define([
 			);
 		}
 
-		var dataPromise = responsePromise.then(function(response){
-				return response.data || response.text;
-			});
+		var dataPromise = responsePromise.then(dataHandler);
 
-		var promise = freeze(lang.delegate(dataPromise, {
-			response: responsePromise
-		}));
+		// http://bugs.dojotoolkit.org/ticket/16794
+		// The following works around a leak in IE9 through the
+		// prototype using lang.delegate on dataPromise and
+		// assigning the result a property with a reference to
+		// responsePromise.
+		var promise = new Promise();
+		for (var prop in dataPromise) {
+			if (dataPromise.hasOwnProperty(prop)) {
+				promise[prop] = dataPromise[prop];
+			}
+		}
+		promise.response = responsePromise;
+		freeze(promise);
+		// End leak fix
 
 
 		if(last){
@@ -10802,7 +10923,7 @@ define([
 			}
 			function onError(evt){
 				var _xhr = evt.target;
-				var error = new RequestError('Unable to load ' + response.url + ' status: ' + _xhr.status, response); 
+				var error = new RequestError('Unable to load ' + response.url + ' status: ' + _xhr.status, response);
 				dfd.handleResponse(response, error);
 			}
 
@@ -10822,6 +10943,7 @@ define([
 				_xhr.removeEventListener('load', onLoad, false);
 				_xhr.removeEventListener('error', onError, false);
 				_xhr.removeEventListener('progress', onProgress, false);
+				_xhr = null;
 			};
 		};
 	}else{
@@ -10842,15 +10964,16 @@ define([
 		};
 	}
 
+	function getHeader(headerName){
+		return this.xhr.getResponseHeader(headerName);
+	}
+
 	var undefined,
 		defaultOptions = {
 			data: null,
 			query: null,
 			sync: false,
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded'
-			}
+			method: 'GET'
 		};
 	function xhr(url, options, returnDeferred){
 		var response = util.parseArgs(
@@ -10884,9 +11007,7 @@ define([
 			return returnDeferred ? dfd : dfd.promise;
 		}
 
-		response.getHeader = function(headerName){
-			return this.xhr.getResponseHeader(headerName);
-		};
+		response.getHeader = getHeader;
 
 		if(addListeners){
 			remover = addListeners(_xhr, dfd, response);
@@ -10905,7 +11026,7 @@ define([
 			}
 
 			var headers = options.headers,
-				contentType;
+				contentType = 'application/x-www-form-urlencoded';
 			if(headers){
 				for(var hdr in headers){
 					if(hdr.toLowerCase() === 'content-type'){
@@ -11731,7 +11852,6 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/lang", "./dom", "./dom-
 	//		dojo/dom-prop
 	// summary:
 	//		This module defines the core dojo DOM properties API.
-	//		Indirectly depends on dojo.empty() and dojo.toDom().
 
 	// TODOC: summary not showing up in output, see https://github.com/csnover/js-doc-parse/issues/42
 
@@ -11909,8 +12029,8 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/lang", "./dom", "./dom-
 
 },
 'dojo/dom-construct':function(){
-define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./dom-attr", "./on"],
-		function(exports, dojo, has, win, dom, attr, on){
+define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./dom-attr"],
+		function(exports, dojo, has, win, dom, attr){
 	// module:
 	//		dojo/dom-construct
 	// summary:
@@ -11946,6 +12066,21 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 			tw.post = "</" + tw.reverse().join("></") + ">";
 			// the last line is destructive: it reverses the array,
 			// but we don't care at this point
+		}
+	}
+
+	var tested, html5domfix;
+	if(has("ie") <= 8){
+		html5domfix = function(){
+			if(tested){ return; }
+			tested = true;
+			var div = d.create('div', { innerHTML:"<nav>a</nav>"});
+			if(div.childNodes.length !== 1){
+				'abbr article aside audio canvas details figcaption figure footer header ' +
+				'hgroup mark meter nav output progress section summary time video'.replace(/\b\w+\b/g,function(n){
+					d.createElement(n);
+				});
+			}
 		}
 	}
 
@@ -11988,6 +12123,10 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		if(!masterId){
 			doc[masterName] = masterId = ++masterNum + "";
 			masterNode[masterId] = doc.createElement("div");
+		}
+
+		if(has("ie") <= 8){
+			if(!tested){ html5domfix(); }
 		}
 
 		// make sure the frag is a string.
@@ -15454,8 +15593,59 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 
 },
 'dojo/window':function(){
-define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", "./dom-style"],
-	function(lang, has, baseWindow, dom, geom, style){
+define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", "./dom-style", "./dom-construct"],
+	function(lang, has, baseWindow, dom, geom, style, domConstruct){
+
+	// feature detection
+	/* not needed but included here for future reference
+	has.add("rtl-innerVerticalScrollBar-on-left", function(win, doc){
+		var	body = baseWindow.body(doc),
+			scrollable = domConstruct.create('div', {
+				style: {overflow:'scroll', overflowX:'hidden', direction:'rtl', visibility:'hidden', position:'absolute', left:'0', width:'64px', height:'64px'}
+			}, body, "last"),
+			center = domConstruct.create('center', {
+				style: {overflow:'hidden', direction:'ltr'}
+			}, scrollable, "last"),
+			inner = domConstruct.create('div', {
+				style: {overflow:'visible', display:'inline' }
+			}, center, "last");
+		inner.innerHTML="&nbsp;";
+		var midPoint = Math.max(inner.offsetLeft, geom.position(inner).x);
+		var ret = midPoint >= 32;
+		center.removeChild(inner);
+		scrollable.removeChild(center);
+		body.removeChild(scrollable);
+		return ret;
+	});
+	*/
+	has.add("rtl-adjust-position-for-verticalScrollBar", function(win, doc){
+		var	body = baseWindow.body(doc),
+			scrollable = domConstruct.create('div', {
+				style: {overflow:'scroll', overflowX:'visible', direction:'rtl', visibility:'hidden', position:'absolute', left:'0', top:'0', width:'64px', height:'64px'}
+			}, body, "last"),
+			div = domConstruct.create('div', {
+				style: {overflow:'hidden', direction:'ltr'}
+			}, scrollable, "last"),
+			ret = geom.position(div).x != 0;
+		scrollable.removeChild(div);
+		body.removeChild(scrollable);
+		return ret;
+	});
+
+	has.add("position-fixed-support", function(win, doc){
+		// IE6, IE7+quirks, and some older mobile browsers don't support position:fixed
+		var	body = baseWindow.body(doc),
+			outer = domConstruct.create('span', {
+				style: {visibility:'hidden', position:'fixed', left:'1px', top:'1px'}
+			}, body, "last"),
+			inner = domConstruct.create('span', {
+				style: {position:'fixed', left:'0', top:'0'}
+			}, outer, "last"),
+			ret = geom.position(inner).x != geom.position(outer).x;
+		outer.removeChild(inner);
+		body.removeChild(outer);
+		return ret;
+	});
 
 	// module:
 	//		dojo/window
@@ -15523,54 +15713,59 @@ define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", 
 
 		scrollIntoView: function(/*DomNode*/ node, /*Object?*/ pos){
 			// summary:
-			//		Scroll the passed node into view, if it is not already.
+			//		Scroll the passed node into view using minimal movement, if it is not already.
 
-			// don't rely on node.scrollIntoView working just because the function is there
+			// Don't rely on node.scrollIntoView working just because the function is there since
+			// it forces the node to the page's bottom or top (and left or right in IE) without consideration for the minimal movement.
+			// WebKit's node.scrollIntoViewIfNeeded doesn't work either for inner scrollbars in right-to-left mode
+			// and when there's a fixed position scrollable element
 
 			try{ // catch unexpected/unrecreatable errors (#7808) since we can recover using a semi-acceptable native method
 				node = dom.byId(node);
-				var doc = node.ownerDocument || baseWindow.doc,	// TODO: why baseWindow.doc?  Isn't node.ownerDocument always defined?
+				var	doc = node.ownerDocument || baseWindow.doc,	// TODO: why baseWindow.doc?  Isn't node.ownerDocument always defined?
 					body = baseWindow.body(doc),
 					html = doc.documentElement || body.parentNode,
-					isIE = has("ie"), isWK = has("webkit");
+					isIE = has("ie"),
+					isWK = has("webkit");
 				// if an untested browser, then use the native method
-				if((!(has("mozilla") || isIE || isWK || has("opera")) || node == body || node == html) && (typeof node.scrollIntoView != "undefined")){
+				if(node == body || node == html){ return; }
+				if(!(has("mozilla") || isIE || isWK || has("opera")) && ("scrollIntoView" in node)){
 					node.scrollIntoView(false); // short-circuit to native if possible
 					return;
 				}
-				var backCompat = doc.compatMode == 'BackCompat',
-					clientAreaRoot = (isIE >= 9 && "frameElement" in node.ownerDocument.parentWindow)
-						? ((html.clientHeight > 0 && html.clientWidth > 0 && (body.clientHeight == 0 || body.clientWidth == 0 || body.clientHeight > html.clientHeight || body.clientWidth > html.clientWidth)) ? html : body)
-						: (backCompat ? body : html),
-					scrollRoot = isWK ? body : clientAreaRoot,
-					rootWidth = clientAreaRoot.clientWidth,
-					rootHeight = clientAreaRoot.clientHeight,
-					rtl = !geom.isBodyLtr(doc),
+				var	backCompat = doc.compatMode == 'BackCompat',
+					rootWidth = Math.min(body.clientWidth || html.clientWidth, html.clientWidth || body.clientWidth),
+					rootHeight = Math.min(body.clientHeight || html.clientHeight, html.clientHeight || body.clientHeight),
+					scrollRoot = (isWK || backCompat) ? body : html,
 					nodePos = pos || geom.position(node),
 					el = node.parentNode,
 					isFixed = function(el){
-						return ((isIE <= 6 || (isIE && backCompat))? false : (style.get(el, 'position').toLowerCase() == "fixed"));
+						return (isIE <= 6 || (isIE == 7 && backCompat))
+							? false
+							: (has("position-fixed-support") && (style.get(el, 'position').toLowerCase() == "fixed"));
 					};
 				if(isFixed(node)){ return; } // nothing to do
-
 				while(el){
 					if(el == body){ el = scrollRoot; }
-					var elPos = geom.position(el),
-						fixedPos = isFixed(el);
+					var	elPos = geom.position(el),
+						fixedPos = isFixed(el),
+						rtl = style.getComputedStyle(el).direction.toLowerCase() == "rtl";
 
 					if(el == scrollRoot){
 						elPos.w = rootWidth; elPos.h = rootHeight;
 						if(scrollRoot == html && isIE && rtl){ elPos.x += scrollRoot.offsetWidth-elPos.w; } // IE workaround where scrollbar causes negative x
-						if(elPos.x < 0 || !isIE){ elPos.x = 0; } // IE can have values > 0
-						if(elPos.y < 0 || !isIE){ elPos.y = 0; }
+						if(elPos.x < 0 || !isIE || isIE >= 9){ elPos.x = 0; } // older IE can have values > 0
+						if(elPos.y < 0 || !isIE || isIE >= 9){ elPos.y = 0; }
 					}else{
 						var pb = geom.getPadBorderExtents(el);
 						elPos.w -= pb.w; elPos.h -= pb.h; elPos.x += pb.l; elPos.y += pb.t;
 						var clientSize = el.clientWidth,
 							scrollBarSize = elPos.w - clientSize;
 						if(clientSize > 0 && scrollBarSize > 0){
+							if(rtl && has("rtl-adjust-position-for-verticalScrollBar")){
+								elPos.x += scrollBarSize;
+							}
 							elPos.w = clientSize;
-							elPos.x += (rtl && (isIE || el.clientLeft > pb.l/*Chrome*/)) ? scrollBarSize : 0;
 						}
 						clientSize = el.clientHeight;
 						scrollBarSize = elPos.h - clientSize;
@@ -15593,21 +15788,26 @@ define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", 
 						}
 					}
 					// calculate overflow in all 4 directions
-					var l = nodePos.x - elPos.x, // beyond left: < 0
-						t = nodePos.y - Math.max(elPos.y, 0), // beyond top: < 0
+					var	l = nodePos.x - elPos.x, // beyond left: < 0
+//						t = nodePos.y - Math.max(elPos.y, 0), // beyond top: < 0
+						t = nodePos.y - elPos.y, // beyond top: < 0
 						r = l + nodePos.w - elPos.w, // beyond right: > 0
 						bot = t + nodePos.h - elPos.h; // beyond bottom: > 0
-					if(r * l > 0){
-						var s = Math[l < 0? "max" : "min"](l, r);
+					var s, old;
+					if(r * l > 0 && (!!el.scrollLeft || el == scrollRoot || el.scrollWidth > el.offsetHeight)){
+						s = Math[l < 0? "max" : "min"](l, r);
 						if(rtl && ((isIE == 8 && !backCompat) || isIE >= 9)){ s = -s; }
-						nodePos.x += el.scrollLeft;
+						old = el.scrollLeft;
 						el.scrollLeft += s;
-						nodePos.x -= el.scrollLeft;
+						s = el.scrollLeft - old;
+						nodePos.x -= s;
 					}
-					if(bot * t > 0){
-						nodePos.y += el.scrollTop;
-						el.scrollTop += Math[t < 0? "max" : "min"](t, bot);
-						nodePos.y -= el.scrollTop;
+					if(bot * t > 0 && (!!el.scrollTop || el == scrollRoot || el.scrollHeight > el.offsetHeight)){
+						s = Math.ceil(Math[t < 0? "max" : "min"](t, bot));
+						old = el.scrollTop;
+						el.scrollTop += s;
+						s = el.scrollTop - old;
+						nodePos.y -= s;
 					}
 					el = (el != scrollRoot) && !fixedPos && el.parentNode;
 				}
@@ -15625,113 +15825,268 @@ define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", 
 
 },
 'dojo/touch':function(){
-define(["./_base/kernel", "./aspect", "./dom", "./on", "./has", "./mouse", "./domReady", "./_base/window"],
-function(dojo, aspect, dom, on, has, mouse, domReady, win){
+define(["./_base/kernel", "./aspect", "./dom", "./dom-class", "./_base/lang", "./on", "./has", "./mouse", "./domReady", "./_base/window"],
+function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 
 	// module:
 	//		dojo/touch
 
 	var hasTouch = has("touch");
 
-	// TODO: get iOS version from dojo/sniff after #15827 is fixed
-	var ios4 = false;
-	if(has("ios")){
-		var ua = navigator.userAgent;
-		var v = ua.match(/OS ([\d_]+)/) ? RegExp.$1 : "1";
-		var os = parseFloat(v.replace(/_/, '.').replace(/_/g, ''));
-		ios4 = os < 5;
+	var ios4 = has("ios") < 5;
+	
+	var msPointer = navigator.msPointerEnabled;
+
+	// Click generation variables
+	var clicksInited, clickTracker, clickTarget, clickX, clickY, clickDx, clickDy, clickTime;
+
+	// Time of most recent touchstart, touchmove, or touchend event
+	var lastTouch;
+
+	function dualEvent(mouseType, touchType, msPointerType){
+		// Returns synthetic event that listens for both the specified mouse event and specified touch event.
+		// But ignore fake mouse events that were generated due to the user touching the screen.
+		if(msPointer && msPointerType){
+			// IE10+: MSPointer* events are designed to handle both mouse and touch in a uniform way,
+			// so just use that regardless of hasTouch.
+			return function(node, listener){
+				return on(node, msPointerType, listener);
+			}
+		}else if(hasTouch){
+			return function(node, listener){
+				var handle1 = on(node, touchType, listener),
+					handle2 = on(node, mouseType, function(evt){
+						if(!lastTouch || (new Date()).getTime() > lastTouch + 1000){
+							listener.call(this, evt);
+						}
+					});
+				return {
+					remove: function(){
+						handle1.remove();
+						handle2.remove();
+					}
+				};
+			};
+		}else{
+			// Avoid creating listeners for touch events on performance sensitive older browsers like IE6
+			return function(node, listener){
+				return on(node, mouseType, listener);
+			}
+		}
 	}
 
-	var touchmove, hoveredNode;
+	function marked(/*DOMNode*/ node){
+		// Test if a node or its ancestor has been marked with the dojoClick property to indicate special processing,
+		do{
+			if(node.dojoClick){ return node.dojoClick; }
+		}while(node = node.parentNode);
+	}
+	
+	function doClicks(e, moveType, endType){
+		// summary:
+		//		Setup touch listeners to generate synthetic clicks immediately (rather than waiting for the browser
+		//		to generate clicks after the double-tap delay) and consistently (regardless of whether event.preventDefault()
+		//		was called in an event listener. Synthetic clicks are generated only if a node or one of its ancestors has
+		//		its dojoClick property set to truthy.
+		
+		clickTracker  = !e.target.disabled && marked(e.target); // click threshold = true, number or x/y object
+		if(clickTracker){
+			clickTarget = e.target;
+			clickX = e.touches ? e.touches[0].pageX : e.clientX;
+			clickY = e.touches ? e.touches[0].pageY : e.clientY;
+			clickDx = (typeof clickTracker == "object" ? clickTracker.x : (typeof clickTracker == "number" ? clickTracker : 0)) || 4;
+			clickDy = (typeof clickTracker == "object" ? clickTracker.y : (typeof clickTracker == "number" ? clickTracker : 0)) || 4;
+
+			// add move/end handlers only the first time a node with dojoClick is seen,
+			// so we don't add too much overhead when dojoClick is never set.
+			if(!clicksInited){
+				clicksInited = true;
+
+				win.doc.addEventListener(moveType, function(e){
+					clickTracker = clickTracker &&
+						e.target == clickTarget &&
+						Math.abs((e.touches ? e.touches[0].pageX : e.clientX) - clickX) <= clickDx &&
+						Math.abs((e.touches ? e.touches[0].pageY : e.clientY) - clickY) <= clickDy;
+				}, true);
+
+				win.doc.addEventListener(endType, function(e){
+					if(clickTracker){
+						clickTime = (new Date()).getTime();
+						var target = e.target;
+						if(target.tagName === "LABEL"){
+							// when clicking on a label, forward click to its associated input if any
+							target = dom.byId(target.getAttribute("for")) || target;
+						}
+						setTimeout(function(){
+							on.emit(target, "click", {
+								bubbles : true,
+								cancelable : true,
+								_dojo_click : true
+							});
+						});
+					}
+				}, true);
+
+				function stopNativeEvents(type){
+					win.doc.addEventListener(type, function(e){
+						// Stop native events when we emitted our own click event.  Note that the native click may occur
+						// on a different node than the synthetic click event was generated on.  For example,
+						// click on a menu item, causing the menu to disappear, and then (~300ms later) the browser
+						// sends a click event to the node that was *underneath* the menu.  So stop all native events
+						// sent shortly after ours, similar to what is done in dualEvent.
+						// The INPUT.dijitOffScreen test is for offscreen inputs used in dijit/form/Button, on which
+						// we call click() explicitly, we don't want to stop this event.
+						if(!e._dojo_click &&
+								(new Date()).getTime() <= clickTime + 1000 &&
+								!(e.target.tagName == "INPUT" && domClass.contains(e.target, "dijitOffScreen"))){
+							e.stopImmediatePropagation();
+							if((e.target.tagName != "INPUT" || e.target.type == "radio" || e.target.type == "checkbox")
+								&& e.target.tagName != "TEXTAREA"){
+								 // preventDefault() breaks textual <input>s on android, keyboard doesn't popup,
+								 // but it is still needed for checkboxes and radio buttons, otherwise in some cases
+								 // the checked state becomes inconsistent with the widget's state
+								e.preventDefault();
+							}
+						}
+					}, true);
+				}
+
+				stopNativeEvents("click");
+
+				// We also stop mousedown/up since these would be sent well after with our "fast" click (300ms),
+				// which can confuse some dijit widgets.
+				stopNativeEvents("mousedown");
+				stopNativeEvents("mouseup");
+			}
+		}
+	}
+
+	var dojotouchmove, nativeTouchMoveEvent, hoveredNode;
 
 	if(hasTouch){
-		domReady(function(){
-			// Keep track of currently hovered node
-			hoveredNode = win.body();	// currently hovered node
+		if(msPointer){
+			 // MSPointer (IE10+) already has support for over and out, so we just need to init click support
+			domReady(function(){
+				win.doc.addEventListener("MSPointerDown", function(evt){
+					doClicks(evt, "MSPointerMove", "MSPointerUp");
+				}, true);
+			});		
+		}else{
+			domReady(function(){
+				// Keep track of currently hovered node
+				hoveredNode = win.body();	// currently hovered node
 
-			win.doc.addEventListener("touchstart", function(evt){
-				// Precede touchstart event with touch.over event.  DnD depends on this.
-				// Use addEventListener(cb, true) to run cb before any touchstart handlers on node run,
-				// and to ensure this code runs even if the listener on the node does event.stop().
-				var oldNode = hoveredNode;
-				hoveredNode = evt.target;
-				on.emit(oldNode, "dojotouchout", {
-					target: oldNode,
-					relatedTarget: hoveredNode,
-					bubbles: true
-				});
-				on.emit(hoveredNode, "dojotouchover", {
-					target: hoveredNode,
-					relatedTarget: oldNode,
-					bubbles: true
-				});
-			}, true);
+				win.doc.addEventListener("touchstart", function(evt){
+					lastTouch = (new Date()).getTime();
 
-			// Fire synthetic touchover and touchout events on nodes since the browser won't do it natively.
-			on(win.doc, "touchmove", function(evt){
-				var newNode = win.doc.elementFromPoint(
-					evt.pageX - (ios4 ? 0 : win.global.pageXOffset), // iOS 4 expects page coords
-					evt.pageY - (ios4 ? 0 : win.global.pageYOffset)
-				);
-				if(newNode && hoveredNode !== newNode){
-					// touch out on the old node
-					on.emit(hoveredNode, "dojotouchout", {
-						target: hoveredNode,
-						relatedTarget: newNode,
-						bubbles: true
-					});
-
-					// touchover on the new node
-					on.emit(newNode, "dojotouchover", {
-						target: newNode,
+					// Precede touchstart event with touch.over event.  DnD depends on this.
+					// Use addEventListener(cb, true) to run cb before any touchstart handlers on node run,
+					// and to ensure this code runs even if the listener on the node does event.stop().
+					var oldNode = hoveredNode;
+					hoveredNode = evt.target;
+					on.emit(oldNode, "dojotouchout", {
 						relatedTarget: hoveredNode,
 						bubbles: true
 					});
+					on.emit(hoveredNode, "dojotouchover", {
+						relatedTarget: oldNode,
+						bubbles: true
+					});
+				
+					doClicks(evt, "touchmove", "touchend"); // init click generation
+				}, true);
 
-					hoveredNode = newNode;
-				}
+				on(win.doc, "touchmove", function(evt){
+					lastTouch = (new Date()).getTime();
+					nativeTouchMoveEvent = evt;
+
+					var newNode = win.doc.elementFromPoint(
+						evt.pageX - (ios4 ? 0 : win.global.pageXOffset), // iOS 4 expects page coords
+						evt.pageY - (ios4 ? 0 : win.global.pageYOffset)
+					);
+
+					if(newNode){
+						// Fire synthetic touchover and touchout events on nodes since the browser won't do it natively.
+						if(hoveredNode !== newNode){
+							// touch out on the old node
+							on.emit(hoveredNode, "dojotouchout", {
+								relatedTarget: newNode,
+								bubbles: true
+							});
+
+							// touchover on the new node
+							on.emit(newNode, "dojotouchover", {
+								relatedTarget: hoveredNode,
+								bubbles: true
+							});
+
+							hoveredNode = newNode;
+						}
+
+						// Emit synthetic "dojotouchmove" as a way of triggering listeners to synthetic dojotouchmove event
+						// defined below.
+						on.emit(newNode, "dojotouchmove", {
+							bubbles: true
+						});
+					}
+				});
+
+				// Fire a dojotouchend event on the node where the finger was before it was removed from the screen.
+				// This is different than the native touchend, which fires on the node where the drag started.
+				on(win.doc, "touchend", function(evt){
+					lastTouch = (new Date()).getTime();
+					var node = win.doc.elementFromPoint(
+						evt.pageX - (ios4 ? 0 : win.global.pageXOffset), // iOS 4 expects page coords
+						evt.pageY - (ios4 ? 0 : win.global.pageYOffset)
+					) || win.body(); // if out of the screen
+
+					on.emit(node, "dojotouchend", lang.delegate(evt, {
+						bubbles: true
+					}));
+				});
 			});
-		});
-
-		// Define synthetic touch.move event that unlike the native touchmove, fires for the node the finger is
-		// currently dragging over rather than the node where the touch started.
-		touchmove = function(node, listener){
-			return on(win.doc, "touchmove", function(evt){
-				if(node === win.doc || dom.isDescendant(hoveredNode, node)){
-					evt.target = hoveredNode;
-					listener.call(this, evt);
-				}
-			});
-		};
-	}
 
 
-	function _handle(type){
-		// type: String
-		//		press | move | release | cancel
-
-		return function(node, listener){//called by on(), see dojo.on
-			return on(node, type, listener);
-		};
+			// Unlike a listener on "touchmove", on(node, dojotouchmove, listener) fires when the finger
+			// drags over the specified node, regardless of which node the touch started on.
+			// The listener is called with the native touchmove event object, so that evt.preventDefault() works,
+			// but target is set to the node currently being dragged over, and stopPropagation() refers to the synthetic
+			// event.
+			dojotouchmove = function(node, listener){
+				return on(node, "dojotouchmove", function(syntheticEvent){
+					listener(lang.delegate(nativeTouchMoveEvent, {
+						target: syntheticEvent.target,
+						stopPropagation: function(){
+							syntheticEvent.stopPropagation();
+						}
+					}));
+				});
+			};
+		}
 	}
 
 	//device neutral events - touch.press|move|release|cancel/over/out
 	var touch = {
-		press: _handle(hasTouch ? "touchstart": "mousedown"),
-		move: hasTouch ? touchmove :_handle("mousemove"),
-		release: _handle(hasTouch ? "touchend": "mouseup"),
-		cancel: hasTouch ? _handle("touchcancel") : mouse.leave,
-		over: _handle(hasTouch ? "dojotouchover": "mouseover"),
-		out: _handle(hasTouch ? "dojotouchout": "mouseout"),
-		enter: mouse._eventHandler(hasTouch ? "dojotouchover" : "mouseover"),
-		leave: mouse._eventHandler(hasTouch ? "dojotouchout" : "mouseout")
+		press: dualEvent("mousedown", "touchstart", "MSPointerDown"),
+		move: dualEvent("mousemove", dojotouchmove, "MSPointerMove"),
+		release: dualEvent("mouseup", "dojotouchend", "MSPointerUp"),
+		cancel: dualEvent(mouse.leave, "touchcancel", hasTouch?"MSPointerCancel":null),
+		over: dualEvent("mouseover", "dojotouchover", "MSPointerOver"),
+		out: dualEvent("mouseout", "dojotouchout", "MSPointerOut"),
+		enter: mouse._eventHandler(dualEvent("mouseover","dojotouchover", "MSPointerOver")),
+		leave: mouse._eventHandler(dualEvent("mouseout", "dojotouchout", "MSPointerOut"))
 	};
+
 	/*=====
 	touch = {
 		// summary:
 		//		This module provides unified touch event handlers by exporting
 		//		press, move, release and cancel which can also run well on desktop.
 		//		Based on http://dvcs.w3.org/hg/webevents/raw-file/tip/touchevents.html
+		//		Also, if the dojoClick property is set to true on a DOM node, dojo/touch generates
+		//		click events immediately for this node and its descendants, to avoid the
+		//		delay before native browser click events, and regardless of whether evt.preventDefault()
+		//		was called in a touch.press event listener.
 		//
 		// example:
 		//		Used with dojo.on
@@ -15746,6 +16101,16 @@ function(dojo, aspect, dom, on, has, mouse, domReady, win){
 		//		|	touch.move(node, function(e){});
 		//		|	touch.release(node, function(e){});
 		//		|	touch.cancel(node, function(e){});
+		// example:
+		//		Have dojo/touch generate clicks without delay, with a default move threshold of 4 pixels
+		//		|	node.dojoClick = true;
+		// example:
+		//		Have dojo/touch generate clicks without delay, with a move threshold of 10 pixels horizontally and vertically
+		//		|	node.dojoClick = 10;
+		// example:
+		//		Have dojo/touch generate clicks without delay, with a move threshold of 50 pixels horizontally and 10 pixels vertically
+		//		|	node.dojoClick = {x:50, y:5};
+		
 
 		press: function(node, listener){
 			// summary:
@@ -15759,7 +16124,7 @@ function(dojo, aspect, dom, on, has, mouse, domReady, win){
 		},
 		move: function(node, listener){
 			// summary:
-			//		Register a listener to 'touchmove'|'mousemove' for the given node
+			//		Register a listener that fires when the mouse cursor or a finger is dragged over the given node.
 			// node: Dom
 			//		Target node to listen to
 			// listener: Function
@@ -15769,7 +16134,8 @@ function(dojo, aspect, dom, on, has, mouse, domReady, win){
 		},
 		release: function(node, listener){
 			// summary:
-			//		Register a listener to 'touchend'|'mouseup' for the given node
+			//		Register a listener to releasing the mouse button while the cursor is over the given node
+			//		(i.e. "mouseup") or for removing the finger from the screen while touching the given node.
 			// node: Dom
 			//		Target node to listen to
 			// listener: Function
@@ -15837,7 +16203,7 @@ function(dojo, aspect, dom, on, has, mouse, domReady, win){
 
 },
 'dojo/Stateful':function(){
-define(["./_base/declare", "./_base/lang", "./_base/array", "dojo/when"], function(declare, lang, array, when){
+define(["./_base/declare", "./_base/lang", "./_base/array", "./when"], function(declare, lang, array, when){
 	// module:
 	//		dojo/Stateful
 
@@ -16063,17 +16429,18 @@ define("dojo/cache", ["./_base/kernel", "./text"], function(dojo){
 
 },
 'dojo/text':function(){
-define(["./_base/kernel", "require", "./has", "./_base/xhr"], function(dojo, require, has, xhr){
+define(["./_base/kernel", "require", "./has", "./request"], function(dojo, require, has, request){
 	// module:
 	//		dojo/text
 
 	var getText;
 	if( 1 ){
 		getText= function(url, sync, load){
-			xhr("GET", {url: url, sync:!!sync, load: load, headers: dojo.config.textPluginHeaders || {}});
+			request(url, {sync:!!sync}).then(load);
 		};
 	}else{
-		// TODOC: only works for dojo AMD loader
+		// Path for node.js and rhino, to load from local file system.
+		// TODO: use node.js native methods rather than depending on a require.getText() method to exist.
 		if(require.getText){
 			getText= require.getText;
 		}else{
@@ -16251,7 +16618,7 @@ define(["./_base/kernel", "require", "./has", "./_base/xhr"], function(dojo, req
 				};
 			if(absMid in theCache){
 				text = theCache[absMid];
-			}else if(requireCacheUrl in require.cache){
+			}else if(require.cache && requireCacheUrl in require.cache){
 				text = require.cache[requireCacheUrl];
 			}else if(url in theCache){
 				text = theCache[url];
@@ -16277,6 +16644,125 @@ define(["./_base/kernel", "require", "./has", "./_base/xhr"], function(dojo, req
 
 });
 
+
+},
+'dojo/request':function(){
+define([
+	'./request/default!'/*=====,
+	'./_base/declare',
+	'./promise/Promise' =====*/
+], function(request/*=====, declare, Promise =====*/){
+	/*=====
+	request = function(url, options){
+		// summary:
+		//		Send a request using the default transport for the current platform.
+		// url: String
+		//		The URL to request.
+		// options: dojo/request.__Options?
+		//		Options for the request.
+		// returns: dojo/request.__Promise
+	};
+	request.__Promise = declare(Promise, {
+		// response: dojo/promise/Promise
+		//		A promise resolving to an object representing
+		//		the response from the server.
+	});
+	request.__BaseOptions = declare(null, {
+		// query: String|Object?
+		//		Query parameters to append to the URL.
+		// data: String|Object?
+		//		Data to transfer.  This is ignored for GET and DELETE
+		//		requests.
+		// preventCache: Boolean?
+		//		Whether to append a cache-busting parameter to the URL.
+		// timeout: Integer?
+		//		Milliseconds to wait for the response.  If this time
+		//		passes, the then the promise is rejected.
+		// handleAs: String?
+		//		How to handle the response from the server.  Default is
+		//		'text'.  Other values are 'json', 'javascript', and 'xml'.
+	});
+	request.__MethodOptions = declare(null, {
+		// method: String?
+		//		The HTTP method to use to make the request.  Must be
+		//		uppercase.
+	});
+	request.__Options = declare([request.__BaseOptions, request.__MethodOptions]);
+
+	request.get = function(url, options){
+		// summary:
+		//		Send an HTTP GET request using the default transport for the current platform.
+		// url: String
+		//		URL to request
+		// options: dojo/request.__BaseOptions?
+		//		Options for the request.
+		// returns: dojo/request.__Promise
+	};
+	request.post = function(url, options){
+		// summary:
+		//		Send an HTTP POST request using the default transport for the current platform.
+		// url: String
+		//		URL to request
+		// options: dojo/request.__BaseOptions?
+		//		Options for the request.
+		// returns: dojo/request.__Promise
+	};
+	request.put = function(url, options){
+		// summary:
+		//		Send an HTTP POST request using the default transport for the current platform.
+		// url: String
+		//		URL to request
+		// options: dojo/request.__BaseOptions?
+		//		Options for the request.
+		// returns: dojo/request.__Promise
+	};
+	request.del = function(url, options){
+		// summary:
+		//		Send an HTTP DELETE request using the default transport for the current platform.
+		// url: String
+		//		URL to request
+		// options: dojo/request.__BaseOptions?
+		//		Options for the request.
+		// returns: dojo/request.__Promise
+	};
+	=====*/
+	return request;
+});
+
+},
+'dojo/request/default':function(){
+define([
+	'exports',
+	'require',
+	'../has'
+], function(exports, require, has){
+	var defId = has('config-requestProvider'),
+		platformId;
+
+	if( 1 ){
+		platformId = './xhr';
+	}else if( 0 ){
+		platformId = './node';
+	/* TODO:
+	}else if( 0 ){
+		platformId = './rhino';
+   */
+	}
+
+	if(!defId){
+		defId = platformId;
+	}
+
+	exports.getPlatformDefaultId = function(){
+		return platformId;
+	};
+
+	exports.load = function(id, parentRequire, loaded, config){
+		require([id == 'platform' ? platformId : defId], function(provider){
+			loaded(provider);
+		});
+	};
+});
 
 },
 'dojo/cookie':function(){
@@ -16518,6 +17004,7 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 				current += (current ? "-" : "") + localeParts[i];
 				if(!root || root[current]){
 					result.push(bundlePath + current + "/" + bundleName);
+					result.specificity = current;
 				}
 			}
 			return result;
@@ -16551,6 +17038,7 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 					// target may not have been resolve (e.g., maybe only "fr" exists when "fr-ca" was requested)
 					var target = bundlePathAndName + "/" + locale;
 					cache[target] = current;
+					current.$locale = availableLocales.specificity;
 					load();
 				});
 			});
@@ -17001,7 +17489,8 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 		dynamic:true,
 		normalize:normalize,
 		load:load,
-		cache:cache
+		cache:cache,
+		getL10nName: getL10nName
 	});
 });
 
@@ -17544,7 +18033,7 @@ exports.format = function(/*Date*/ dateObject, /*__FormatOptions?*/ options){
 		if(pattern){str.push(_processPattern(pattern, sauce));}
 	}
 
-	return str.length == 1 ? str[0] : bundle["dateTimeFormat-"+formatLength].replace(/\{(\d+)\}/g,
+	return str.length == 1 ? str[0] : bundle["dateTimeFormat-"+formatLength].replace(/\'/g,'').replace(/\{(\d+)\}/g,
 		function(match, key){ return str[key]; }); // String
 };
 
@@ -18373,8 +18862,51 @@ supplemental._region = function(/*String?*/locale){
 	if(!region){
 		// IE often gives language only (#2269)
 		// Arbitrary mappings of language-only locales to a country:
-		region = {de:"de", en:"us", es:"es", fi:"fi", fr:"fr", he:"il", hu:"hu", it:"it",
-			ja:"jp", ko:"kr", nl:"nl", pt:"br", sv:"se", zh:"cn"}[tags[0]];
+		region = {
+			aa:"et", ab:"ge", af:"za", ak:"gh", am:"et", ar:"eg", as:"in", av:"ru", ay:"bo", az:"az", ba:"ru",
+			be:"by", bg:"bg", bi:"vu", bm:"ml", bn:"bd", bo:"cn", br:"fr", bs:"ba", ca:"es", ce:"ru", ch:"gu",
+			co:"fr", cr:"ca", cs:"cz", cv:"ru", cy:"gb", da:"dk", de:"de", dv:"mv", dz:"bt", ee:"gh", el:"gr",
+			en:"us", es:"es", et:"ee", eu:"es", fa:"ir", ff:"sn", fi:"fi", fj:"fj", fo:"fo", fr:"fr", fy:"nl",
+			ga:"ie", gd:"gb", gl:"es", gn:"py", gu:"in", gv:"gb", ha:"ng", he:"il", hi:"in", ho:"pg", hr:"hr",
+			ht:"ht", hu:"hu", hy:"am", ia:"fr", id:"id", ig:"ng", ii:"cn", ik:"us", "in":"id", is:"is", it:"it",
+			iu:"ca", iw:"il", ja:"jp", ji:"ua", jv:"id", jw:"id", ka:"ge", kg:"cd", ki:"ke", kj:"na", kk:"kz",
+			kl:"gl", km:"kh", kn:"in", ko:"kr", ks:"in", ku:"tr", kv:"ru", kw:"gb", ky:"kg", la:"va", lb:"lu",
+			lg:"ug", li:"nl", ln:"cd", lo:"la", lt:"lt", lu:"cd", lv:"lv", mg:"mg", mh:"mh", mi:"nz", mk:"mk",
+			ml:"in", mn:"mn", mo:"ro", mr:"in", ms:"my", mt:"mt", my:"mm", na:"nr", nb:"no", nd:"zw", ne:"np",
+			ng:"na", nl:"nl", nn:"no", no:"no", nr:"za", nv:"us", ny:"mw", oc:"fr", om:"et", or:"in", os:"ge",
+			pa:"in", pl:"pl", ps:"af", pt:"br", qu:"pe", rm:"ch", rn:"bi", ro:"ro", ru:"ru", rw:"rw", sa:"in",
+			sd:"in", se:"no", sg:"cf", si:"lk", sk:"sk", sl:"si", sm:"ws", sn:"zw", so:"so", sq:"al", sr:"rs",
+			ss:"za", st:"za", su:"id", sv:"se", sw:"tz", ta:"in", te:"in", tg:"tj", th:"th", ti:"et", tk:"tm",
+			tl:"ph", tn:"za", to:"to", tr:"tr", ts:"za", tt:"ru", ty:"pf", ug:"cn", uk:"ua", ur:"pk", uz:"uz",
+			ve:"za", vi:"vn", wa:"be", wo:"sn", xh:"za", yi:"il", yo:"ng", za:"cn", zh:"cn", zu:"za",
+			ace:"id", ady:"ru", agq:"cm", alt:"ru", amo:"ng", asa:"tz", ast:"es", awa:"in", bal:"pk",
+			ban:"id", bas:"cm", bax:"cm", bbc:"id", bem:"zm", bez:"tz", bfq:"in", bft:"pk", bfy:"in",
+			bhb:"in", bho:"in", bik:"ph", bin:"ng", bjj:"in", bku:"ph", bqv:"ci", bra:"in", brx:"in",
+			bss:"cm", btv:"pk", bua:"ru", buc:"yt", bug:"id", bya:"id", byn:"er", cch:"ng", ccp:"in",
+			ceb:"ph", cgg:"ug", chk:"fm", chm:"ru", chp:"ca", chr:"us", cja:"kh", cjm:"vn", ckb:"iq",
+			crk:"ca", csb:"pl", dar:"ru", dav:"ke", den:"ca", dgr:"ca", dje:"ne", doi:"in", dsb:"de",
+			dua:"cm", dyo:"sn", dyu:"bf", ebu:"ke", efi:"ng", ewo:"cm", fan:"gq", fil:"ph", fon:"bj",
+			fur:"it", gaa:"gh", gag:"md", gbm:"in", gcr:"gf", gez:"et", gil:"ki", gon:"in", gor:"id",
+			grt:"in", gsw:"ch", guz:"ke", gwi:"ca", haw:"us", hil:"ph", hne:"in", hnn:"ph", hoc:"in",
+			hoj:"in", ibb:"ng", ilo:"ph", inh:"ru", jgo:"cm", jmc:"tz", kaa:"uz", kab:"dz", kaj:"ng",
+			kam:"ke", kbd:"ru", kcg:"ng", kde:"tz", kdt:"th", kea:"cv", ken:"cm", kfo:"ci", kfr:"in",
+			kha:"in", khb:"cn", khq:"ml", kht:"in", kkj:"cm", kln:"ke", kmb:"ao", koi:"ru", kok:"in",
+			kos:"fm", kpe:"lr", krc:"ru", kri:"sl", krl:"ru", kru:"in", ksb:"tz", ksf:"cm", ksh:"de",
+			kum:"ru", lag:"tz", lah:"pk", lbe:"ru", lcp:"cn", lep:"in", lez:"ru", lif:"np", lis:"cn",
+			lki:"ir", lmn:"in", lol:"cd", lua:"cd", luo:"ke", luy:"ke", lwl:"th", mad:"id", mag:"in",
+			mai:"in", mak:"id", man:"gn", mas:"ke", mdf:"ru", mdh:"ph", mdr:"id", men:"sl", mer:"ke",
+			mfe:"mu", mgh:"mz", mgo:"cm", min:"id", mni:"in", mnk:"gm", mnw:"mm", mos:"bf", mua:"cm",
+			mwr:"in", myv:"ru", nap:"it", naq:"na", nds:"de", "new":"np", niu:"nu", nmg:"cm", nnh:"cm",
+			nod:"th", nso:"za", nus:"sd", nym:"tz", nyn:"ug", pag:"ph", pam:"ph", pap:"bq", pau:"pw",
+			pon:"fm", prd:"ir", raj:"in", rcf:"re", rej:"id", rjs:"np", rkt:"in", rof:"tz", rwk:"tz",
+			saf:"gh", sah:"ru", saq:"ke", sas:"id", sat:"in", saz:"in", sbp:"tz", scn:"it", sco:"gb",
+			sdh:"ir", seh:"mz", ses:"ml", shi:"ma", shn:"mm", sid:"et", sma:"se", smj:"se", smn:"fi",
+			sms:"fi", snk:"ml", srn:"sr", srr:"sn", ssy:"er", suk:"tz", sus:"gn", swb:"yt", swc:"cd",
+			syl:"bd", syr:"sy", tbw:"ph", tcy:"in", tdd:"cn", tem:"sl", teo:"ug", tet:"tl", tig:"er",
+			tiv:"ng", tkl:"tk", tmh:"ne", tpi:"pg", trv:"tw", tsg:"ph", tts:"th", tum:"mw", tvl:"tv",
+			twq:"ne", tyv:"ru", tzm:"ma", udm:"ru", uli:"fm", umb:"ao", unr:"in", unx:"in", vai:"lr",
+			vun:"tz", wae:"ch", wal:"et", war:"ph", xog:"ug", xsr:"np", yao:"mz", yap:"fm", yav:"cm", zza:"tr"
+		}[tags[0]];
 	}else if(region.length == 4){
 		// The ISO 3166 country code is usually in the second position, unless a
 		// 4-letter script is given. See http://www.ietf.org/rfc/rfc4646.txt
@@ -18564,8 +19096,8 @@ return stamp;
 
 },
 'dojo/store/Cache':function(){
-define(["../_base/lang","../_base/Deferred" /*=====, "../_base/declare", "./api/Store" =====*/],
-function(lang, Deferred /*=====, declare, Store =====*/){
+define(["../_base/lang","../when" /*=====, "../_base/declare", "./api/Store" =====*/],
+function(lang, when /*=====, declare, Store =====*/){
 
 // module:
 //		dojo/store/Cache
@@ -18585,8 +19117,8 @@ var Cache = function(masterStore, cachingStore, options){
 		// look for a queryEngine in either store
 		queryEngine: masterStore.queryEngine || cachingStore.queryEngine,
 		get: function(id, directives){
-			return Deferred.when(cachingStore.get(id), function(result){
-				return result || Deferred.when(masterStore.get(id, directives), function(result){
+			return when(cachingStore.get(id), function(result){
+				return result || when(masterStore.get(id, directives), function(result){
 					if(result){
 						cachingStore.put(result, {id: id});
 					}
@@ -18595,7 +19127,7 @@ var Cache = function(masterStore, cachingStore, options){
 			});
 		},
 		add: function(object, directives){
-			return Deferred.when(masterStore.add(object, directives), function(result){
+			return when(masterStore.add(object, directives), function(result){
 				// now put result in cache
 				cachingStore.add(object && typeof result == "object" ? result : object, directives);
 				return result; // the result from the add should be dictated by the masterStore and be unaffected by the cachingStore
@@ -18604,14 +19136,14 @@ var Cache = function(masterStore, cachingStore, options){
 		put: function(object, directives){
 			// first remove from the cache, so it is empty until we get a response from the master store
 			cachingStore.remove((directives && directives.id) || this.getIdentity(object));
-			return Deferred.when(masterStore.put(object, directives), function(result){
+			return when(masterStore.put(object, directives), function(result){
 				// now put result in cache
 				cachingStore.put(object && typeof result == "object" ? result : object, directives);
 				return result; // the result from the put should be dictated by the masterStore and be unaffected by the cachingStore
 			});
 		},
 		remove: function(id, directives){
-			return Deferred.when(masterStore.remove(id, directives), function(result){
+			return when(masterStore.remove(id, directives), function(result){
 				return cachingStore.remove(id, directives);
 			});
 		},
@@ -18765,6 +19297,15 @@ return declare("dojo.store.JsonRest", base, {
 	//		the sort information is included in a functional query token to avoid colliding
 	//		with the set of name/value pairs.
 
+	// ascendingPrefix: String
+	//		The prefix to apply to sort attribute names that are ascending
+	ascendingPrefix: "+",
+
+	// descendingPrefix: String
+	//		The prefix to apply to sort attribute names that are ascending
+	descendingPrefix: "-",
+	 
+
 	get: function(id, options){
 		// summary:
 		//		Retrieves an object by its identity. This will trigger a GET request to the server using
@@ -18882,7 +19423,7 @@ return declare("dojo.store.JsonRest", base, {
 			query += (query || hasQuestionMark ? "&" : "?") + (sortParam ? sortParam + '=' : "sort(");
 			for(var i = 0; i<options.sort.length; i++){
 				var sort = options.sort[i];
-				query += (i > 0 ? "," : "") + (sort.descending ? '-' : '+') + encodeURIComponent(sort.attribute);
+				query += (i > 0 ? "," : "") + (sort.descending ? this.descendingPrefix : this.ascendingPrefix) + encodeURIComponent(sort.attribute);
 			}
 			if(!sortParam){
 				query += ")";
@@ -18904,8 +19445,8 @@ return declare("dojo.store.JsonRest", base, {
 });
 },
 'dojo/store/util/QueryResults':function(){
-define(["../../_base/array", "../../_base/lang", "../../_base/Deferred"
-], function(array, lang, Deferred){
+define(["../../_base/array", "../../_base/lang", "../../when"
+], function(array, lang, when){
 
 // module:
 //		dojo/store/util/QueryResults
@@ -18944,7 +19485,7 @@ var QueryResults = function(results){
 		if(!results[method]){
 			results[method] = function(){
 				var args = arguments;
-				return Deferred.when(results, function(results){
+				return when(results, function(results){
 					Array.prototype.unshift.call(args, results);
 					return QueryResults(array[method].apply(array, args));
 				});
@@ -18955,7 +19496,7 @@ var QueryResults = function(results){
 	addIterativeMethod("filter");
 	addIterativeMethod("map");
 	if(!results.total){
-		results.total = Deferred.when(results, function(results){
+		results.total = when(results, function(results){
 			return results.length;
 		});
 	}
@@ -19250,8 +19791,8 @@ return function(query, options){
 
 },
 'dojo/store/Observable':function(){
-define(["../_base/kernel", "../_base/lang", "../_base/Deferred", "../_base/array" /*=====, "./api/Store" =====*/
-], function(kernel, lang, Deferred, array /*=====, Store =====*/){
+define(["../_base/kernel", "../_base/lang", "../when", "../_base/array" /*=====, "./api/Store" =====*/
+], function(kernel, lang, when, array /*=====, Store =====*/){
 
 // module:
 //		dojo/store/Observable
@@ -19314,7 +19855,7 @@ var Observable = function(/*Store*/ store){
 				if(listeners.push(listener) == 1){
 					// first listener was added, create the query checker and updater
 					queryUpdaters.push(queryUpdater = function(changed, existingId){
-						Deferred.when(results, function(resultsArray){
+						when(results, function(resultsArray){
 							var atEnd = resultsArray.length != options.count;
 							var i, l, listener;
 							if(++queryRevision != revision){
@@ -19409,7 +19950,7 @@ var Observable = function(/*Store*/ store){
 				inMethod = true;
 				try{
 					var results = original.apply(this, arguments);
-					Deferred.when(results, function(results){
+					when(results, function(results){
 						action((typeof results == "object" && results) || value);
 					});
 					return results;
@@ -21205,16 +21746,20 @@ define([
 
 },
 'dojo/parser':function(){
-define(
-	["require", "./_base/kernel", "./_base/lang", "./_base/array", "./_base/config", "./_base/html", "./_base/window",
-		"./_base/url", "./_base/json", "./aspect", "./date/stamp", "./Deferred", "./has", "./query", "./on", "./ready"],
-	function(require, dojo, dlang, darray, config, dhtml, dwindow, _Url, djson, aspect, dates, Deferred, has, query, don, ready){
+define([
+	"require", "./_base/kernel", "./_base/lang", "./_base/array", "./_base/config", "./dom", "./_base/window",
+		"./_base/url", "./aspect", "./promise/all", "./date/stamp", "./Deferred", "./has", "./query", "./on", "./ready"
+], function(require, dojo, dlang, darray, config, dom, dwindow, _Url, aspect, all, dates, Deferred, has, query, don, ready){
 
 	// module:
 	//		dojo/parser
 
 	new Date("X"); // workaround for #11279, new Date("") == NaN
 
+	// data-dojo-props etc. is not restricted to JSON, it can be any javascript
+	function myEval(text){
+		return eval("(" + text + ")");
+	}
 
 	// Widgets like BorderContainer add properties to _Widget via dojo.extend().
 	// If BorderContainer is loaded after _Widget's parameter list has been cached,
@@ -21234,7 +21779,9 @@ define(
 		if(!map || map._extendCnt < extendCnt){
 			map = ctor._nameCaseMap = {};
 			for(var name in proto){
-				if(name.charAt(0) === "_"){ continue; }	// skip internal properties
+				if(name.charAt(0) === "_"){
+					continue;
+				}	// skip internal properties
 				map[name.toLowerCase()] = name;
 			}
 			map._extendCnt = extendCnt;
@@ -21245,7 +21792,7 @@ define(
 	// Map from widget name or list of widget names(ex: "dijit/form/Button,acme/MyMixin") to a constructor.
 	var _ctorMap = {};
 
-	function getCtor(/*String[]*/ types){
+	function getCtor(/*String[]*/ types, /*Function?*/ contextRequire){
 		// summary:
 		//		Retrieves a constructor.  If the types array contains more than one class/MID then the
 		//		subsequent classes will be mixed into the first class and a unique constructor will be
@@ -21257,7 +21804,8 @@ define(
 			for(var i = 0, l = types.length; i < l; i++){
 				var t = types[i];
 				// TODO: Consider swapping getObject and require in the future
-				mixins[mixins.length] = (_ctorMap[t] = _ctorMap[t] || (dlang.getObject(t) || (~t.indexOf('/') && require(t))));
+				mixins[mixins.length] = (_ctorMap[t] = _ctorMap[t] || (dlang.getObject(t) || (~t.indexOf('/') &&
+					(contextRequire ? contextRequire(t) : require(t)))));
 			}
 			var ctor = mixins.shift();
 			_ctorMap[ts] = mixins.length ? (ctor.createSubclass ? ctor.createSubclass(mixins) : ctor.extend.apply(ctor, mixins)) : ctor;
@@ -21296,7 +21844,7 @@ define(
 
 			if(withStr && withStr.length){
 				darray.forEach(withStr.split(/\s*,\s*/), function(part){
-					preamble += "with("+part+"){";
+					preamble += "with(" + part + "){";
 					suffix += "}";
 				});
 			}
@@ -21318,13 +21866,15 @@ define(
 			// options: Object?
 			//		An object used to hold kwArgs for instantiation.
 			//		See parse.options argument for details.
+			// returns:
+			//		Array of instances.
 
 			mixin = mixin || {};
 			options = options || {};
 
-			var dojoType = (options.scope || dojo._scopeName) + "Type",		// typically "dojoType"
-				attrData = "data-" + (options.scope || dojo._scopeName) + "-",// typically "data-dojo-"
-				dataDojoType = attrData + "type",						// typically "data-dojo-type"
+			var dojoType = (options.scope || dojo._scopeName) + "Type", // typically "dojoType"
+				attrData = "data-" + (options.scope || dojo._scopeName) + "-", // typically "data-dojo-"
+				dataDojoType = attrData + "type", // typically "data-dojo-type"
 				dataDojoMixins = attrData + "mixins";					// typically "data-dojo-mixins"
 
 			var list = [];
@@ -21341,11 +21891,11 @@ define(
 				}
 			});
 
-			// Instantiate the nodes and return the objects
+			// Instantiate the nodes and return the list of instances.
 			return this._instantiate(list, mixin, options);
 		},
 
-		_instantiate: function(nodes, mixin, options){
+		_instantiate: function(nodes, mixin, options, returnPromise){
 			// summary:
 			//		Takes array of objects representing nodes, and turns them into class instances and
 			//		potentially calls a startup method to allow them to connect with
@@ -21366,10 +21916,15 @@ define(
 			// options: Object
 			//		An options object used to hold kwArgs for instantiation.
 			//		See parse.options argument for details.
+			// returnPromise: Boolean
+			//		Return a Promise rather than the instance; supports asynchronous widget creation.
+			// returns:
+			//		Array of instances, or if returnPromise is true, a promise for array of instances
+			//		that resolves when instances have finished initializing.
 
-			// Call widget constructors
+			// Call widget constructors.   Some may be asynchronous and return promises.
 			var thelist = darray.map(nodes, function(obj){
-				var ctor = obj.ctor || getCtor(obj.types);
+				var ctor = obj.ctor || getCtor(obj.types, options.contextRequire);
 				// If we still haven't resolved a ctor, it is fatal now
 				if(!ctor){
 					throw new Error("Unable to resolve constructor for: '" + obj.types.join() + "'");
@@ -21377,24 +21932,32 @@ define(
 				return this.construct(ctor, obj.node, mixin, options, obj.scripts, obj.inherited);
 			}, this);
 
-			// Call startup on each top level instance if it makes sense (as for
-			// widgets).  Parent widgets will recursively call startup on their
-			// (non-top level) children
-			if(!mixin._started && !options.noStart){
-				darray.forEach(thelist, function(instance){
-					if(typeof instance.startup === "function" && !instance._started){
-						instance.startup();
-					}
-				});
+			// After all widget construction finishes, call startup on each top level instance if it makes sense (as for
+			// widgets).  Parent widgets will recursively call startup on their (non-top level) children
+			function onConstruct(thelist){
+				if(!mixin._started && !options.noStart){
+					darray.forEach(thelist, function(instance){
+						if(typeof instance.startup === "function" && !instance._started){
+							instance.startup();
+						}
+					});
+				}
+
+				return thelist;
 			}
 
-			return thelist;
+			if(returnPromise){
+				return all(thelist).then(onConstruct);
+			}else{
+				// Back-compat path, remove for 2.0
+				return onConstruct(thelist);
+			}
 		},
 
 		construct: function(ctor, node, mixin, options, scripts, inherited){
 			// summary:
 			//		Calls new ctor(params, node), where params is the hash of parameters specified on the node,
-			//		excluding data-dojo-type and data-dojo-mixins.   Does not call startup().   Returns the widget.
+			//		excluding data-dojo-type and data-dojo-mixins.   Does not call startup().
 			// ctor: Function
 			//		Widget constructor.
 			// node: DOMNode
@@ -21408,6 +21971,8 @@ define(
 			//		Array of `<script type="dojo/*">` DOMNodes.  If not specified, will search for `<script>` tags inside node.
 			// inherited: Object?
 			//		Settings from dir=rtl or lang=... on a node above this node.   Overrides options.inherited.
+			// returns:
+			//		Instance or Promise for the instance, if markupFactory() itself returned a promise
 
 			var proto = ctor && ctor.prototype;
 			options = options || {};
@@ -21433,7 +21998,9 @@ define(
 				attributes = node.attributes;
 			}else if(has("dom-attributes-specified-flag")){
 				// Special processing needed for IE8, to skip a few faux values in attributes[]
-				attributes = darray.filter(node.attributes, function(a){ return a.specified;});
+				attributes = darray.filter(node.attributes, function(a){
+					return a.specified;
+				});
 			}else{
 				// Special path for IE6-7, avoid (sometimes >100) bogus entries in node.attributes
 				var clone = /^input$|^img$/i.test(node.nodeName) ? node : node.cloneNode(false),
@@ -21446,7 +22013,7 @@ define(
 						// getAttribute() doesn't work for button.value, returns innerHTML of button.
 						// but getAttributeNode().value doesn't work for the form.encType or li.value
 						value: (node.nodeName == "LI" && name == "value") || lcName == "enctype" ?
-								node.getAttribute(lcName) : node.getAttributeNode(lcName).value
+							node.getAttribute(lcName) : node.getAttributeNode(lcName).value
 					};
 				});
 			}
@@ -21454,7 +22021,7 @@ define(
 			// Hash to convert scoped attribute name (ex: data-dojo17-params) to something friendly (ex: data-dojo-params)
 			// TODO: remove scope for 2.0
 			var scope = options.scope || dojo._scopeName,
-				attrData = "data-" + scope + "-",						// typically "data-dojo-"
+				attrData = "data-" + scope + "-", // typically "data-dojo-"
 				hash = {};
 			if(scope !== "dojo"){
 				hash[attrData + "props"] = "data-dojo-props";
@@ -21466,7 +22033,7 @@ define(
 
 			// Read in attributes and process them, including data-dojo-props, data-dojo-type,
 			// dojoAttachPoint, etc., as well as normal foo=bar attributes.
-			var i=0, item, funcAttrs=[], jsname, extra;
+			var i = 0, item, funcAttrs = [], jsname, extra;
 			while(item = attributes[i++]){
 				var name = item.name,
 					lcName = name.toLowerCase(),
@@ -21550,7 +22117,7 @@ define(
 										value == "now" ? new Date() :	// current date
 										dates.fromISOString(value)) :
 								(pVal instanceof _Url) ? (dojo.baseUrl + value) :
-								djson.fromJson(value);
+								myEval(value);
 						}
 					}else{
 						params[name] = value;
@@ -21560,7 +22127,7 @@ define(
 
 			// Remove function attributes from DOMNode to prevent "double connect" problem, see #15026.
 			// Do this as a separate loop since attributes[] is often a live collection (depends on the browser though).
-			for(var j=0; j<funcAttrs.length; j++){
+			for(var j = 0; j < funcAttrs.length; j++){
 				var lcfname = funcAttrs[j].toLowerCase();
 				node.removeAttribute(lcfname);
 				node[lcfname] = null;
@@ -21569,7 +22136,7 @@ define(
 			// Mix things found in data-dojo-props into the params, overriding any direct settings
 			if(extra){
 				try{
-					extra = djson.fromJson.call(options.propsThis, "{" + extra + "}");
+					extra = myEval.call(options.propsThis, "{" + extra + "}");
 					dlang.mixin(params, extra);
 				}catch(e){
 					// give the user a pointer to their invalid parameters. FIXME: can we kill this in production?
@@ -21600,7 +22167,7 @@ define(
 				ons = []; // functions to on after instantiation
 
 			if(scripts){
-				for(i=0; i<scripts.length; i++){
+				for(i = 0; i < scripts.length; i++){
 					var script = scripts[i];
 					node.removeChild(script);
 					// FIXME: drop event="" support in 2.0. use data-dojo-event="" instead
@@ -21634,26 +22201,34 @@ define(
 			var markupFactory = ctor.markupFactory || proto.markupFactory;
 			var instance = markupFactory ? markupFactory(params, node, ctor) : new ctor(params, node);
 
-			// map it to the JS namespace if that makes sense
-			if(jsname){
-				dlang.setObject(jsname, instance);
+			function onInstantiate(instance){
+				// map it to the JS namespace if that makes sense
+				if(jsname){
+					dlang.setObject(jsname, instance);
+				}
+
+				// process connections and startup functions
+				for(i = 0; i < aspects.length; i++){
+					aspect[aspects[i].advice || "after"](instance, aspects[i].method, dlang.hitch(instance, aspects[i].func), true);
+				}
+				for(i = 0; i < calls.length; i++){
+					calls[i].call(instance);
+				}
+				for(i = 0; i < watches.length; i++){
+					instance.watch(watches[i].prop, watches[i].func);
+				}
+				for(i = 0; i < ons.length; i++){
+					don(instance, ons[i].event, ons[i].func);
+				}
+
+				return instance;
 			}
 
-			// process connections and startup functions
-			for(i=0; i<aspects.length; i++){
-				aspect[aspects[i].advice || "after"](instance, aspects[i].method, dlang.hitch(instance, aspects[i].func), true);
+			if(instance.then){
+				return instance.then(onInstantiate);
+			}else{
+				return onInstantiate(instance);
 			}
-			for(i=0; i<calls.length; i++){
-				calls[i].call(instance);
-			}
-			for(i=0; i<watches.length; i++){
-				instance.watch(watches[i].prop, watches[i].func);
-			}
-			for(i=0; i<ons.length; i++){
-				don(instance, ons[i].event, ons[i].func);
-			}
-
-			return instance;
 		},
 
 		scan: function(root, options){
@@ -21680,14 +22255,14 @@ define(
 			// returns: Promise
 			//		A promise that is resolved with the nodes that have been parsed.
 
-			var list = [],  // Output List
+			var list = [], // Output List
 				mids = [], // An array of modules that are not yet loaded
 				midsHash = {}; // Used to keep the mids array unique
 
-			var dojoType = (options.scope || dojo._scopeName) + "Type",		// typically "dojoType"
-				attrData = "data-" + (options.scope || dojo._scopeName) + "-",	// typically "data-dojo-"
-				dataDojoType = attrData + "type",						// typically "data-dojo-type"
-				dataDojoTextDir = attrData + "textdir",					// typically "data-dojo-textdir"
+			var dojoType = (options.scope || dojo._scopeName) + "Type", // typically "dojoType"
+				attrData = "data-" + (options.scope || dojo._scopeName) + "-", // typically "data-dojo-"
+				dataDojoType = attrData + "type", // typically "data-dojo-type"
+				dataDojoTextDir = attrData + "textdir", // typically "data-dojo-textdir"
 				dataDojoMixins = attrData + "mixins";					// typically "data-dojo-mixins"
 
 			// Info on DOMNode currently being processed
@@ -21703,13 +22278,16 @@ define(
 					return (node.getAttribute && node.getAttribute(attr)) ||
 						(node.parentNode && findAncestorAttr(node.parentNode, attr));
 				}
+
 				inherited = {
 					dir: findAncestorAttr(root, "dir"),
 					lang: findAncestorAttr(root, "lang"),
 					textDir: findAncestorAttr(root, dataDojoTextDir)
 				};
 				for(var key in inherited){
-					if(!inherited[key]){ delete inherited[key]; }
+					if(!inherited[key]){
+						delete inherited[key];
+					}
 				}
 			}
 
@@ -21733,7 +22311,7 @@ define(
 					parent.inherited = {};
 					var node = parent.node,
 						grandparent = getEffective(parent.parent);
-					var inherited  = {
+					var inherited = {
 						dir: node.getAttribute("dir") || grandparent.dir,
 						lang: node.getAttribute("lang") || grandparent.lang,
 						textDir: node.getAttribute(dataDojoTextDir) || grandparent.textDir
@@ -21806,7 +22384,7 @@ define(
 					// Note: won't find classes declared via dojo/Declaration or any modules that haven't been
 					// loaded yet so use try/catch to avoid throw from require()
 					try{
-						ctor = getCtor(types);
+						ctor = getCtor(types, options.contextRequire);
 					}catch(e){}
 
 					// If the constructor was not found, check to see if it has modules that can be loaded
@@ -21844,10 +22422,10 @@ define(
 				// Recurse, collecting <script type="dojo/..."> children, and also looking for
 				// descendant nodes with dojoType specified (unless the widget has the stopParser flag).
 				// When finished with children, go to my next sibling.
-				node = firstChild;
 				scripts = childScripts;
-				scriptsOnly = ctor && ctor.prototype.stopParser && !(options.template);
+				scriptsOnly = node.stopParser || (ctor && ctor.prototype.stopParser && !(options.template));
 				parent = current;
+				node = firstChild;
 			}
 
 			var d = new Deferred();
@@ -21858,7 +22436,8 @@ define(
 				if(has("dojo-debug-messages")){
 					console.warn("WARNING: Modules being Auto-Required: " + mids.join(", "));
 				}
-				require(mids, function(){
+				var r = options.contextRequire || require;
+				r(mids, function(){
 					// Go through list of widget nodes, filling in missing constructors, and filtering out nodes that shouldn't
 					// be instantiated due to a stopParser flag on an ancestor that we belatedly learned about due to
 					// auto-require of a module like ContentPane.   Assumes list is in DFS order.
@@ -21867,7 +22446,7 @@ define(
 							// Attempt to find the constructor again.   Still won't find classes defined via
 							// dijit/Declaration so need to try/catch.
 							try{
-								widget.ctor = getCtor(widget.types);
+								widget.ctor = getCtor(widget.types, options.contextRequire);
 							}catch(e){}
 						}
 
@@ -21896,7 +22475,7 @@ define(
 			return d.promise;
 		},
 
-		_require: function(/*DOMNode*/ script){
+		_require: function(/*DOMNode*/ script, /*Object?*/ options){
 			// summary:
 			//		Helper for _scanAMD().  Takes a `<script type=dojo/require>bar: "acme/bar", ...</script>` node,
 			//		calls require() to load the specified modules and (asynchronously) assign them to the specified global
@@ -21904,18 +22483,20 @@ define(
 			//
 			//		In the example above, it is effectively doing a require(["acme/bar", ...], function(a){ bar = a; }).
 
-			var hash = djson.fromJson("{" + script.innerHTML + "}"),
+			var hash = myEval("{" + script.innerHTML + "}"), // can't use dojo/json::parse() because maybe no quotes
 				vars = [],
 				mids = [],
 				d = new Deferred();
+
+			var contextRequire = (options && options.contextRequire) || require;
 
 			for(var name in hash){
 				vars.push(name);
 				mids.push(hash[name]);
 			}
 
-			require(mids, function(){
-				for(var i=0; i<vars.length; i++){
+			contextRequire(mids, function(){
+				for(var i = 0; i < vars.length; i++){
 					dlang.setObject(vars[i], arguments[i]);
 				}
 				d.resolve(arguments);
@@ -21924,15 +22505,17 @@ define(
 			return d.promise;
 		},
 
-		_scanAmd: function(root){
+		_scanAmd: function(root, options){
 			// summary:
 			//		Scans the DOM for any declarative requires and returns their values.
 			// description:
 			//		Looks for `<script type=dojo/require>bar: "acme/bar", ...</script>` node, calls require() to load the
 			//		specified modules and (asynchronously) assign them to the specified global variables,
-			//		 and returns a Promise for when those operations complete.
+			//		and returns a Promise for when those operations complete.
 			// root: DomNode
 			//		The node to base the scan from.
+			// options: Object?
+			//		a kwArgs options object, see parse() for details
 
 			// Promise that resolves when all the <script type=dojo/require> nodes have finished loading.
 			var deferred = new Deferred(),
@@ -21943,7 +22526,9 @@ define(
 			query("script[type='dojo/require']", root).forEach(function(node){
 				// Fire off require() call for specified modules.  Chain this require to fire after
 				// any previous requires complete, so that layers can be loaded before individual module require()'s fire.
-				promise = promise.then(function(){ return self._require(node); });
+				promise = promise.then(function(){
+					return self._require(node, options);
+				});
 
 				// Remove from DOM so it isn't seen again
 				node.parentNode.removeChild(node);
@@ -22000,6 +22585,10 @@ define(
 			//		- propsThis: Object:
 			//			If specified, "this" referenced from data-dojo-props will refer to propsThis.
 			//			Intended for use from the widgets-in-template feature of `dijit._WidgetsInTemplateMixin`
+			//		- contextRequire: Function:
+			//			If specified, this require is utilised for looking resolving modules instead of the
+			//			`dojo/parser` context `require()`.  Intended for use from the widgets-in-template feature of
+			//			`dijit._WidgetsInTemplateMixin`.
 			// returns: Mixed
 			//		Returns a blended object that is an array of the instantiated objects, but also can include
 			//		a promise that is resolved with the instantiated objects.  This is done for backwards
@@ -22031,7 +22620,7 @@ define(
 			}else{
 				root = rootNode;
 			}
-			root = root ? dhtml.byId(root) : dwindow.body();
+			root = root ? dom.byId(root) : dwindow.body();
 
 			options = options || {};
 
@@ -22048,9 +22637,13 @@ define(
 				this._scanAmd(root, options).then(function(){
 					return self.scan(root, options);
 				}).then(function(parsedNodes){
-					return instances = instances.concat(self._instantiate(parsedNodes, mixin, options));
+					return self._instantiate(parsedNodes, mixin, options, true);
+				}).then(function(_instances){
+					// Copy the instances into the instances[] array we declared above, and are accessing as
+					// our return value.
+					return instances = instances.concat(_instances);
 				}).otherwise(function(e){
-					// TODO Modify to follow better pattern for promise error managment when available
+					// TODO Modify to follow better pattern for promise error management when available
 					console.error("dojo/parser::parse() error", e);
 					throw e;
 				});
@@ -22062,7 +22655,7 @@ define(
 	};
 
 	if( 1 ){
-		dojo.parser  = parser;
+		dojo.parser = parser;
 	}
 
 	// Register the parser callback. It should be the first callback
@@ -22427,7 +23020,7 @@ define([], function () {
         },
 
         getPathname = function (url) {
-            var pathname = url.split('?')[0].split('#')[0].replace(/\w+:\/\/[\w\d\._\-]*/, '');
+            var pathname = url.split('?')[0].split('#')[0].replace(/\w+:\/\/[\w\d\._\-]*:?\d*/, '');
             return (pathname.match(/^\//)) ? pathname : ''; // only allow absolute urls
         },
         
@@ -25543,8 +26136,8 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 	//		To create a simple div with a class name of "foo":
 	//		|	put("div.foo");
 	fragmentFasterHeuristic = newFragmentFasterHeuristic || fragmentFasterHeuristic;
-	var selectorParse = /(?:\s*([-+ ,<>]))?\s*(\.|!\.?|#)?([-\w%$]+)?(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g,
-		undefined,
+	var selectorParse = /(?:\s*([-+ ,<>]))?\s*(\.|!\.?|#)?([-\w%$|]+)?(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g,
+		undefined, namespaceIndex, namespaces = false,
 		doc = doc || document,
 		ieCreateElement = typeof doc.createElement == "object"; // telltale sign of the old IE behavior with createElement that does not support later addition of name 
 	function insertTextNode(element, text){
@@ -25652,7 +26245,10 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 								// in IE, we have to use the crazy non-standard createElement to create input's that have a name 
 								tag = '<' + tag + ' name="' + ieInputName + '">';
 							}
-							current = doc.createElement(tag);
+							// we swtich between creation methods based on namespace usage
+							current = namespaces && ~(namespaceIndex = tag.indexOf('|')) ?
+								doc.createElementNS(namespaces[tag.slice(0, namespaceIndex)], tag.slice(namespaceIndex + 1)) : 
+								doc.createElement(tag);
 						}
 					}
 					if(prefix){
@@ -25674,9 +26270,15 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 							}else{
 								// else a '!' class removal
 								if(argument == "!"){
+									var parentNode;
 									// special signal to delete this element
-									// use the ol' innerHTML trick to get IE to do some cleanup
-									put("div", current, '<').innerHTML = "";
+									if(ieCreateElement){
+										// use the ol' innerHTML trick to get IE to do some cleanup
+										put("div", current, '<').innerHTML = "";
+									}else if(parentNode = current.parentNode){ // intentional assigment
+										// use a faster, and more correct (for namespaced elements) removal (http://jsperf.com/removechild-innerhtml)
+										parentNode.removeChild(current);
+									}
 								}else{
 									// we already have removed the class, just need to trim
 									removed = removed.substring(1, removed.length - 1);
@@ -25698,7 +26300,12 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 							// handle the special case of setAttribute not working in old IE
 							current.style.cssText = attrValue;
 						}else{
-							current[attrName.charAt(0) == "!" ? (attrName = attrName.substring(1)) && 'removeAttribute' : 'setAttribute'](attrName, attrValue === '' ? attrName : attrValue);
+							var method = attrName.charAt(0) == "!" ? (attrName = attrName.substring(1)) && 'removeAttribute' : 'setAttribute';
+							attrValue = attrValue === '' ? attrName : attrValue;
+							// determine if we need to use a namespace
+							namespaces && ~(namespaceIndex = attrName.indexOf('|')) ?
+								current[method + "NS"](namespaces[attrName.slice(0, namespaceIndex)], attrName.slice(namespaceIndex + 1), attrValue) :
+								current[method](attrName, attrValue);
 						}
 					}
 					return '';
@@ -25716,19 +26323,33 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 		}
 		return returnValue;
 	}
+	put.addNamespace = function(name, uri){
+		if(doc.createElementNS){
+			(namespaces || (namespaces = {}))[name] = uri;
+		}else{
+			// for old IE
+			doc.namespaces.add(name, uri);
+		}
+	};
 	put.defaultTag = "div";
 	put.forDocument = forDocument;
 	return put;
 });
-})(typeof define == "undefined" ? function(deps, factory){
-	if(typeof window == "undefined"){
+})(function(id, deps, factory){
+	factory = factory || deps;
+	if(typeof define === "function"){
+		// AMD loader
+		define([], function(){
+			return factory();
+		});
+	}else if(typeof window == "undefined"){
 		// server side JavaScript, probably (hopefully) NodeJS
 		require("./node-html")(module, factory);
 	}else{
 		// plain script in a browser
 		put = factory();
 	}
-} : define);
+});
 
 },
 'xstyle/has-class':function(){
@@ -25755,138 +26376,101 @@ define(["dojo/has"], function(has){
 'xstyle/css':function(){
 define(["require"], function(moduleRequire){
 "use strict";
-var cssCache = window.cssCache || (window.cssCache = {});
 /*
- * RequireJS css! plugin
+ * AMD css! plugin
  * This plugin will load and wait for css files.  This could be handy when
  * loading css files as part of a layer or as a way to apply a run-time theme. This
  * module checks to see if the CSS is already loaded before incurring the cost
  * of loading the full CSS loader codebase
  */
-/* 	function search(tag, href){
-		var elements = document.getElementsByTagName(tag);
-		for(var i = 0; i < elements.length; i++){
-			var element = elements[i];
-			var sheet = alreadyLoaded(element.sheet || element.styleSheet, href)
-			if(sheet){
-				return sheet;
-			}
-		}
-	}
-	function alreadyLoaded(sheet, href){
-		if(sheet){
-			var importRules = sheet.imports || sheet.rules || sheet.cssRules;
-			for(var i = 0; i < importRules.length; i++){								
-				var importRule = importRules[i];
-				if(importRule.href){
-					sheet = importRule.styleSheet || importRule;
-					if(importRule.href == href){
-						return sheet;
-					}
-					sheet = alreadyLoaded(sheet, href);
-					if(sheet){
-						return sheet;
-					}
-				}
-			}
-		}
-	}
-	function nameWithExt (name, defaultExt) {
-		return name.lastIndexOf('.') <= name.lastIndexOf('/') ?
-			name + '.' + defaultExt : name;
-	}*/
+ 	function testElementStyle(tag, id, property){
+ 		// test an element's style
+		var docElement = document.documentElement;
+		var testDiv = docElement.insertBefore(document.createElement(tag), docElement.firstChild);
+		testDiv.id = id;
+		var styleValue = (testDiv.currentStyle || getComputedStyle(testDiv, null))[property];
+		docElement.removeChild(testDiv);
+ 		return styleValue;
+ 	} 
  	return {
-		load: function (resourceDef, require, callback, config) {
+		load: function(resourceDef, require, callback, config) {
 			var url = require.toUrl(resourceDef);
-			if(cssCache[url]){
-				return createStyleSheet(cssCache[url]);
-			}
-/*			var cssIdTest = resourceDef.match(/(.+)\?(.+)/);
-			if(cssIdTest){*/
-				// if there is an id test available, see if the referenced rule is already loaded,
-				// and if so we can completely avoid any dynamic CSS loading. If it is
-				// not present, we need to use the dynamic CSS loader.
-				var docElement = document.documentElement;
-				var testDiv = docElement.insertBefore(document.createElement('div'), docElement.firstChild);
-				testDiv.id = require.toAbsMid(resourceDef).replace(/\//g,'-').replace(/\..*/,'') + "-loaded";  //cssIdTest[2];
-				var displayStyle = (testDiv.currentStyle || getComputedStyle(testDiv, null)).display;
-				docElement.removeChild(testDiv);
-				if(displayStyle == "none"){
-					return callback();
+			var cachedCss = require.cache['url:' + url];
+			if(cachedCss){
+				// we have CSS cached inline in the build
+				if(cachedCss.xCss){
+					var parser = cachedCss.parser;
+					var xCss =cachedCss.xCss;
+					cachedCss = cachedCss.cssText;
 				}
-				//resourceDef = cssIdTest[1];
-			//}
+				moduleRequire(['./util/createStyleSheet'],function(createStyleSheet){
+					createStyleSheet(cachedCss);
+				});
+				if(xCss){
+					//require([parsed], callback);
+				}
+				return checkForParser();
+			}
+			function checkForParser(){
+				var parser = testElementStyle('x-parse', null, 'content');
+				if(parser && parser != 'none'){
+					// TODO: wait for parser to load
+					require([eval(parser)], callback);
+				}else{
+					callback();
+				}
+			}
+			
+			// if there is an id test available, see if the referenced rule is already loaded,
+			// and if so we can completely avoid any dynamic CSS loading. If it is
+			// not present, we need to use the dynamic CSS loader.
+			var displayStyle = testElementStyle('div', resourceDef.replace(/\//g,'-').replace(/\..*/,'') + "-loaded", 'display');
+			if(displayStyle == "none"){
+				return checkForParser();
+			}
 			// use dynamic loader
-			/*if(search("link", url) || search("style", url)){
-				callback();
-			}else{*/
 			moduleRequire(["./load-css"], function(load){
-				load(url, callback);
+				load(url, checkForParser);
 			});
-		},
-		pluginBuilder: "xstyle/css-builder"
-
+		}
 	};
 });
 
 },
 'dgrid/List':function(){
-define(["dojo/_base/array","dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"], 
-function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"], 
+function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 	// Add user agent/feature CSS classes 
 	hasClass("mozilla", "opera", "webkit", "ie", "ie-6", "ie-6-7", "quirks", "no-quirks", "touch");
 	
-	var scrollbarWidth;
-
-	// establish an extra stylesheet which addCssRule calls will use,
-	// plus an array to track actual indices in stylesheet for removal
-	var
-		extraSheet = put(document.getElementsByTagName("head")[0], "style"),
-		extraRules = [],
-		oddClass = "dgrid-row-odd",
-		evenClass = "dgrid-row-even";
-	// keep reference to actual StyleSheet object (.styleSheet for IE < 9)
-	extraSheet = extraSheet.sheet || extraSheet.styleSheet;
-	
-	// functions for adding and removing extra style rules.
-	// addExtraRule is exposed on the List prototype as addCssRule.
-	function addExtraRule(selector, css){
-		var index = extraRules.length;
-		extraRules[index] = (extraSheet.cssRules || extraSheet.rules).length;
-		extraSheet.addRule ?
-			extraSheet.addRule(selector, css) :
-			extraSheet.insertRule(selector + '{' + css + '}', extraRules[index]);
-		return {
-			remove: function(){ removeExtraRule(index); }
-		};
-	}
-	function removeExtraRule(index){
-		var
-			realIndex = extraRules[index],
-			i, l = extraRules.length;
-		if (realIndex === undefined) { return; } // already removed
-		
-		// remove rule indicated in internal array at index
-		extraSheet.deleteRule ?
-			extraSheet.deleteRule(realIndex) :
-			extraSheet.removeRule(realIndex); // IE < 9
-		
-		// Clear internal array item representing rule that was just deleted.
-		// NOTE: we do NOT splice, since the point of this array is specifically
-		// to negotiate the splicing that occurs in the stylesheet itself!
-		extraRules[index] = undefined;
-		
-		// Then update array items as necessary to downshift remaining rule indices.
-		// Can start at index, since array is sparse but strictly increasing.
-		for(i = index; i < l; i++){
-			if(extraRules[i] > realIndex){ extraRules[i]--; }
-		}
-	}
+	var oddClass = "dgrid-row-odd",
+		evenClass = "dgrid-row-even",
+		scrollbarWidth, scrollbarHeight;
 	
 	function byId(id){
 		return document.getElementById(id);
 	}
-
+	
+	function getScrollbarSize(node, dimension){
+		// Used by has tests for scrollbar width/height
+		var body = document.body,
+			size;
+		
+		put(body, node, ".dgrid-scrollbar-measure");
+		size = node["offset" + dimension] - node["client" + dimension];
+		
+		put(node, "!dgrid-scrollbar-measure");
+		body.removeChild(node);
+		
+		return size;
+	}
+	has.add("dom-scrollbar-width", function(global, doc, element){
+		return getScrollbarSize(element, "Width");
+	});
+	has.add("dom-scrollbar-height", function(global, doc, element){
+		return getScrollbarSize(element, "Height");
+	});
+	
 	// var and function for autogenerating ID when one isn't provided
 	var autogen = 0;
 	function generateId(){
@@ -25945,9 +26529,15 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 		//		in the footer area should set this to true.
 		showFooter: false,
 		// maintainOddEven: Boolean
-		//		Indicates whether to maintain the odd/even classes when new rows are inserted.
+		//		Whether to maintain the odd/even classes when new rows are inserted.
 		//		This can be disabled to improve insertion performance if odd/even styling is not employed.
 		maintainOddEven: true,
+		
+		// cleanAddedRules: Boolean
+		//		Whether to track rules added via the addCssRule method to be removed
+		//		when the list is destroyed.  Note this is effective at the time of
+		//		the call to addCssRule, not at the time of destruction.
+		cleanAddedRules: true,
 		
 		postscript: function(params, srcNodeRef){
 			// perform setup and invoke create in postScript to allow descendants to
@@ -26076,8 +26666,8 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			//		Called automatically after postCreate if the component is already
 			//		visible; otherwise, should be called manually once placed.
 			
-			this.inherited(arguments);
 			if(this._started){ return; } // prevent double-triggering
+			this.inherited(arguments);
 			this._started = true;
 			this.resize();
 			// apply sort (and refresh) now that we're ready to render
@@ -26115,23 +26705,26 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			
 			if(!scrollbarWidth){
 				// Measure the browser's scrollbar width using a DIV we'll delete right away
-				var scrollDiv = put(document.body, "div.dgrid-scrollbar-measure");
-				scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
-				put(scrollDiv, "!");
+				scrollbarWidth = has("dom-scrollbar-width");
+				scrollbarHeight = has("dom-scrollbar-height");
 				
-				// avoid crazy issues in IE7 only, with certain widgets inside
-				if(has("ie") === 7){ scrollbarWidth++; }
+				// Avoid issues with certain widgets inside in IE7, and
+				// ColumnSet scroll issues with all supported IE versions
+				if(has("ie")){
+					scrollbarWidth++;
+					scrollbarHeight++;
+				}
 				
 				// add rules that can be used where scrollbar width/height is needed
-				this.addCssRule(".dgrid-scrollbar-width", "width: " + scrollbarWidth + "px");
-				this.addCssRule(".dgrid-scrollbar-height", "height: " + scrollbarWidth + "px");
+				miscUtil.addCssRule(".dgrid-scrollbar-width", "width: " + scrollbarWidth + "px");
+				miscUtil.addCssRule(".dgrid-scrollbar-height", "height: " + scrollbarHeight + "px");
 				
 				if(scrollbarWidth != 17 && !quirks){
 					// for modern browsers, we can perform a one-time operation which adds
 					// a rule to account for scrollbar width in all grid headers.
-					this.addCssRule(".dgrid-header", "right: " + scrollbarWidth + "px");
+					miscUtil.addCssRule(".dgrid-header", "right: " + scrollbarWidth + "px");
 					// add another for RTL grids
-					this.addCssRule(".dgrid-rtl-nonwebkit .dgrid-header", "left: " + scrollbarWidth + "px");
+					miscUtil.addCssRule(".dgrid-rtl-nonwebkit .dgrid-header", "left: " + scrollbarWidth + "px");
 				}
 			}
 			
@@ -26144,7 +26737,20 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 				}, 0);
 			}
 		},
-		addCssRule: addExtraRule,
+		
+		addCssRule: function(selector, css){
+			// summary:
+			//		Version of util/misc.addCssRule which tracks added rules and removes
+			//		them when the List is destroyed.
+			
+			var rule = miscUtil.addCssRule(selector, css);
+			if(this.cleanAddedRules){
+				// Although this isn't a listener, it shares the same remove contract
+				this._listeners.push(rule);
+			}
+			return rule;
+		},
+		
 		on: function(eventType, listener){
 			// delegate events to the domNode
 			var signal = listen(this.domNode, eventType, listener);
@@ -26180,8 +26786,8 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			// summary:
 			//		Destroys this grid
 			
-			// remove any event listeners
-			if(this._listeners){ // guard against accidental subsequent calls to destroy
+			// Remove any event listeners and other such removables
+			if(this._listeners){ // Guard against accidental subsequent calls to destroy
 				for(var i = this._listeners.length; i--;){
 					this._listeners[i].remove();
 				}
@@ -26205,10 +26811,9 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			this.scrollTo({ x: 0, y: 0 });
 		},
 		
-		newRow: function(object, before, to, options){
-			if(!before || before.parentNode){
-				var i = options.start + to;
-				var row = this.insertRow(object, before ? before.parentNode : this.contentNode, before, i, options);
+		newRow: function(object, parentNode, beforeNode, i, options){
+			if(parentNode){
+				var row = this.insertRow(object, parentNode, beforeNode, i, options);
 				put(row, ".ui-state-highlight");
 				setTimeout(function(){
 					put(row, "!ui-state-highlight");
@@ -26250,7 +26855,7 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			if(results.observe){
 				// observe the results for changes
 				var observerIndex = this.observers.push(results.observe(function(object, from, to){
-					var firstRow, nextNode;
+					var firstRow, nextNode, parentNode;
 					// a change in the data took place
 					if(from > -1 && rows[from]){
 						// remove from old slot
@@ -26282,7 +26887,9 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 								nextNode = (nextNode.connected || nextNode).nextSibling;
 							}
 						}
-						row = self.newRow(object, nextNode, to, options);
+						parentNode = (beforeNode && beforeNode.parentNode) ||
+							(nextNode && nextNode.parentNode) || self.contentNode;
+						row = self.newRow(object, parentNode, nextNode, options.start + to, options);
 						
 						if(row){
 							row.observerIndex = observerIndex;
@@ -26298,6 +26905,7 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 						options.count++;
 					}
 					from != to && firstRow && self.adjustRowIndices(firstRow);
+					self._onNotification(rows, object, from, to);
 				}, true)) - 1;
 			}
 			var rowsFragment = document.createDocumentFragment();
@@ -26330,7 +26938,13 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			}
 			return whenDone(rows);
 		},
-		
+
+		_onNotification: function(rows, object, from, to){
+			// summary:
+			//		Protected method called whenever a store notification is observed.
+			//		Intended to be extended as necessary by mixins/extensions.
+		},
+
 		renderHeader: function(){
 			// no-op in a plain list
 		},
@@ -26349,17 +26963,14 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 						this.store.getIdentity(object) : this._autoId++),
 				row = byId(id),
 				previousRow = row && row.previousSibling;
-			
-			if(!row || // we must create a row if it doesn't exist, or if it previously belonged to a different container 
-					(beforeNode && row.parentNode != beforeNode.parentNode)){
-				if(row){// if it existed elsewhere in the DOM, we will remove it, so we can recreate it
-					this.removeRow(row);
-				}
-				row = this.renderRow(object, options);
-				row.className = (row.className || "") + " ui-state-default dgrid-row " + (i % 2 == 1 ? oddClass : evenClass);
-				// get the row id for easy retrieval
-				this._rowIdToObject[row.id = id] = object;
+		
+			if(row){// if it existed elsewhere in the DOM, we will remove it, so we can recreate it
+				this.removeRow(row);
 			}
+			row = this.renderRow(object, options);
+			row.className = (row.className || "") + " ui-state-default dgrid-row " + (i % 2 == 1 ? oddClass : evenClass);
+			// get the row id for easy retrieval
+			this._rowIdToObject[row.id = id] = object;
 			parent.insertBefore(row, beforeNode || null);
 			if(previousRow){
 				// in this case, we are pulling the row from another location in the grid, and we need to readjust the rowIndices from the point it was removed
@@ -26566,12 +27177,12 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			//		Sets named properties on a List object.
 			//		A programmatic setter may be defined in subclasses.
 			//
-			//	set() may also be called with a hash of name/value pairs, ex:
+			//		set() may also be called with a hash of name/value pairs, ex:
 			//	|	myObj.set({
 			//	|		foo: "Howdy",
 			//	|		bar: 3
 			//	|	})
-			//	This is equivalent to calling set(foo, "Howdy") and set(bar, 3)
+			//		This is equivalent to calling set(foo, "Howdy") and set(bar, 3)
 			
 			if(typeof name === "object"){
 				for(var k in name){
@@ -26684,8 +27295,39 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 
 },
 'dgrid/util/misc':function(){
-define([], function(){
-	// This module defines miscellaneous utility methods.
+define(["put-selector/put"], function(put){
+	// summary:
+	//		This module defines miscellaneous utility methods for purposes of
+	//		adding styles, and throttling/debouncing function calls.
+	
+	// establish an extra stylesheet which addCssRule calls will use,
+	// plus an array to track actual indices in stylesheet for removal
+	var extraRules = [],
+		extraSheet,
+		removeMethod,
+		rulesProperty,
+		invalidCssChars = /([^A-Za-z0-9_\u00A0-\uFFFF-])/g;
+	
+	function removeRule(index){
+		// Function called by the remove method on objects returned by addCssRule.
+		var realIndex = extraRules[index],
+			i, l;
+		if (realIndex === undefined) { return; } // already removed
+		
+		// remove rule indicated in internal array at index
+		extraSheet[removeMethod](realIndex);
+		
+		// Clear internal array item representing rule that was just deleted.
+		// NOTE: we do NOT splice, since the point of this array is specifically
+		// to negotiate the splicing that occurs in the stylesheet itself!
+		extraRules[index] = undefined;
+		
+		// Then update array items as necessary to downshift remaining rule indices.
+		// Can start at index + 1, since array is sparse but strictly increasing.
+		for(i = index + 1, l = extraRules.length; i < l; i++){
+			if(extraRules[i] > realIndex){ extraRules[i]--; }
+		}
+	}
 	
 	var util = {
 		defaultDelay: 15,
@@ -26700,7 +27342,7 @@ define([], function(){
 				ran = true;
 				cb.apply(context, arguments);
 				setTimeout(function(){ ran = false; }, delay);
-			}
+			};
 		},
 		throttleDelayed: function(cb, context, delay){
 			// summary:
@@ -26716,7 +27358,7 @@ define([], function(){
 					ran = false;
 					cb.apply(context, a);
 				}, delay);
-			}
+			};
 		},
 		debounce: function(cb, context, delay){
 			// summary:
@@ -26733,7 +27375,54 @@ define([], function(){
 				timer = setTimeout(function(){
 					cb.apply(context, a);
 				}, delay);
+			};
+		},
+		
+		addCssRule: function(selector, css){
+			// summary:
+			//		Dynamically adds a style rule to the document.  Returns an object
+			//		with a remove method which can be called to later remove the rule.
+			
+			if(!extraSheet){
+				// First time, create an extra stylesheet for adding rules
+				extraSheet = put(document.getElementsByTagName("head")[0], "style");
+				// Keep reference to actual StyleSheet object (`styleSheet` for IE < 9)
+				extraSheet = extraSheet.sheet || extraSheet.styleSheet;
+				// Store name of method used to remove rules (`removeRule` for IE < 9)
+				removeMethod = extraSheet.deleteRule ? "deleteRule" : "removeRule";
+				// Store name of property used to access rules (`rules` for IE < 9)
+				rulesProperty = extraSheet.cssRules ? "cssRules" : "rules";
 			}
+			
+			var index = extraRules.length;
+			extraRules[index] = (extraSheet.cssRules || extraSheet.rules).length;
+			extraSheet.addRule ?
+				extraSheet.addRule(selector, css) :
+				extraSheet.insertRule(selector + '{' + css + '}', extraRules[index]);
+			
+			return {
+				get: function(prop) {
+					return extraSheet[rulesProperty][extraRules[index]].style[prop];
+				},
+				set: function(prop, value) {
+					if (typeof extraRules[index] !== "undefined") {
+						extraSheet[rulesProperty][extraRules[index]].style[prop] = value;
+					}
+				},
+				remove: function(){
+					removeRule(index);
+				}
+			};
+		},
+		
+		escapeCssIdentifier: function(id){
+			// summary:
+			//		Escapes normally-invalid characters in a CSS identifier (such as .);
+			//		see http://www.w3.org/TR/CSS2/syndata.html#value-def-identifier
+			// id: String
+			//		CSS identifier (e.g. tag name, class, or id) to be escaped
+			
+			return id.replace(invalidCssChars, "\\$1");
 		}
 	};
 	return util;
@@ -26818,12 +27507,16 @@ return declare([List, _StoreMixin], {
 		//		Creates a preload node for rendering a query into, and executes the query
 		//		for the first page of data. Subsequent data will be downloaded as it comes
 		//		into view.
-		var preload = {
-			query: query,
-			count: 0,
-			node: preloadNode,
-			options: options
-		};
+		var self = this,
+			preload = {
+				query: query,
+				count: 0,
+				node: preloadNode,
+				options: options
+			},
+			priorPreload = this.preload,
+			results;
+		
 		if(!preloadNode){
 			// Initial query; set up top and bottom preload nodes
 			var topPreload = {
@@ -26835,6 +27528,7 @@ return declare([List, _StoreMixin], {
 				next: preload,
 				options: options
 			};
+			topPreload.node.style.height = "0";
 			preload.node = preloadNode = put(this.contentNode, "div.dgrid-preload");
 			preload.previous = topPreload;
 		}
@@ -26842,7 +27536,6 @@ return declare([List, _StoreMixin], {
 		// downloaded yet
 		preloadNode.rowIndex = this.minRowsPerPage;
 
-		var priorPreload = this.preload;
 		if(priorPreload){
 			// the preload nodes (if there are multiple) are represented as a linked list, need to insert it
 			if((preload.next = priorPreload.next) && 
@@ -26865,23 +27558,43 @@ return declare([List, _StoreMixin], {
 		var loadingNode = put(preloadNode, "-div.dgrid-loading"),
 			innerNode = put(loadingNode, "div.dgrid-below");
 		innerNode.innerHTML = this.loadingMessage;
-		
+
+		function errback(err) {
+			// Used as errback for when calls;
+			// remove the loadingNode and re-throw if an error was passed
+			put(loadingNode, "!");
+			
+			if(err){
+				if(self._refreshDeferred){
+					self._refreshDeferred.reject(err);
+					delete self._refreshDeferred;
+				}
+				throw err;
+			}
+		}
+
 		// Establish query options, mixing in our own.
 		// (The getter returns a delegated object, so simply using mixin is safe.)
 		options = lang.mixin(this.get("queryOptions"), options, 
 			{start: 0, count: this.minRowsPerPage, query: query});
-		// execute the query
-		var results = query(options);
-		var self = this;
-		// render the result set
-		Deferred.when(this.renderArray(results, preloadNode, options), function(trs){
+		
+		// Protect the query within a _trackError call, but return the QueryResults
+		this._trackError(function(){ return results = query(options); });
+		
+		if(typeof results === "undefined"){
+			// Synchronous error occurred (but was caught by _trackError)
+			errback();
+			return;
+		}
+		
+		// Render the result set
+		Deferred.when(self.renderArray(results, preloadNode, options), function(trs){
 			return Deferred.when(results.total || results.length, function(total){
 				// remove loading node
 				put(loadingNode, "!");
 				// now we need to adjust the height and total count based on the first result set
 				var trCount = trs.length;
-				total = total || trCount;
-				if(!total){
+				if(total === 0){
 					self.noDataNode = put(self.contentNode, "div.dgrid-no-data");
 					self.noDataNode.innerHTML = self.noDataMessage;
 				}
@@ -26911,11 +27624,19 @@ return declare([List, _StoreMixin], {
 				// Redo scroll processing in case the query didn't fill the screen,
 				// or in case scroll position was restored
 				self._processScroll();
+				
+				// If _refreshDeferred is still defined after calling _processScroll,
+				// resolve it now (_processScroll will remove it and resolve it itself
+				// otherwise)
+				if(self._refreshDeferred){
+					self._refreshDeferred.resolve(results);
+					delete self._refreshDeferred;
+				}
+				
 				return trs;
-			});
-		});
-
-		// return results so that callers can handle potential of async error
+			}, errback);
+		}, errback);
+		
 		return results;
 	},
 	
@@ -26928,7 +27649,9 @@ return declare([List, _StoreMixin], {
 		//			specifying it in the options here will override the instance
 		//			property's value for this specific refresh call only.
 		
-		var keep = (options && options.keepScrollPosition);
+		var self = this,
+			keep = (options && options.keepScrollPosition),
+			dfd, results;
 		
 		// Fall back to instance property if option is not defined
 		if(typeof keep === "undefined"){ keep = this.keepScrollPosition; }
@@ -26939,13 +27662,48 @@ return declare([List, _StoreMixin], {
 		this.inherited(arguments);
 		if(this.store){
 			// render the query
-			var self = this;
-			this._trackError(function(){
-				return self.renderQuery(function(queryOptions){
-					return self.store.query(self.query, queryOptions);
-				});
+			dfd = this._refreshDeferred = new Deferred();
+			
+			// renderQuery calls _trackError internally
+			results = self.renderQuery(function(queryOptions){
+				return self.store.query(self.query, queryOptions);
+			});
+			if(typeof results === "undefined"){
+				// Synchronous error occurred; reject the refresh promise.
+				dfd.reject();
+			}
+			
+			// Internally, _refreshDeferred will always be resolved with an object
+			// containing `results` (QueryResults) and `rows` (the rendered rows);
+			// externally the promise will resolve simply with the QueryResults, but
+			// the event will be emitted with both under respective properties.
+			return dfd.then(function(results){
+				// Emit on a separate turn to enable event to be used consistently for
+				// initial render, regardless of whether the backing store is async
+				setTimeout(function() {
+					listen.emit(self.domNode, "dgrid-refresh-complete", {
+						bubbles: true,
+						cancelable: false,
+						grid: self,
+						results: results // QueryResults object (may be a wrapped promise)
+					});
+				}, 0);
+				
+				// Delete the Deferred immediately so nothing tries to re-resolve
+				delete self._refreshDeferred;
+				
+				// Resolve externally with just the QueryResults
+				return results;
+			}, function(err){
+				delete self._refreshDeferred;
+				throw err;
 			});
 		}
+	},
+	
+	resize: function(){
+		this.inherited(arguments);
+		this._processScroll();
 	},
 	
 	_calcRowHeight: function(rowElement){
@@ -26966,12 +27724,16 @@ return declare([List, _StoreMixin], {
 		var grid = this,
 			scrollNode = grid.bodyNode,
 			// grab current visible top from event if provided, otherwise from node
-			visibleTop = (evt && evt.scrollTop) || scrollNode.scrollTop,
+			visibleTop = (evt && evt.scrollTop) || this.getScrollPosition().y,
 			visibleBottom = scrollNode.offsetHeight + visibleTop,
 			priorPreload, preloadNode, preload = grid.preload,
 			lastScrollTop = grid.lastScrollTop,
 			requestBuffer = grid.bufferRows * grid.rowHeight,
-			searchBuffer = requestBuffer - grid.rowHeight; // Avoid rounding causing multiple queries
+			searchBuffer = requestBuffer - grid.rowHeight, // Avoid rounding causing multiple queries
+			// References related to emitting dgrid-refresh-complete if applicable
+			refreshDfd,
+			lastResults,
+			lastRows;
 		
 		// XXX: I do not know why this happens.
 		// munging the actual location of the viewport relative to the preload node by a few pixels in either
@@ -27030,10 +27792,7 @@ return declare([List, _StoreMixin], {
 					preloadNode.style.height = (preloadNode.offsetHeight + reclaimedHeight) + "px";
 				}
 				// we remove the elements after expanding the preload node so that the contraction doesn't alter the scroll position
-				var trashBin = put("div");
-				for(var i = 0; i < toDelete.length; i++){
-					put(trashBin, toDelete[i]); // remove it from the DOM
-				}
+				var trashBin = put("div", toDelete);
 				setTimeout(function(){
 					// we can defer the destruction until later
 					put(trashBin, "!");
@@ -27156,12 +27915,18 @@ return declare([List, _StoreMixin], {
 				var results = preload.query(options),
 					trackedResults = grid._trackError(function(){ return results; });
 				
-				if(trackedResults === undefined){ return; } // sync query failed
+				if(trackedResults === undefined){
+					// Sync query failed
+					put(loadingNode, "!");
+					return;
+				}
 
 				// Isolate the variables in case we make multiple requests
 				// (which can happen if we need to render on both sides of an island of already-rendered rows)
 				(function(loadingNode, scrollNode, below, keepScrollTo, results){
-					Deferred.when(grid.renderArray(results, loadingNode, options), function(){
+					lastRows = Deferred.when(grid.renderArray(results, loadingNode, options), function(rows){
+						lastResults = results;
+						
 						// can remove the loading node now
 						beforeNode = loadingNode.nextSibling;
 						put(loadingNode, "!");
@@ -27192,10 +27957,23 @@ return declare([List, _StoreMixin], {
 						}
 						// make sure we have covered the visible area
 						grid._processScroll();
+						return rows;
+					}, function (e) {
+						put(loadingNode, "!");
+						throw e;
 					});
 				}).call(this, loadingNode, scrollNode, below, keepScrollTo, results);
 				preload = preload.previous;
 			}
+		}
+		
+		// After iterating, if additional requests have been made mid-refresh,
+		// resolve the refresh promise based on the latest results obtained
+		if (lastRows && (refreshDfd = this._refreshDeferred)) {
+			delete this._refreshDeferred;
+			Deferred.when(lastRows, function() {
+				refreshDfd.resolve(lastResults);
+			});
 		}
 	}
 });
@@ -27208,6 +27986,10 @@ define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/lang", "dojo/_bas
 function(kernel, declare, lang, Deferred, listen, put){
 	// This module isolates the base logic required by store-aware list/grid
 	// components, e.g. OnDemandList/Grid and the Pagination extension.
+	
+	// Noop function, needed for _trackError when callback due to a bug in 1.8
+	// (see http://bugs.dojotoolkit.org/ticket/16667)
+	function noop(value){ return value; }
 	
 	function emitError(err){
 		// called by _trackError in context of list/grid, if an error is encountered
@@ -27470,7 +28252,7 @@ function(kernel, declare, lang, Deferred, listen, put){
 			}
 			
 			// wrap in when call to handle reporting of potential async error
-			return Deferred.when(result, null, lang.hitch(this, emitError));
+			return Deferred.when(result, noop, lang.hitch(this, emitError));
 		},
 		
 		newRow: function(){
@@ -27503,10 +28285,10 @@ define(["dojo/_base/declare", "./Grid", "./OnDemandList"], function(declare, Gri
 });
 },
 'dgrid/Grid':function(){
-define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "dojo/_base/sniff"],
-function(kernel, declare, listen, has, put, List){
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "./util/misc", "dojo/_base/sniff"],
+function(kernel, declare, listen, has, put, List, miscUtil){
 	var contentBoxSizing = has("ie") < 8 && !has("quirks");
-	var invalidClassChars = /[^\._a-zA-Z0-9-]/g;	
+	var invalidClassChars = /[^\._a-zA-Z0-9-]/g;
 	function appendIfNode(parent, subNode){
 		if(subNode && subNode.nodeType){
 			parent.appendChild(subNode);
@@ -27536,7 +28318,7 @@ function(kernel, declare, listen, has, put, List){
 			// summary:
 			//		Get the cell object by node, or event, id, plus a columnId
 			
-			if(target.row && target.row instanceof this._Row){ return target; }
+			if(target.column && target.element){ return target; }
 			
 			if(target.target && target.target.nodeType){
 				// event
@@ -27561,7 +28343,7 @@ function(kernel, declare, listen, has, put, List){
 			if(!element && typeof columnId != "undefined"){
 				var row = this.row(target),
 					rowElement = row.element;
-				if(rowElement){ 
+				if(rowElement){
 					var elements = rowElement.getElementsByTagName("td");
 					for(var i = 0; i < elements.length; i++){
 						if(elements[i].columnId == columnId){
@@ -27579,17 +28361,7 @@ function(kernel, declare, listen, has, put, List){
 				};
 			}
 		},
-		_columnsCss: function(rule){
-			// This is an attempt at integration with xstyle, will probably change
-			rule.fullSelector = function(){
-				return this.parent.fullSelector() + " .dgrid-cell";
-			};
-			for(var i = 0;i < rule.children.length;i++){
-				var child = rule.children[i];
-				child.field = child.className = child.selector.substring(1); 
-			}
-			return rule.children;
-		},
+		
 		createRowCells: function(tag, each, subRows){
 			// summary:
 			//		Generates the grid for each row (used by renderHeader and and renderRow)
@@ -27609,7 +28381,7 @@ function(kernel, declare, listen, has, put, List){
 				subRow = subRows[si];
 				// for single-subrow cases in modern browsers, TR can be skipped
 				// http://jsperf.com/table-without-trs
-				tr = (sl == 1 && !has("ie")) ? tbody : put(tbody, "tr");
+				tr = put(tbody, "tr");
 				if(subRow.className){
 					put(tr, "." + subRow.className);
 				}
@@ -27659,18 +28431,24 @@ function(kernel, declare, listen, has, put, List){
 		},
 		
 		renderRow: function(object, options){
+			var self = this;
 			var row = this.createRowCells("td", function(td, column){
 				var data = object;
-				// we support the field, get, and formatter properties like the DataGrid
+				// Support get function or field property (similar to DataGrid)
 				if(column.get){
 					data = column.get(object);
 				}else if("field" in column && column.field != "_item"){
 					data = data[column.field];
 				}
-				if(column.formatter){
-					td.innerHTML = column.formatter(data);
+				
+				// Support formatter, with or without formatterScope
+				var formatter = column.formatter,
+					formatterScope = self.formatterScope;
+				if(formatter){
+					td.innerHTML = typeof formatter === "string" && formatterScope ?
+						formatterScope[formatter](data, object) : formatter(data, object);
 				}else if(column.renderCell){
-					// A column can provide a renderCell method to do its own DOM manipulation, 
+					// A column can provide a renderCell method to do its own DOM manipulation,
 					// event handling, etc.
 					appendIfNode(td, column.renderCell(object, data, td, options));
 				}else if(data != null){
@@ -27721,26 +28499,45 @@ function(kernel, declare, listen, has, put, List){
 			}, this.subRows && this.subRows.headerRows);
 			this._rowIdToObject[row.id = this.id + "-header"] = this.columns;
 			headerNode.appendChild(row);
-			// if it columns are sortable, resort on clicks
-			listen(row, "click,keydown", function(event){
+			
+			// If the columns are sortable, re-sort on clicks.
+			// Use a separate listener property to be managed by renderHeader in case
+			// of subsequent calls.
+			if(this._sortListener){
+				this._sortListener.remove();
+			}
+			this._sortListener = listen(row, "click,keydown", function(event){
 				// respond to click, space keypress, or enter keypress
 				if(event.type == "click" || event.keyCode == 32 /* space bar */ || (!has("opera") && event.keyCode == 13) /* enter */){
 					var target = event.target,
-						field, descending, parentNode, sort;
+						field, sort, newSort, eventObj;
 					do{
 						if(target.sortable){
-							// stash node subject to DOM manipulations,
-							// to be referenced then removed by sort()
-							grid._sortNode = target;
-							
-							field = target.field || target.columnId;
-							
-							// if the click is on the same column as the active sort,
+							// If the click is on the same column as the active sort,
 							// reverse sort direction
-							descending = (sort = grid._sort[0]) && sort.attribute == field &&
-								!sort.descending;
+							newSort = [{
+								attribute: (field = target.field || target.columnId),
+								descending: (sort = grid._sort[0]) && sort.attribute == field &&
+									!sort.descending
+							}];
 							
-							return grid.set("sort", field, descending);
+							// Emit an event with the new sort
+							eventObj = {
+								bubbles: true,
+								cancelable: true,
+								grid: grid,
+								parentType: event.type,
+								sort: newSort
+							};
+							
+							if (listen.emit(target, "dgrid-sort", eventObj)){
+								// Stash node subject to DOM manipulations,
+								// to be referenced then removed by sort()
+								grid._sortNode = target;
+								grid.set("sort", newSort);
+							}
+							
+							break;
 						}
 					}while((target = target.parentNode) && target != headerNode);
 				}
@@ -27776,6 +28573,10 @@ function(kernel, declare, listen, has, put, List){
 		destroy: function(){
 			// Run _destroyColumns first to perform any column plugin tear-down logic.
 			this._destroyColumns();
+			if(this._sortListener){
+				this._sortListener.remove();
+			}
+			
 			this.inherited(arguments);
 		},
 		
@@ -27783,21 +28584,41 @@ function(kernel, declare, listen, has, put, List){
 			// summary:
 			//		Extension of List.js sort to update sort arrow in UI
 			
-			this.inherited(arguments); // normalize _sort first
+			// Normalize _sort first via inherited logic, then update the sort arrow
+			this.inherited(arguments);
+			this.updateSortArrow(this._sort);
+		},
+		
+		updateSortArrow: function(sort, updateSort){
+			// summary:
+			//		Method responsible for updating the placement of the arrow in the
+			//		appropriate header cell.  Typically this should not be called (call
+			//		set("sort", ...) when actually updating sort programmatically), but
+			//		this method may be used by code which is customizing sort (e.g.
+			//		by reacting to the dgrid-sort event, canceling it, then
+			//		performing logic and calling this manually).
+			// sort: Array
+			//		Standard sort parameter - array of object(s) containing attribute
+			//		and optionally descending property
+			// updateSort: Boolean?
+			//		If true, will update this._sort based on the passed sort array
+			//		(i.e. to keep it in sync when custom logic is otherwise preventing
+			//		it from being updated); defaults to false
 			
-			// clean up UI from any previous sort
+			// Clean up UI from any previous sort
 			if(this._lastSortedArrow){
-				// remove the sort classes from parent node
+				// Remove the sort classes from the parent node
 				put(this._lastSortedArrow, "<!dgrid-sort-up!dgrid-sort-down");
-				// destroy the lastSortedArrow node
+				// Destroy the lastSortedArrow node
 				put(this._lastSortedArrow, "!");
 				delete this._lastSortedArrow;
 			}
 			
-			if(!this._sort[0]){ return; } // nothing to do if no sort is specified
+			if(updateSort){ this._sort = sort; }
+			if(!sort[0]){ return; } // nothing to do if no sort is specified
 			
-			var prop = this._sort[0].attribute,
-				desc = this._sort[0].descending,
+			var prop = sort[0].attribute,
+				desc = sort[0].descending,
 				target = this._sortNode, // stashed if invoked from header click
 				columns, column, i;
 			
@@ -27824,11 +28645,13 @@ function(kernel, declare, listen, has, put, List){
 				this.resize();
 			}
 		},
+		
 		styleColumn: function(colId, css){
 			// summary:
 			//		Dynamically creates a stylesheet rule to alter a column's style.
 			
-			return this.addCssRule("#" + this.domNode.id + " .dgrid-column-" + colId, css);
+			return this.addCssRule("#" + miscUtil.escapeCssIdentifier(this.domNode.id) +
+				" .dgrid-column-" + colId, css);
 		},
 		
 		/*=====
@@ -27853,7 +28676,7 @@ function(kernel, declare, listen, has, put, List){
 					column.field = columnId;
 				}
 				columnId = column.id = column.id || (isNaN(columnId) ? columnId : (prefix + columnId));
-				if(prefix){ this.columns[columnId] = column; }
+				if(isArray){ this.columns[columnId] = column; }
 				
 				// allow further base configuration in subclasses
 				if(this._configColumn){
@@ -27875,7 +28698,9 @@ function(kernel, declare, listen, has, put, List){
 			//		destroy methods (defined by plugins) and calls them.  This is called
 			//		immediately before configuring a new column structure.
 			
-			var subRowsLength = this.subRows.length,
+			var subRows = this.subRows,
+				// if we have column sets, then we don't need to do anything with the missing subRows, ColumnSet will handle it
+				subRowsLength = subRows && subRows.length,
 				i, j, column, len;
 			
 			// First remove rows (since they'll be refreshed after we're done),
@@ -27884,8 +28709,8 @@ function(kernel, declare, listen, has, put, List){
 			this.cleanup();
 			
 			for(i = 0; i < subRowsLength; i++){
-				for(j = 0, len = this.subRows[i].length; j < len; j++){
-					column = this.subRows[i][j];
+				for(j = 0, len = subRows[i].length; j < len; j++){
+					column = subRows[i][j];
 					if(typeof column.destroy === "function"){ column.destroy(); }
 				}
 			}
@@ -27893,16 +28718,28 @@ function(kernel, declare, listen, has, put, List){
 		
 		configStructure: function(){
 			// configure the columns and subRows
-			var subRows = this.subRows;
+			var subRows = this.subRows,
+				columns = this._columns = this.columns;
+			
+			// Reset this.columns unless it was already passed in as an object
+			this.columns = !columns || columns instanceof Array ? {} : columns;
+			
 			if(subRows){
-				// we have subRows, but no columns yet, need to create the columns
-				this.columns = {};
+				// Process subrows, which will in turn populate the this.columns object
 				for(var i = 0; i < subRows.length; i++){
 					subRows[i] = this._configColumns(i + "-", subRows[i]);
 				}
 			}else{
-				this.subRows = [this._configColumns("", this.columns)];
+				this.subRows = [this._configColumns("", columns)];
 			}
+		},
+		
+		_getColumns: function(){
+			// _columns preserves what was passed to set("columns"), but if subRows
+			// was set instead, columns contains the "object-ified" version, which
+			// was always accessible in the past, so maintain that accessibility going
+			// forward.
+			return this._columns || this.columns;
 		},
 		_setColumns: function(columns){
 			this._destroyColumns();
@@ -27912,11 +28749,13 @@ function(kernel, declare, listen, has, put, List){
 			// re-run logic
 			this._updateColumns();
 		},
+		
 		_setSubRows: function(subrows){
 			this._destroyColumns();
 			this.subRows = subrows;
 			this._updateColumns();
 		},
+		
 		setColumns: function(columns){
 			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 1.0");
 			this.set("columns", columns);
@@ -27932,10 +28771,21 @@ function(kernel, declare, listen, has, put, List){
 			
 			this.configStructure();
 			this.renderHeader();
+			
 			this.refresh();
 			// re-render last collection if present
 			this._lastCollection && this.renderArray(this._lastCollection);
-			this.resize();
+			
+			// After re-rendering the header, re-apply the sort arrow if needed.
+			if(this._started){
+				if(this._sort && this._sort.length){
+					this.updateSortArrow(this._sort);
+				} else {
+					// Only call resize directly if we didn't call updateSortArrow,
+					// since that calls resize itself when it updates.
+					this.resize();
+				}
+			}
 		}
 	});
 	
@@ -27950,10 +28800,99 @@ function(kernel, declare, listen, has, put, List){
 
 },
 'dgrid/Selection':function(){
-define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query"],
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
 function(kernel, declare, Deferred, on, has, aspect, List, touchUtil, put){
 
-var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey";
+// Add feature test for user-select CSS property for optionally disabling
+// text selection.
+// (Can't use dom.setSelectable prior to 1.8.2 because of bad sniffs, see #15990)
+has.add("css-user-select", function(global, doc, element){
+	var style = element.style,
+		prefixes = ["Khtml", "O", "ms", "Moz", "Webkit"],
+		i = prefixes.length,
+		name = "userSelect";
+
+	// Iterate prefixes from most to least likely
+	do{
+		if(typeof style[name] !== "undefined"){
+			// Supported; return property name
+			return name;
+		}
+	}while(i-- && (name = prefixes[i] + "UserSelect"));
+
+	// Not supported if we didn't return before now
+	return false;
+});
+
+// Also add a feature test for the onselectstart event, which offers a more
+// graceful fallback solution than node.unselectable.
+has.add("dom-selectstart", typeof document.onselectstart !== "undefined");
+
+var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey",
+	hasUserSelect = has("css-user-select");
+
+function makeUnselectable(node, unselectable){
+	// Utility function used in fallback path for recursively setting unselectable
+	var value = node.unselectable = unselectable ? "on" : "",
+		elements = node.getElementsByTagName("*"),
+		i = elements.length;
+	
+	while(--i){
+		if(elements[i].tagName === "INPUT" || elements[i].tagName === "TEXTAREA"){
+			continue; // Don't prevent text selection in text input fields.
+		}
+		elements[i].unselectable = value;
+	}
+}
+
+function setSelectable(grid, selectable){
+	// Alternative version of dojo/dom.setSelectable based on feature detection.
+	
+	// For FF < 21, use -moz-none, which will respect -moz-user-select: text on
+	// child elements (e.g. form inputs).  In FF 21, none behaves the same.
+	// See https://developer.mozilla.org/en-US/docs/CSS/user-select
+	var node = grid.bodyNode,
+		value = selectable ? "text" : has("ff") < 21 ? "-moz-none" : "none";
+	
+	if(hasUserSelect){
+		node.style[hasUserSelect] = value;
+	}else if(has("dom-selectstart")){
+		// For browsers that don't support user-select but support selectstart (IE<10),
+		// we can hook up an event handler as necessary.  Since selectstart bubbles,
+		// it will handle any child elements as well.
+		// Note, however, that both this and the unselectable fallback below are
+		// incapable of preventing text selection from outside the targeted node.
+		if(!selectable && !grid._selectstartHandle){
+			grid._selectstartHandle = on(node, "selectstart", function(evt){
+				var tag = evt.target && evt.target.tagName;
+				
+				// Prevent selection except where a text input field is involved.
+				if(tag !== "INPUT" && tag !== "TEXTAREA"){
+					evt.preventDefault();
+				}
+			});
+		}else if(selectable && grid._selectstartHandle){
+			grid._selectstartHandle.remove();
+			delete grid._selectstartHandle;
+		}
+	}else{
+		// For browsers that don't support either user-select or selectstart (Opera),
+		// we need to resort to setting the unselectable attribute on all nodes
+		// involved.  Since this doesn't automatically apply to child nodes, we also
+		// need to re-apply it whenever rows are rendered.
+		makeUnselectable(node, !selectable);
+		if(!selectable && !grid._unselectableHandle){
+			grid._unselectableHandle = aspect.after(grid, "renderRow", function(row){
+				makeUnselectable(row, true);
+				return row;
+			});
+		}else if(selectable && grid._unselectableHandle){
+			grid._unselectableHandle.remove();
+			delete grid._unselectableHandle;
+		}
+	}
+}
+
 return declare(null, {
 	// summary:
 	//		Add selection capabilities to a grid. The grid will have a selection property and
@@ -27972,10 +28911,26 @@ return declare(null, {
 	//		If true, the selection object will be cleared when refresh is called.
 	deselectOnRefresh: true,
 	
-	//allowSelectAll: Boolean
+	// allowSelectAll: Boolean
 	//		If true, allow ctrl/cmd+A to select all rows.
 	//		Also consulted by the selector plugin for showing select-all checkbox.
 	allowSelectAll: false,
+	
+	// selection:
+	//		An object where the property names correspond to 
+	//		object ids and values are true or false depending on whether an item is selected
+	selection: {},
+	
+	// selectionMode: String
+	//		The selection mode to use, can be "none", "multiple", "single", or "extended".
+	selectionMode: "extended",
+	
+	// allowTextSelection: Boolean
+	//		Whether to still allow text within cells to be selected.  The default
+	//		behavior is to allow text selection only when selectionMode is none;
+	//		setting this property to either true or false will explicitly set the
+	//		behavior regardless of selectionMode.
+	allowTextSelection: undefined,
 	
 	create: function(){
 		this.selection = {};
@@ -27983,16 +28938,22 @@ return declare(null, {
 	},
 	postCreate: function(){
 		this.inherited(arguments);
+		
+		// Force selectionMode setter to run.
+		var selectionMode = this.selectionMode;
+		this.selectionMode = "";
+		this._setSelectionMode(selectionMode);
+		
 		this._initSelectionEvents(); // first time; set up event hooks
 	},
 	
-	// selection:
-	//		An object where the property names correspond to 
-	//		object ids and values are true or false depending on whether an item is selected
-	selection: {},
-	// selectionMode: String
-	//		The selection mode to use, can be "none", "multiple", "single", or "extended".
-	selectionMode: "extended",
+	destroy: function(){
+		this.inherited(arguments);
+		
+		// Remove any handles added for cross-browser text selection prevention.
+		if(this._selectstartHandle){ this._selectstartHandle.remove(); }
+		if(this._unselectableHandle){ this._unselectableHandle.remove(); }
+	},
 	
 	_setSelectionMode: function(mode){
 		// summary:
@@ -28003,68 +28964,113 @@ return declare(null, {
 		this.clearSelection();
 		
 		this.selectionMode = mode;
+		
+		// Compute name of selection handler for this mode once
+		// (in the form of _fooSelectionHandler)
+		this._selectionHandlerName = "_" + mode + "SelectionHandler";
+		
+		// Also re-run allowTextSelection setter in case it is in automatic mode.
+		this._setAllowTextSelection(this.allowTextSelection);
 	},
 	setSelectionMode: function(mode){
 		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 1.0");
 		this.set("selectionMode", mode);
 	},
 	
-	_handleSelect: function(event, currentTarget){
-		// don't run if selection mode is none,
+	_setAllowTextSelection: function(allow){
+		if(typeof allow !== "undefined"){
+			setSelectable(this, allow);
+		}else{
+			setSelectable(this, this.selectionMode === "none");
+		}
+		this.allowTextSelection = allow;
+	},
+	
+	_handleSelect: function(event, target){
+		// Don't run if selection mode doesn't have a handler (incl. "none"),
 		// or if coming from a dgrid-cellfocusin from a mousedown
-		if(this.selectionMode == "none" ||
+		if(!this[this._selectionHandlerName] ||
 				(event.type == "dgrid-cellfocusin" && event.parentType == "mousedown") ||
-				(event.type == "mouseup" && currentTarget != this._waitForMouseUp)){
+				(event.type == "mouseup" && target != this._waitForMouseUp)){
 			return;
 		}
 		this._waitForMouseUp = null;
 		this._selectionTriggerEvent = event;
-		var ctrlKey = !event.keyCode ? event[ctrlEquiv] : event.ctrlKey;
+		
+		// Don't call select handler for ctrl+navigation
 		if(!event.keyCode || !event.ctrlKey || event.keyCode == 32){
-			var mode = this.selectionMode,
-				row = currentTarget,
-				rowObj = this.row(row),
-				lastRow = this._lastSelected;
-			
-			if(mode == "single"){
-				if(lastRow === row){
-					// Allow ctrl to toggle selection, even within single select mode.
-					this.select(row, null, !ctrlKey || !this.isSelected(row));
-				}else{
-					this.clearSelection();
-					this.select(row);
-					this._lastSelected = row;
-				}
-			}else if(this.selection[rowObj.id] && !event.shiftKey && event.type == "mousedown"){
-				// we wait for the mouse up if we are clicking a selected item so that drag n' drop
-				// is possible without losing our selection
-				this._waitForMouseUp = row;
+			// If clicking a selected item, wait for mouseup so that drag n' drop
+			// is possible without losing our selection
+			if(!event.shiftKey && event.type == "mousedown" && this.isSelected(target)){
+				this._waitForMouseUp = target;
 			}else{
-				var value;
-				// clear selection first for non-ctrl-clicks in extended mode,
-				// as well as for right-clicks on unselected targets
-				if((event.button != 2 && mode == "extended" && !ctrlKey) ||
-						(event.button == 2 && !(this.selection[rowObj.id]))){
-					this.clearSelection(rowObj.id, true);
-				}
-				if(!event.shiftKey){
-					// null == toggle; undefined == true;
-					lastRow = value = ctrlKey ? null : undefined;
-				}
-				this.select(row, lastRow, value);
-
-				if(!lastRow){
-					// update lastRow reference for potential subsequent shift+select
-					// (current row was already selected by earlier logic)
-					this._lastSelected = row;
-				}
-			}
-			if(!event.keyCode && (event.shiftKey || ctrlKey)){
-				// prevent selection in firefox
-				event.preventDefault();
+				this[this._selectionHandlerName](event, target);
 			}
 		}
 		this._selectionTriggerEvent = null;
+	},
+	
+	_singleSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "single" mode, where only one target may be
+		//		selected at a time.
+		
+		var ctrlKey = event.keyCode ? event.ctrlKey : event[ctrlEquiv];
+		if(this._lastSelected === target){
+			// Allow ctrl to toggle selection, even within single select mode.
+			this.select(target, null, !ctrlKey || !this.isSelected(target));
+		}else{
+			this.clearSelection();
+			this.select(target);
+			this._lastSelected = target;
+		}
+	},
+	
+	_multipleSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "multiple" mode, where shift can be held to
+		//		select ranges, ctrl/cmd can be held to toggle, and clicks/keystrokes
+		//		without modifier keys will add to the current selection.
+		
+		var lastRow = this._lastSelected,
+			ctrlKey = event.keyCode ? event.ctrlKey : event[ctrlEquiv],
+			value;
+		
+		if(!event.shiftKey){
+			// Toggle if ctrl is held; otherwise select
+			value = ctrlKey ? null : true;
+			lastRow = null;
+		}
+		this.select(target, lastRow, value);
+
+		if(!lastRow){
+			// Update reference for potential subsequent shift+select
+			// (current row was already selected above)
+			this._lastSelected = target;
+		}
+	},
+	
+	_extendedSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "extended" mode, which is like multiple mode
+		//		except that clicks/keystrokes without modifier keys will clear
+		//		the previous selection.
+		
+		// Clear selection first for right-clicks outside selection and non-ctrl-clicks;
+		// otherwise, extended mode logic is identical to multiple mode
+		if(event.button === 2 ? !this.isSelected(target) :
+				!(event.keyCode ? event.ctrlKey : event[ctrlEquiv])){
+			this.clearSelection(null, true);
+		}
+		this._multipleSelectionHandler(event, target);
+	},
+	
+	_toggleSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "toggle" mode which simply toggles the selection
+		//		of the given target.  Primarily useful for touch input.
+		
+		this.select(target, null, null);
 	},
 
 	_initSelectionEvents: function(){
@@ -28075,21 +29081,6 @@ return declare(null, {
 		var grid = this,
 			selector = this.selectionDelegate;
 		
-		// This is to stop IE8+'s web accelerator and selection.
-		// It also stops selection in Chrome/Safari.
-		on(this.domNode, "selectstart", function(event){
-			// In IE, this also bubbles from text selection inside editor fields;
-			// we don't want to prevent that!
-			var tag = event.target && event.target.tagName;
-			if(tag != "INPUT" && tag != "TEXTAREA"){
-				event.preventDefault();
-			}
-		});
-		
-		function focus(event){
-			grid._handleSelect(event, this);
-		}
-		
 		if(has("touch")){
 			// listen for touch taps if available
 			on(this.contentNode, touchUtil.selector(selector, touchUtil.tap), function(evt){
@@ -28097,9 +29088,18 @@ return declare(null, {
 			});
 		}else{
 			// listen for actions that should cause selections
-			on(this.contentNode, on.selector(selector, this.selectionEvents), focus);
+			on(this.contentNode, on.selector(selector, this.selectionEvents), function(event){
+				grid._handleSelect(event, this);
+			});
 		}
-
+		
+		// Also hook up spacebar (for ctrl+space)
+		if(this.addKeyHandler){
+			this.addKeyHandler(32, function(event){
+				grid._handleSelect(event, event.target);
+			});
+		}
+		
 		// If allowSelectAll is true, allow ctrl/cmd+A to (de)select all rows.
 		// (Handler further checks against _allowSelectAll, which may be updated
 		// if selectionMode is changed post-init.)
@@ -28170,7 +29170,7 @@ return declare(null, {
 		if(!row.element){
 			row = this.row(row);
 		}
-		if(this.allowSelect(row)){
+		if(!value || this.allowSelect(row)){
 			var selection = this.selection;
 			var previousValue = selection[row.id];
 			if(value === null){
@@ -28207,7 +29207,7 @@ return declare(null, {
 					toElement.compareDocumentPosition(fromElement) == 2 :
 					toElement.sourceIndex > fromElement.sourceIndex)) ? "down" : "up";
 				while(row.element != toElement && (row = this[traverser](row))){
-					this.select(row);
+					this.select(row, null, value);
 				}
 			}
 		}
@@ -28240,14 +29240,21 @@ return declare(null, {
 		}
 	},
 	isSelected: function(object){
-		if(!object){
+		// summary:
+		//		Returns true if the indicated row is selected.
+		
+		if(typeof object === "undefined" || object === null){
 			return false;
 		}
 		if(!object.element){
 			object = this.row(object);
 		}
-
-		return !!this.selection[object.id];
+		
+		// First check whether the given row is indicated in the selection hash;
+		// failing that, check if allSelected is true (testing against the
+		// allowSelect method if possible)
+		return (object.id in this.selection) ? !!this.selection[object.id] :
+			this.allSelected && (!object.data || this.allowSelect(object));
 	},
 	
 	refresh: function(){
@@ -28258,7 +29265,7 @@ return declare(null, {
 			this._fireSelectionEvent && this._fireSelectionEvent();
 		}
 		this._lastSelected = null;
-		this.inherited(arguments);
+		return this.inherited(arguments);
 	},
 	
 	renderArray: function(){
@@ -28304,7 +29311,7 @@ function updateInputValue(input, value){
 	// common code for updating value of a standard input
 	input.value = value;
 	if(input.type == "radio" || input.type == "checkbox"){
-		input.checked = !!value;
+		input.checked = input.defaultChecked = !!value;
 	}
 }
 
@@ -28336,7 +29343,7 @@ function setProperty(grid, cellElement, oldValue, value, triggerEvent){
 	// Updates dirty hash and fires dgrid-datachange event for a changed value.
 	var cell, row, column, eventObject;
 	// test whether old and new values are inequal, with coercion (e.g. for Dates)
-	if(!(oldValue >= value && oldValue <= value)){
+	if((oldValue && oldValue.valueOf()) != (value && value.valueOf())){
 		cell = grid.cell(cellElement);
 		row = cell.row;
 		column = cell.column;
@@ -28477,6 +29484,7 @@ function createSharedEditor(column, originalRenderCell){
 	// shared usage across an entire column (for columns with editOn specified).
 	
 	var cmp = createEditor(column),
+		grid = column.grid,
 		isWidget = cmp.domNode,
 		node = cmp.domNode || cmp,
 		focusNode = cmp.focusNode || node,
@@ -28491,13 +29499,23 @@ function createSharedEditor(column, originalRenderCell){
 	
 	function onblur(){
 		var parentNode = node.parentNode,
-			cell = column.grid.cell(node),
 			i = parentNode.children.length - 1,
 			options = { alreadyHooked: true },
-			renderedNode;
+			cell = grid.cell(node);
 		
+		// emit an event immediately prior to removing an editOn editor
+		on.emit(cell.element, "dgrid-editor-hide", {
+			grid: grid,
+			cell: cell,
+			column: column,
+			editor: cmp,
+			bubbles: true,
+			cancelable: false
+		});
 		// Remove the editor from the cell, to be reused later.
 		parentNode.removeChild(node);
+		
+		put(cell.element, "!dgrid-cell-editing");
 		
 		// Clear out the rest of the cell's contents, then re-render with new value.
 		while(i--){ put(parentNode.firstChild, "!"); }
@@ -28512,7 +29530,7 @@ function createSharedEditor(column, originalRenderCell){
 	
 	function dismissOnKey(evt){
 		// Contains logic for reacting to enter/escape keypresses to save/cancel edits.
-		// Returns boolean specifying whether this key event should dismiss the field.
+		// Calls `focusNode.blur()` in cases where field should be dismissed.
 		var key = evt.keyCode || evt.which;
 		
 		if(key == 27){ // escape: revert + dismiss
@@ -28534,19 +29552,19 @@ function createSharedEditor(column, originalRenderCell){
 	return cmp;
 }
 
-function showEditor(cmp, column, cell, value){
+function showEditor(cmp, column, cellElement, value){
 	// Places a shared editor into the newly-active cell in the column.
 	// Also called when rendering an editor in an "always-on" editor column.
 	
-	var grid = column.grid,
-		editor = column.editor,
-		isWidget = cmp.domNode;
+	var isWidget = cmp.domNode,
+		grid = column.grid;
 	
 	// for regular inputs, we can update the value before even showing it
 	if(!isWidget){ updateInputValue(cmp, value); }
 	
-	cell.innerHTML = "";
-	put(cell, cmp.domNode || cmp);
+	cellElement.innerHTML = "";
+	put(cellElement, ".dgrid-cell-editing");
+	put(cellElement, cmp.domNode || cmp);
 	
 	if(isWidget){
 		// For widgets, ensure startup is called before setting value,
@@ -28563,7 +29581,18 @@ function showEditor(cmp, column, cell, value){
 	cmp._dgridLastValue = value;
 	// if this is an editor with editOn, also update activeValue
 	// (activeOptions will have been updated previously)
-	if(activeCell){ activeValue = value; }
+	if(activeCell){ 
+		activeValue = value; 
+		// emit an event immediately prior to placing a shared editor
+		on.emit(cellElement, "dgrid-editor-show", {
+			grid: grid,
+			cell: grid.cell(cellElement),
+			column: column,
+			editor: cmp,
+			bubbles: true,
+			cancelable: false
+		});
+	}
 }
 
 function edit(cell) {
@@ -28580,6 +29609,8 @@ function edit(cell) {
 	var row, column, cellElement, dirty, field, value, cmp, dfd;
 	
 	if(!cell.column){ cell = this.cell(cell); }
+	if(!cell || !cell.element){ return null; }
+	
 	column = cell.column;
 	field = column.field;
 	cellElement = cell.element.contents || cell.element;
@@ -29068,8 +30099,8 @@ define([
                 resetPlayInfo = function () {
                     this.positionNode.innerHTML = '0:00';
                 },
-                formatTime = function(seconds) {
-                    var seconds = parseInt(seconds, 10),
+                formatTime = function(sec) {
+                    var seconds = parseInt(sec, 10),
                         h = (seconds >= 3600) ? Math.floor(seconds / 3600) : 0,
                         m = ((seconds - h * 3600) >= 60) ? Math.floor((seconds - h * 3600) / 60) : 0,
                         s = seconds - (h * 3600) - (m * 60),

@@ -10,9 +10,6 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 		// truthy if DOMContentLoaded or better (e.g., window.onload fired) has been achieved
 		isDomReady = 0,
 
-		// a function to call to cause onLoad to be called when all requested modules have been loaded
-		requestCompleteSignal,
-
 		// The queue of functions waiting to execute as soon as dojo.ready conditions satisfied
 		loadQ = [],
 
@@ -22,46 +19,58 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 		handleDomReady = function(){
 			isDomReady = 1;
 			dojo._postLoad = dojo.config.afterOnLoad = true;
-			if(loadQ.length){
-				requestCompleteSignal(onLoad);
-			}
+			onEvent();
 		},
 
-		// run the next function queued with dojo.ready
-		onLoad = function(){
-			if(isDomReady && !onLoadRecursiveGuard && loadQ.length){
-				//guard against recursions into this function
-				onLoadRecursiveGuard = 1;
+		onEvent = function(){
+			// Called when some state changes:
+			//		- dom ready
+			//		- dojo/domReady has finished processing everything in its queue
+			//		- task added to loadQ
+			//		- require() has finished loading all currently requested modules
+			//
+			// Run the functions queued with dojo.ready if appropriate.
+
+
+			//guard against recursions into this function
+			if(onLoadRecursiveGuard){
+				return;
+			}
+			onLoadRecursiveGuard = 1;
+
+			// Run tasks in queue if require() is finished loading modules, the dom is ready, and there are no
+			// pending tasks registered via domReady().
+			// The last step is necessary so that a user defined dojo.ready() callback is delayed until after the
+			// domReady() calls inside of dojo.	  Failure can be seen on dijit/tests/robot/Dialog_ally.html on IE8
+			// because the dijit/focus.js domReady() callback doesn't execute until after the test starts running.
+			while(isDomReady && (!domReady || domReady._Q.length == 0) && require.idle() && loadQ.length){
 				var f = loadQ.shift();
 				try{
-					// Call domReady() again to yield to any tasks registered directly via domReady().
-					// This is necessary so that a user defined dojo.ready() callback is delayed until after the
-					// domReady() calls inside of dojo.   Failure can be seen on dijit/tests/Dialog.html because the
-					// dijit/focus.js domReady() callback doesn't execute until after the test starts running.
-					domReady(f);
-				}
-				// FIXME: signal the error via require.on
-				finally{
-					onLoadRecursiveGuard = 0;
-				}
-				onLoadRecursiveGuard = 0;
-				if(loadQ.length){
-					requestCompleteSignal(onLoad);
+					f();
+				}catch(e){
+					// force the dojo.js on("error") handler do display the message
+					e.info = e.message;
+					require.signal("error", e);
 				}
 			}
+
+			onLoadRecursiveGuard = 0;
 		};
 
-	require.on("idle", onLoad);
-	requestCompleteSignal = function(){
-		if(require.idle()){
-			onLoad();
-		} // else do nothing, onLoad will be called with the next idle signal
-	};
+	// Check if we should run the next queue operation whenever require() finishes loading modules or domReady
+	// finishes processing it's queue.
+	require.on("idle", onEvent);
+	if(domReady){
+		domReady._onQEmpty = onEvent;
+	}
 
 	var ready = dojo.ready = dojo.addOnLoad = function(priority, context, callback){
 		// summary:
 		//		Add a function to execute on DOM content loaded and all requested modules have arrived and been evaluated.
 		//		In most cases, the `domReady` plug-in should suffice and this method should not be needed.
+		//
+		//		When called in a non-browser environment, just checks that all requested modules have arrived and been
+		//		evaluated.
 		// priority: Integer?
 		//		The order in which to exec this callback relative to other callbacks, defaults to 1000
 		// context: Object?|Function
@@ -112,7 +121,7 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 		callback.priority = priority;
 		for(var i = 0; i < loadQ.length && priority >= loadQ[i].priority; i++){}
 		loadQ.splice(i, 0, callback);
-		requestCompleteSignal();
+		onEvent();
 	};
 
 	 1 || has.add("dojo-config-addOnLoad", 1);
@@ -132,7 +141,7 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 		});
 	}
 
-	if( 1 ){
+	if(domReady){
 		domReady(handleDomReady);
 	}else{
 		handleDomReady();
@@ -152,6 +161,25 @@ define("dojo/domReady", ['./has'], function(has){
 		readyQ = [],
 		recursiveGuard;
 
+	function domReady(callback){
+		// summary:
+		//		Plugin to delay require()/define() callback from firing until the DOM has finished loading.
+		readyQ.push(callback);
+		if(ready){ processQ(); }
+	}
+	domReady.load = function(id, req, load){
+		domReady(load);
+	};
+
+	// Export queue so that ready() can check if it's empty or not.
+	domReady._Q = readyQ;
+	domReady._onQEmpty = function(){
+		// summary:
+		//		Private method overridden by dojo/ready, to notify when everything in the
+		//		domReady queue has been processed.  Do not use directly.
+		//		Will be removed in 2.0, along with domReady._Q.
+	};
+
 	// For FF <= 3.5
 	if(fixReadyState){ doc.readyState = "loading"; }
 
@@ -170,6 +198,10 @@ define("dojo/domReady", ['./has'], function(has){
 		}
 
 		recursiveGuard = false;
+
+		// Notification for dojo/ready.  Remove for 2.0.
+		// Note that this could add more tasks to the ready queue.
+		domReady._onQEmpty();
 	}
 
 	if(!ready){
@@ -181,8 +213,8 @@ define("dojo/domReady", ['./has'], function(has){
 				// For FF <= 3.5
 				if(fixReadyState){ doc.readyState = "complete"; }
 
-				processQ();
 				ready = 1;
+				processQ();
 			},
 			on = function(node, event){
 				node.addEventListener(event, detectReady, false);
@@ -241,16 +273,6 @@ define("dojo/domReady", ['./has'], function(has){
 			poller();
 		}
 	}
-
-	function domReady(callback){
-		// summary:
-		//		Plugin to delay require()/define() callback from firing until the DOM has finished loading.
-		readyQ.push(callback);
-		if(ready){ processQ(); }
-	}
-	domReady.load = function(id, req, load){
-		domReady(load);
-	};
 
 	return domReady;
 });

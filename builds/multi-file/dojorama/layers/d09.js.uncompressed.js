@@ -1,7 +1,7 @@
 require({cache:{
 'dojo/store/Cache':function(){
-define("dojo/store/Cache", ["../_base/lang","../_base/Deferred" /*=====, "../_base/declare", "./api/Store" =====*/],
-function(lang, Deferred /*=====, declare, Store =====*/){
+define("dojo/store/Cache", ["../_base/lang","../when" /*=====, "../_base/declare", "./api/Store" =====*/],
+function(lang, when /*=====, declare, Store =====*/){
 
 // module:
 //		dojo/store/Cache
@@ -21,8 +21,8 @@ var Cache = function(masterStore, cachingStore, options){
 		// look for a queryEngine in either store
 		queryEngine: masterStore.queryEngine || cachingStore.queryEngine,
 		get: function(id, directives){
-			return Deferred.when(cachingStore.get(id), function(result){
-				return result || Deferred.when(masterStore.get(id, directives), function(result){
+			return when(cachingStore.get(id), function(result){
+				return result || when(masterStore.get(id, directives), function(result){
 					if(result){
 						cachingStore.put(result, {id: id});
 					}
@@ -31,7 +31,7 @@ var Cache = function(masterStore, cachingStore, options){
 			});
 		},
 		add: function(object, directives){
-			return Deferred.when(masterStore.add(object, directives), function(result){
+			return when(masterStore.add(object, directives), function(result){
 				// now put result in cache
 				cachingStore.add(object && typeof result == "object" ? result : object, directives);
 				return result; // the result from the add should be dictated by the masterStore and be unaffected by the cachingStore
@@ -40,14 +40,14 @@ var Cache = function(masterStore, cachingStore, options){
 		put: function(object, directives){
 			// first remove from the cache, so it is empty until we get a response from the master store
 			cachingStore.remove((directives && directives.id) || this.getIdentity(object));
-			return Deferred.when(masterStore.put(object, directives), function(result){
+			return when(masterStore.put(object, directives), function(result){
 				// now put result in cache
 				cachingStore.put(object && typeof result == "object" ? result : object, directives);
 				return result; // the result from the put should be dictated by the masterStore and be unaffected by the cachingStore
 			});
 		},
 		remove: function(id, directives){
-			return Deferred.when(masterStore.remove(id, directives), function(result){
+			return when(masterStore.remove(id, directives), function(result){
 				return cachingStore.remove(id, directives);
 			});
 		},
@@ -201,6 +201,15 @@ return declare("dojo.store.JsonRest", base, {
 	//		the sort information is included in a functional query token to avoid colliding
 	//		with the set of name/value pairs.
 
+	// ascendingPrefix: String
+	//		The prefix to apply to sort attribute names that are ascending
+	ascendingPrefix: "+",
+
+	// descendingPrefix: String
+	//		The prefix to apply to sort attribute names that are ascending
+	descendingPrefix: "-",
+	 
+
 	get: function(id, options){
 		// summary:
 		//		Retrieves an object by its identity. This will trigger a GET request to the server using
@@ -318,7 +327,7 @@ return declare("dojo.store.JsonRest", base, {
 			query += (query || hasQuestionMark ? "&" : "?") + (sortParam ? sortParam + '=' : "sort(");
 			for(var i = 0; i<options.sort.length; i++){
 				var sort = options.sort[i];
-				query += (i > 0 ? "," : "") + (sort.descending ? '-' : '+') + encodeURIComponent(sort.attribute);
+				query += (i > 0 ? "," : "") + (sort.descending ? this.descendingPrefix : this.ascendingPrefix) + encodeURIComponent(sort.attribute);
 			}
 			if(!sortParam){
 				query += ")";
@@ -340,8 +349,8 @@ return declare("dojo.store.JsonRest", base, {
 });
 },
 'dojo/store/util/QueryResults':function(){
-define("dojo/store/util/QueryResults", ["../../_base/array", "../../_base/lang", "../../_base/Deferred"
-], function(array, lang, Deferred){
+define("dojo/store/util/QueryResults", ["../../_base/array", "../../_base/lang", "../../when"
+], function(array, lang, when){
 
 // module:
 //		dojo/store/util/QueryResults
@@ -380,7 +389,7 @@ var QueryResults = function(results){
 		if(!results[method]){
 			results[method] = function(){
 				var args = arguments;
-				return Deferred.when(results, function(results){
+				return when(results, function(results){
 					Array.prototype.unshift.call(args, results);
 					return QueryResults(array[method].apply(array, args));
 				});
@@ -391,7 +400,7 @@ var QueryResults = function(results){
 	addIterativeMethod("filter");
 	addIterativeMethod("map");
 	if(!results.total){
-		results.total = Deferred.when(results, function(results){
+		results.total = when(results, function(results){
 			return results.length;
 		});
 	}
@@ -686,8 +695,8 @@ return function(query, options){
 
 },
 'dojo/store/Observable':function(){
-define("dojo/store/Observable", ["../_base/kernel", "../_base/lang", "../_base/Deferred", "../_base/array" /*=====, "./api/Store" =====*/
-], function(kernel, lang, Deferred, array /*=====, Store =====*/){
+define("dojo/store/Observable", ["../_base/kernel", "../_base/lang", "../when", "../_base/array" /*=====, "./api/Store" =====*/
+], function(kernel, lang, when, array /*=====, Store =====*/){
 
 // module:
 //		dojo/store/Observable
@@ -750,7 +759,7 @@ var Observable = function(/*Store*/ store){
 				if(listeners.push(listener) == 1){
 					// first listener was added, create the query checker and updater
 					queryUpdaters.push(queryUpdater = function(changed, existingId){
-						Deferred.when(results, function(resultsArray){
+						when(results, function(resultsArray){
 							var atEnd = resultsArray.length != options.count;
 							var i, l, listener;
 							if(++queryRevision != revision){
@@ -845,7 +854,7 @@ var Observable = function(/*Store*/ store){
 				inMethod = true;
 				try{
 					var results = original.apply(this, arguments);
-					Deferred.when(results, function(results){
+					when(results, function(results){
 						action((typeof results == "object" && results) || value);
 					});
 					return results;

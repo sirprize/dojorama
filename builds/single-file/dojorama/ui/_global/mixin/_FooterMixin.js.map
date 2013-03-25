@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"_FooterMixin.js",
+"lineCount":1,
+"mappings":"A,SAEAA,MAAA,0FAGG,QAAA,CACCC,CADD,CAECC,CAFD,QAIQD,EAAA,kCAUSE,QAAAA,GACRC,cAAA,CAAeC,SAAf,CAEAC,kBAHQH,CAGY,IAAID,CAAJ,SACRK,WADQ,EAEjBC,eAFiB,CAHZL,CAVT,SAkBMM,QAAAA,GACLL,cAAA,CAAeC,SAAf,CACAC,kBAAAG,QAAA,EAFKA,CAlBN,YAuBSC,QAAAA,GACRJ,iBAAAK,KAAA,EADQD,CAvBT,EAJR,CAHH;",
+"sources":["_FooterMixin.js.uncompressed.js"],
+"names":["define","declare","FooterWidget","postCreate","inherited","arguments","footerWidget","router","footerNode","startup","showFooter","show"]
+}

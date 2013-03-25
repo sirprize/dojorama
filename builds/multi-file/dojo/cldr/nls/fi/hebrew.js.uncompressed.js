@@ -1,13 +1,11 @@
 define(
 "dojo/cldr/nls/fi/hebrew", //begin v1.x content
 {
-	"dateFormatItem-yM": "L.yyyy",
-	"dateFormatItem-yQ": "Q/yyyy",
+	"dateFormatItem-yyyyMMMEd": "E d. MMM y G",
 	"months-standAlone-abbr-leap": "adár II",
 	"dayPeriods-format-wide-pm": "ip.",
 	"dateFormatItem-MMMEd": "ccc d. MMM",
 	"dateFormatItem-hms": "h.mm.ss a",
-	"dateFormatItem-yQQQ": "QQQ y",
 	"days-standAlone-wide": [
 		"sunnuntai",
 		"maanantai",
@@ -32,6 +30,7 @@ define(
 		"A",
 		"E"
 	],
+	"dateFormatItem-Gy": "y G",
 	"dayPeriods-format-wide-am": "ap.",
 	"quarters-standAlone-abbr": [
 		"1. nelj.",
@@ -39,7 +38,9 @@ define(
 		"3. nelj.",
 		"4. nelj."
 	],
+	"dateFormatItem-y": "y G",
 	"timeFormat-full": "H.mm.ss zzzz",
+	"dateFormatItem-yyyy": "y G",
 	"months-standAlone-narrow-leap": "A",
 	"months-standAlone-abbr": [
 		"tišrí",
@@ -57,7 +58,6 @@ define(
 		"elúl"
 	],
 	"dateFormatItem-Ed": "E d.",
-	"dateFormatItem-yMMM": "LLL y",
 	"days-standAlone-narrow": [
 		"S",
 		"M",
@@ -67,13 +67,13 @@ define(
 		"P",
 		"L"
 	],
-	"dateFormat-long": "d. MMMM y",
+	"dateFormatItem-GyMMMd": "d. MMM y G",
+	"dateFormat-long": "d. MMMM y G",
 	"timeFormat-medium": "H.mm.ss",
 	"dateFormatItem-Hm": "H.mm",
-	"dateFormat-medium": "d.M.yyyy",
+	"dateFormat-medium": "d.M.y G",
 	"dateFormatItem-Hms": "H.mm.ss",
 	"dayPeriods-format-narrow-pm": "ip.",
-	"dateFormatItem-yMd": "d.M.yyyy",
 	"quarters-standAlone-wide": [
 		"1. neljännes",
 		"2. neljännes",
@@ -81,6 +81,7 @@ define(
 		"4. neljännes"
 	],
 	"dateFormatItem-ms": "mm.ss",
+	"dateFormatItem-yyyyQQQQ": "QQQQ y G",
 	"dayPeriods-format-narrow-am": "ap.",
 	"months-standAlone-wide": [
 		"tišríkuu",
@@ -97,6 +98,9 @@ define(
 		"abkuu",
 		"elúlkuu"
 	],
+	"dateFormatItem-yyyyMd": "d.M.y G",
+	"dateFormatItem-yyyyMMMd": "d. MMM y G",
+	"dateFormatItem-yyyyMEd": "E d.M.y G",
 	"dateFormatItem-MMMd": "d. MMM",
 	"timeFormat-long": "H.mm.ss z",
 	"months-format-abbr": [
@@ -140,7 +144,9 @@ define(
 		"P",
 		"L"
 	],
-	"dateFormatItem-yMMMd": "d. MMM y",
+	"dateFormatItem-GyMMMEd": "E d. MMM y G",
+	"dateFormatItem-GyMMM": "LLL y G",
+	"dateFormatItem-yyyyQQQ": "QQQ y G",
 	"dateFormatItem-MEd": "E d.M.",
 	"months-format-narrow": [
 		"T",
@@ -178,11 +184,10 @@ define(
 	],
 	"months-standAlone-wide-leap": "adárkuu II",
 	"dayPeriods-format-abbr-pm": "ip.",
-	"dateFormat-short": "d.M.yyyy",
-	"dateFormatItem-yMMMEd": "E d. MMM y",
-	"dateFormat-full": "cccc d. MMMM y",
+	"dateFormat-short": "d.M.y GGGGG",
+	"dateFormatItem-yyyyM": "L.y G",
+	"dateFormat-full": "cccc d. MMMM y G",
 	"dateFormatItem-Md": "d.M.",
-	"dateFormatItem-yMEd": "E d.M.yyyy",
 	"months-format-wide": [
 		"tišríkuuta",
 		"hešvánkuuta",
@@ -208,6 +213,7 @@ define(
 		"pe",
 		"la"
 	],
+	"dateFormatItem-yyyyMMM": "LLL y G",
 	"quarters-format-wide": [
 		"1. neljännes",
 		"2. neljännes",

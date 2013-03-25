@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"chinese.js",
+"lineCount":1,
+"mappings":"A,SAAAA,MAAA,6BAGC,oBAHD,CAGuB,4BAAA,MAAA,KAHvB,CAiBC,sBAjBD,CAiByB,4BAAA,MAAA,KAjBzB,CA+BC,wBA/BD,CA+B2B,4BAAA,MAAA,KA/B3B,CA6CC,wBA7CD,CA6C2B,4BAAA,MAAA,KA7C3B;",
+"sources":["chinese.js.uncompressed.js"],
+"names":["define"]
+}

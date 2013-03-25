@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"Observable.js",
+"lineCount":1,
+"mappings":"A,SAEAA,MAAA,wDAEG,QAAA,CACCC,CADD,QAKQ,SAAA,CAAUC,CAAV,MACCC,EAAQF,CAAA,CAAWC,CAAX,CADT,CACwBE,EAAWD,CAAAE,MACtCF,EAAAE,MAFG,CAEWC,QAAAA,CAAUD,CAAVC,CAAiBC,CAAjBD,MACNE,EAASJ,CAAA,CAASC,CAAT,CAAgBE,CAAhB,CADHD,CAC6BG,EAAaD,CAAAE,QACpDF,EAAAE,QAFUJ,CAEOK,QAAAA,CAAUC,CAAVD,CAAoBE,CAApBF,QASNF,EAAA,CARCK,QAAAA,CAAUC,CAAVD,CAAgBE,CAAhBF,CAA8BG,CAA9BH,MACAI,EAAQH,CADRD,oBAESC,EAAAI,YAFTL,GAGAI,CAHAJ,CAGQX,CAAAiB,iBAAA,EAHRN,CAIAI,CAAAC,YAAA,CAAkBJ,CAAlB,CAJAD,QAMGF,EAAA,CAASM,CAAT,CAAgBF,CAAhB,CAA8BC,CAA9B,CANHH,CAQD,CAAcD,CAAd,CATMF,CAFPL,OAaHE,EAbGF,CAFX,OAiBIH,EAjBJ,CALR,CAFH;",
+"sources":["Observable.js.uncompressed.js"],
+"names":["define","Observable","s","store","oldQuery","query","store.query","options","result","oldObserve","observe","result.observe","listener","includeObjectUpdates","l","item","removedIndex","insertedIndex","model","deserialize","getModelInstance"]
+}

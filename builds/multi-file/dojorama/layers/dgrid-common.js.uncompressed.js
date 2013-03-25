@@ -14,8 +14,8 @@ define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeur
 	//		To create a simple div with a class name of "foo":
 	//		|	put("div.foo");
 	fragmentFasterHeuristic = newFragmentFasterHeuristic || fragmentFasterHeuristic;
-	var selectorParse = /(?:\s*([-+ ,<>]))?\s*(\.|!\.?|#)?([-\w%$]+)?(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g,
-		undefined,
+	var selectorParse = /(?:\s*([-+ ,<>]))?\s*(\.|!\.?|#)?([-\w%$|]+)?(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g,
+		undefined, namespaceIndex, namespaces = false,
 		doc = doc || document,
 		ieCreateElement = typeof doc.createElement == "object"; // telltale sign of the old IE behavior with createElement that does not support later addition of name 
 	function insertTextNode(element, text){
@@ -123,7 +123,10 @@ define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeur
 								// in IE, we have to use the crazy non-standard createElement to create input's that have a name 
 								tag = '<' + tag + ' name="' + ieInputName + '">';
 							}
-							current = doc.createElement(tag);
+							// we swtich between creation methods based on namespace usage
+							current = namespaces && ~(namespaceIndex = tag.indexOf('|')) ?
+								doc.createElementNS(namespaces[tag.slice(0, namespaceIndex)], tag.slice(namespaceIndex + 1)) : 
+								doc.createElement(tag);
 						}
 					}
 					if(prefix){
@@ -145,9 +148,15 @@ define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeur
 							}else{
 								// else a '!' class removal
 								if(argument == "!"){
+									var parentNode;
 									// special signal to delete this element
-									// use the ol' innerHTML trick to get IE to do some cleanup
-									put("div", current, '<').innerHTML = "";
+									if(ieCreateElement){
+										// use the ol' innerHTML trick to get IE to do some cleanup
+										put("div", current, '<').innerHTML = "";
+									}else if(parentNode = current.parentNode){ // intentional assigment
+										// use a faster, and more correct (for namespaced elements) removal (http://jsperf.com/removechild-innerhtml)
+										parentNode.removeChild(current);
+									}
 								}else{
 									// we already have removed the class, just need to trim
 									removed = removed.substring(1, removed.length - 1);
@@ -169,7 +178,12 @@ define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeur
 							// handle the special case of setAttribute not working in old IE
 							current.style.cssText = attrValue;
 						}else{
-							current[attrName.charAt(0) == "!" ? (attrName = attrName.substring(1)) && 'removeAttribute' : 'setAttribute'](attrName, attrValue === '' ? attrName : attrValue);
+							var method = attrName.charAt(0) == "!" ? (attrName = attrName.substring(1)) && 'removeAttribute' : 'setAttribute';
+							attrValue = attrValue === '' ? attrName : attrValue;
+							// determine if we need to use a namespace
+							namespaces && ~(namespaceIndex = attrName.indexOf('|')) ?
+								current[method + "NS"](namespaces[attrName.slice(0, namespaceIndex)], attrName.slice(namespaceIndex + 1), attrValue) :
+								current[method](attrName, attrValue);
 						}
 					}
 					return '';
@@ -187,19 +201,33 @@ define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeur
 		}
 		return returnValue;
 	}
+	put.addNamespace = function(name, uri){
+		if(doc.createElementNS){
+			(namespaces || (namespaces = {}))[name] = uri;
+		}else{
+			// for old IE
+			doc.namespaces.add(name, uri);
+		}
+	};
 	put.defaultTag = "div";
 	put.forDocument = forDocument;
 	return put;
 });
-})(typeof define == "undefined" ? function(deps, factory){
-	if(typeof window == "undefined"){
+})(function(id, deps, factory){
+	factory = factory || deps;
+	if(typeof define === "function"){
+		// AMD loader
+		define([], function(){
+			return factory();
+		});
+	}else if(typeof window == "undefined"){
 		// server side JavaScript, probably (hopefully) NodeJS
 		require("./node-html")(module, factory);
 	}else{
 		// plain script in a browser
 		put = factory();
 	}
-} : define);
+});
 
 },
 'xstyle/has-class':function(){
@@ -226,138 +254,101 @@ define("xstyle/has-class", ["dojo/has"], function(has){
 'xstyle/css':function(){
 define("xstyle/css", ["require"], function(moduleRequire){
 "use strict";
-var cssCache = window.cssCache || (window.cssCache = {});
 /*
- * RequireJS css! plugin
+ * AMD css! plugin
  * This plugin will load and wait for css files.  This could be handy when
  * loading css files as part of a layer or as a way to apply a run-time theme. This
  * module checks to see if the CSS is already loaded before incurring the cost
  * of loading the full CSS loader codebase
  */
-/* 	function search(tag, href){
-		var elements = document.getElementsByTagName(tag);
-		for(var i = 0; i < elements.length; i++){
-			var element = elements[i];
-			var sheet = alreadyLoaded(element.sheet || element.styleSheet, href)
-			if(sheet){
-				return sheet;
-			}
-		}
-	}
-	function alreadyLoaded(sheet, href){
-		if(sheet){
-			var importRules = sheet.imports || sheet.rules || sheet.cssRules;
-			for(var i = 0; i < importRules.length; i++){								
-				var importRule = importRules[i];
-				if(importRule.href){
-					sheet = importRule.styleSheet || importRule;
-					if(importRule.href == href){
-						return sheet;
-					}
-					sheet = alreadyLoaded(sheet, href);
-					if(sheet){
-						return sheet;
-					}
-				}
-			}
-		}
-	}
-	function nameWithExt (name, defaultExt) {
-		return name.lastIndexOf('.') <= name.lastIndexOf('/') ?
-			name + '.' + defaultExt : name;
-	}*/
+ 	function testElementStyle(tag, id, property){
+ 		// test an element's style
+		var docElement = document.documentElement;
+		var testDiv = docElement.insertBefore(document.createElement(tag), docElement.firstChild);
+		testDiv.id = id;
+		var styleValue = (testDiv.currentStyle || getComputedStyle(testDiv, null))[property];
+		docElement.removeChild(testDiv);
+ 		return styleValue;
+ 	} 
  	return {
-		load: function (resourceDef, require, callback, config) {
+		load: function(resourceDef, require, callback, config) {
 			var url = require.toUrl(resourceDef);
-			if(cssCache[url]){
-				return createStyleSheet(cssCache[url]);
-			}
-/*			var cssIdTest = resourceDef.match(/(.+)\?(.+)/);
-			if(cssIdTest){*/
-				// if there is an id test available, see if the referenced rule is already loaded,
-				// and if so we can completely avoid any dynamic CSS loading. If it is
-				// not present, we need to use the dynamic CSS loader.
-				var docElement = document.documentElement;
-				var testDiv = docElement.insertBefore(document.createElement('div'), docElement.firstChild);
-				testDiv.id = require.toAbsMid(resourceDef).replace(/\//g,'-').replace(/\..*/,'') + "-loaded";  //cssIdTest[2];
-				var displayStyle = (testDiv.currentStyle || getComputedStyle(testDiv, null)).display;
-				docElement.removeChild(testDiv);
-				if(displayStyle == "none"){
-					return callback();
+			var cachedCss = require.cache['url:' + url];
+			if(cachedCss){
+				// we have CSS cached inline in the build
+				if(cachedCss.xCss){
+					var parser = cachedCss.parser;
+					var xCss =cachedCss.xCss;
+					cachedCss = cachedCss.cssText;
 				}
-				//resourceDef = cssIdTest[1];
-			//}
+				moduleRequire(['./util/createStyleSheet'],function(createStyleSheet){
+					createStyleSheet(cachedCss);
+				});
+				if(xCss){
+					//require([parsed], callback);
+				}
+				return checkForParser();
+			}
+			function checkForParser(){
+				var parser = testElementStyle('x-parse', null, 'content');
+				if(parser && parser != 'none'){
+					// TODO: wait for parser to load
+					require([eval(parser)], callback);
+				}else{
+					callback();
+				}
+			}
+			
+			// if there is an id test available, see if the referenced rule is already loaded,
+			// and if so we can completely avoid any dynamic CSS loading. If it is
+			// not present, we need to use the dynamic CSS loader.
+			var displayStyle = testElementStyle('div', resourceDef.replace(/\//g,'-').replace(/\..*/,'') + "-loaded", 'display');
+			if(displayStyle == "none"){
+				return checkForParser();
+			}
 			// use dynamic loader
-			/*if(search("link", url) || search("style", url)){
-				callback();
-			}else{*/
 			moduleRequire(["./load-css"], function(load){
-				load(url, callback);
+				load(url, checkForParser);
 			});
-		},
-		pluginBuilder: "xstyle/css-builder"
-
+		}
 	};
 });
 
 },
 'dgrid/List':function(){
-define("dgrid/List", ["dojo/_base/array","dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"], 
-function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
+define("dgrid/List", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"], 
+function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 	// Add user agent/feature CSS classes 
 	hasClass("mozilla", "opera", "webkit", "ie", "ie-6", "ie-6-7", "quirks", "no-quirks", "touch");
 	
-	var scrollbarWidth;
-
-	// establish an extra stylesheet which addCssRule calls will use,
-	// plus an array to track actual indices in stylesheet for removal
-	var
-		extraSheet = put(document.getElementsByTagName("head")[0], "style"),
-		extraRules = [],
-		oddClass = "dgrid-row-odd",
-		evenClass = "dgrid-row-even";
-	// keep reference to actual StyleSheet object (.styleSheet for IE < 9)
-	extraSheet = extraSheet.sheet || extraSheet.styleSheet;
-	
-	// functions for adding and removing extra style rules.
-	// addExtraRule is exposed on the List prototype as addCssRule.
-	function addExtraRule(selector, css){
-		var index = extraRules.length;
-		extraRules[index] = (extraSheet.cssRules || extraSheet.rules).length;
-		extraSheet.addRule ?
-			extraSheet.addRule(selector, css) :
-			extraSheet.insertRule(selector + '{' + css + '}', extraRules[index]);
-		return {
-			remove: function(){ removeExtraRule(index); }
-		};
-	}
-	function removeExtraRule(index){
-		var
-			realIndex = extraRules[index],
-			i, l = extraRules.length;
-		if (realIndex === undefined) { return; } // already removed
-		
-		// remove rule indicated in internal array at index
-		extraSheet.deleteRule ?
-			extraSheet.deleteRule(realIndex) :
-			extraSheet.removeRule(realIndex); // IE < 9
-		
-		// Clear internal array item representing rule that was just deleted.
-		// NOTE: we do NOT splice, since the point of this array is specifically
-		// to negotiate the splicing that occurs in the stylesheet itself!
-		extraRules[index] = undefined;
-		
-		// Then update array items as necessary to downshift remaining rule indices.
-		// Can start at index, since array is sparse but strictly increasing.
-		for(i = index; i < l; i++){
-			if(extraRules[i] > realIndex){ extraRules[i]--; }
-		}
-	}
+	var oddClass = "dgrid-row-odd",
+		evenClass = "dgrid-row-even",
+		scrollbarWidth, scrollbarHeight;
 	
 	function byId(id){
 		return document.getElementById(id);
 	}
-
+	
+	function getScrollbarSize(node, dimension){
+		// Used by has tests for scrollbar width/height
+		var body = document.body,
+			size;
+		
+		put(body, node, ".dgrid-scrollbar-measure");
+		size = node["offset" + dimension] - node["client" + dimension];
+		
+		put(node, "!dgrid-scrollbar-measure");
+		body.removeChild(node);
+		
+		return size;
+	}
+	has.add("dom-scrollbar-width", function(global, doc, element){
+		return getScrollbarSize(element, "Width");
+	});
+	has.add("dom-scrollbar-height", function(global, doc, element){
+		return getScrollbarSize(element, "Height");
+	});
+	
 	// var and function for autogenerating ID when one isn't provided
 	var autogen = 0;
 	function generateId(){
@@ -416,9 +407,15 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 		//		in the footer area should set this to true.
 		showFooter: false,
 		// maintainOddEven: Boolean
-		//		Indicates whether to maintain the odd/even classes when new rows are inserted.
+		//		Whether to maintain the odd/even classes when new rows are inserted.
 		//		This can be disabled to improve insertion performance if odd/even styling is not employed.
 		maintainOddEven: true,
+		
+		// cleanAddedRules: Boolean
+		//		Whether to track rules added via the addCssRule method to be removed
+		//		when the list is destroyed.  Note this is effective at the time of
+		//		the call to addCssRule, not at the time of destruction.
+		cleanAddedRules: true,
 		
 		postscript: function(params, srcNodeRef){
 			// perform setup and invoke create in postScript to allow descendants to
@@ -547,8 +544,8 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			//		Called automatically after postCreate if the component is already
 			//		visible; otherwise, should be called manually once placed.
 			
-			this.inherited(arguments);
 			if(this._started){ return; } // prevent double-triggering
+			this.inherited(arguments);
 			this._started = true;
 			this.resize();
 			// apply sort (and refresh) now that we're ready to render
@@ -586,23 +583,26 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			
 			if(!scrollbarWidth){
 				// Measure the browser's scrollbar width using a DIV we'll delete right away
-				var scrollDiv = put(document.body, "div.dgrid-scrollbar-measure");
-				scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
-				put(scrollDiv, "!");
+				scrollbarWidth = has("dom-scrollbar-width");
+				scrollbarHeight = has("dom-scrollbar-height");
 				
-				// avoid crazy issues in IE7 only, with certain widgets inside
-				if(has("ie") === 7){ scrollbarWidth++; }
+				// Avoid issues with certain widgets inside in IE7, and
+				// ColumnSet scroll issues with all supported IE versions
+				if(has("ie")){
+					scrollbarWidth++;
+					scrollbarHeight++;
+				}
 				
 				// add rules that can be used where scrollbar width/height is needed
-				this.addCssRule(".dgrid-scrollbar-width", "width: " + scrollbarWidth + "px");
-				this.addCssRule(".dgrid-scrollbar-height", "height: " + scrollbarWidth + "px");
+				miscUtil.addCssRule(".dgrid-scrollbar-width", "width: " + scrollbarWidth + "px");
+				miscUtil.addCssRule(".dgrid-scrollbar-height", "height: " + scrollbarHeight + "px");
 				
 				if(scrollbarWidth != 17 && !quirks){
 					// for modern browsers, we can perform a one-time operation which adds
 					// a rule to account for scrollbar width in all grid headers.
-					this.addCssRule(".dgrid-header", "right: " + scrollbarWidth + "px");
+					miscUtil.addCssRule(".dgrid-header", "right: " + scrollbarWidth + "px");
 					// add another for RTL grids
-					this.addCssRule(".dgrid-rtl-nonwebkit .dgrid-header", "left: " + scrollbarWidth + "px");
+					miscUtil.addCssRule(".dgrid-rtl-nonwebkit .dgrid-header", "left: " + scrollbarWidth + "px");
 				}
 			}
 			
@@ -615,7 +615,20 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 				}, 0);
 			}
 		},
-		addCssRule: addExtraRule,
+		
+		addCssRule: function(selector, css){
+			// summary:
+			//		Version of util/misc.addCssRule which tracks added rules and removes
+			//		them when the List is destroyed.
+			
+			var rule = miscUtil.addCssRule(selector, css);
+			if(this.cleanAddedRules){
+				// Although this isn't a listener, it shares the same remove contract
+				this._listeners.push(rule);
+			}
+			return rule;
+		},
+		
 		on: function(eventType, listener){
 			// delegate events to the domNode
 			var signal = listen(this.domNode, eventType, listener);
@@ -651,8 +664,8 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			// summary:
 			//		Destroys this grid
 			
-			// remove any event listeners
-			if(this._listeners){ // guard against accidental subsequent calls to destroy
+			// Remove any event listeners and other such removables
+			if(this._listeners){ // Guard against accidental subsequent calls to destroy
 				for(var i = this._listeners.length; i--;){
 					this._listeners[i].remove();
 				}
@@ -676,10 +689,9 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			this.scrollTo({ x: 0, y: 0 });
 		},
 		
-		newRow: function(object, before, to, options){
-			if(!before || before.parentNode){
-				var i = options.start + to;
-				var row = this.insertRow(object, before ? before.parentNode : this.contentNode, before, i, options);
+		newRow: function(object, parentNode, beforeNode, i, options){
+			if(parentNode){
+				var row = this.insertRow(object, parentNode, beforeNode, i, options);
 				put(row, ".ui-state-highlight");
 				setTimeout(function(){
 					put(row, "!ui-state-highlight");
@@ -721,7 +733,7 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			if(results.observe){
 				// observe the results for changes
 				var observerIndex = this.observers.push(results.observe(function(object, from, to){
-					var firstRow, nextNode;
+					var firstRow, nextNode, parentNode;
 					// a change in the data took place
 					if(from > -1 && rows[from]){
 						// remove from old slot
@@ -753,7 +765,9 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 								nextNode = (nextNode.connected || nextNode).nextSibling;
 							}
 						}
-						row = self.newRow(object, nextNode, to, options);
+						parentNode = (beforeNode && beforeNode.parentNode) ||
+							(nextNode && nextNode.parentNode) || self.contentNode;
+						row = self.newRow(object, parentNode, nextNode, options.start + to, options);
 						
 						if(row){
 							row.observerIndex = observerIndex;
@@ -769,6 +783,7 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 						options.count++;
 					}
 					from != to && firstRow && self.adjustRowIndices(firstRow);
+					self._onNotification(rows, object, from, to);
 				}, true)) - 1;
 			}
 			var rowsFragment = document.createDocumentFragment();
@@ -801,7 +816,13 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			}
 			return whenDone(rows);
 		},
-		
+
+		_onNotification: function(rows, object, from, to){
+			// summary:
+			//		Protected method called whenever a store notification is observed.
+			//		Intended to be extended as necessary by mixins/extensions.
+		},
+
 		renderHeader: function(){
 			// no-op in a plain list
 		},
@@ -820,17 +841,14 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 						this.store.getIdentity(object) : this._autoId++),
 				row = byId(id),
 				previousRow = row && row.previousSibling;
-			
-			if(!row || // we must create a row if it doesn't exist, or if it previously belonged to a different container 
-					(beforeNode && row.parentNode != beforeNode.parentNode)){
-				if(row){// if it existed elsewhere in the DOM, we will remove it, so we can recreate it
-					this.removeRow(row);
-				}
-				row = this.renderRow(object, options);
-				row.className = (row.className || "") + " ui-state-default dgrid-row " + (i % 2 == 1 ? oddClass : evenClass);
-				// get the row id for easy retrieval
-				this._rowIdToObject[row.id = id] = object;
+		
+			if(row){// if it existed elsewhere in the DOM, we will remove it, so we can recreate it
+				this.removeRow(row);
 			}
+			row = this.renderRow(object, options);
+			row.className = (row.className || "") + " ui-state-default dgrid-row " + (i % 2 == 1 ? oddClass : evenClass);
+			// get the row id for easy retrieval
+			this._rowIdToObject[row.id = id] = object;
 			parent.insertBefore(row, beforeNode || null);
 			if(previousRow){
 				// in this case, we are pulling the row from another location in the grid, and we need to readjust the rowIndices from the point it was removed
@@ -1037,12 +1055,12 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 			//		Sets named properties on a List object.
 			//		A programmatic setter may be defined in subclasses.
 			//
-			//	set() may also be called with a hash of name/value pairs, ex:
+			//		set() may also be called with a hash of name/value pairs, ex:
 			//	|	myObj.set({
 			//	|		foo: "Howdy",
 			//	|		bar: 3
 			//	|	})
-			//	This is equivalent to calling set(foo, "Howdy") and set(bar, 3)
+			//		This is equivalent to calling set(foo, "Howdy") and set(bar, 3)
 			
 			if(typeof name === "object"){
 				for(var k in name){
@@ -1155,8 +1173,39 @@ function(arrayUtil, kernel, declare, listen, has, miscUtil, TouchScroll, hasClas
 
 },
 'dgrid/util/misc':function(){
-define("dgrid/util/misc", [], function(){
-	// This module defines miscellaneous utility methods.
+define("dgrid/util/misc", ["put-selector/put"], function(put){
+	// summary:
+	//		This module defines miscellaneous utility methods for purposes of
+	//		adding styles, and throttling/debouncing function calls.
+	
+	// establish an extra stylesheet which addCssRule calls will use,
+	// plus an array to track actual indices in stylesheet for removal
+	var extraRules = [],
+		extraSheet,
+		removeMethod,
+		rulesProperty,
+		invalidCssChars = /([^A-Za-z0-9_\u00A0-\uFFFF-])/g;
+	
+	function removeRule(index){
+		// Function called by the remove method on objects returned by addCssRule.
+		var realIndex = extraRules[index],
+			i, l;
+		if (realIndex === undefined) { return; } // already removed
+		
+		// remove rule indicated in internal array at index
+		extraSheet[removeMethod](realIndex);
+		
+		// Clear internal array item representing rule that was just deleted.
+		// NOTE: we do NOT splice, since the point of this array is specifically
+		// to negotiate the splicing that occurs in the stylesheet itself!
+		extraRules[index] = undefined;
+		
+		// Then update array items as necessary to downshift remaining rule indices.
+		// Can start at index + 1, since array is sparse but strictly increasing.
+		for(i = index + 1, l = extraRules.length; i < l; i++){
+			if(extraRules[i] > realIndex){ extraRules[i]--; }
+		}
+	}
 	
 	var util = {
 		defaultDelay: 15,
@@ -1171,7 +1220,7 @@ define("dgrid/util/misc", [], function(){
 				ran = true;
 				cb.apply(context, arguments);
 				setTimeout(function(){ ran = false; }, delay);
-			}
+			};
 		},
 		throttleDelayed: function(cb, context, delay){
 			// summary:
@@ -1187,7 +1236,7 @@ define("dgrid/util/misc", [], function(){
 					ran = false;
 					cb.apply(context, a);
 				}, delay);
-			}
+			};
 		},
 		debounce: function(cb, context, delay){
 			// summary:
@@ -1204,7 +1253,54 @@ define("dgrid/util/misc", [], function(){
 				timer = setTimeout(function(){
 					cb.apply(context, a);
 				}, delay);
+			};
+		},
+		
+		addCssRule: function(selector, css){
+			// summary:
+			//		Dynamically adds a style rule to the document.  Returns an object
+			//		with a remove method which can be called to later remove the rule.
+			
+			if(!extraSheet){
+				// First time, create an extra stylesheet for adding rules
+				extraSheet = put(document.getElementsByTagName("head")[0], "style");
+				// Keep reference to actual StyleSheet object (`styleSheet` for IE < 9)
+				extraSheet = extraSheet.sheet || extraSheet.styleSheet;
+				// Store name of method used to remove rules (`removeRule` for IE < 9)
+				removeMethod = extraSheet.deleteRule ? "deleteRule" : "removeRule";
+				// Store name of property used to access rules (`rules` for IE < 9)
+				rulesProperty = extraSheet.cssRules ? "cssRules" : "rules";
 			}
+			
+			var index = extraRules.length;
+			extraRules[index] = (extraSheet.cssRules || extraSheet.rules).length;
+			extraSheet.addRule ?
+				extraSheet.addRule(selector, css) :
+				extraSheet.insertRule(selector + '{' + css + '}', extraRules[index]);
+			
+			return {
+				get: function(prop) {
+					return extraSheet[rulesProperty][extraRules[index]].style[prop];
+				},
+				set: function(prop, value) {
+					if (typeof extraRules[index] !== "undefined") {
+						extraSheet[rulesProperty][extraRules[index]].style[prop] = value;
+					}
+				},
+				remove: function(){
+					removeRule(index);
+				}
+			};
+		},
+		
+		escapeCssIdentifier: function(id){
+			// summary:
+			//		Escapes normally-invalid characters in a CSS identifier (such as .);
+			//		see http://www.w3.org/TR/CSS2/syndata.html#value-def-identifier
+			// id: String
+			//		CSS identifier (e.g. tag name, class, or id) to be escaped
+			
+			return id.replace(invalidCssChars, "\\$1");
 		}
 	};
 	return util;
@@ -1289,12 +1385,16 @@ return declare([List, _StoreMixin], {
 		//		Creates a preload node for rendering a query into, and executes the query
 		//		for the first page of data. Subsequent data will be downloaded as it comes
 		//		into view.
-		var preload = {
-			query: query,
-			count: 0,
-			node: preloadNode,
-			options: options
-		};
+		var self = this,
+			preload = {
+				query: query,
+				count: 0,
+				node: preloadNode,
+				options: options
+			},
+			priorPreload = this.preload,
+			results;
+		
 		if(!preloadNode){
 			// Initial query; set up top and bottom preload nodes
 			var topPreload = {
@@ -1306,6 +1406,7 @@ return declare([List, _StoreMixin], {
 				next: preload,
 				options: options
 			};
+			topPreload.node.style.height = "0";
 			preload.node = preloadNode = put(this.contentNode, "div.dgrid-preload");
 			preload.previous = topPreload;
 		}
@@ -1313,7 +1414,6 @@ return declare([List, _StoreMixin], {
 		// downloaded yet
 		preloadNode.rowIndex = this.minRowsPerPage;
 
-		var priorPreload = this.preload;
 		if(priorPreload){
 			// the preload nodes (if there are multiple) are represented as a linked list, need to insert it
 			if((preload.next = priorPreload.next) && 
@@ -1336,23 +1436,43 @@ return declare([List, _StoreMixin], {
 		var loadingNode = put(preloadNode, "-div.dgrid-loading"),
 			innerNode = put(loadingNode, "div.dgrid-below");
 		innerNode.innerHTML = this.loadingMessage;
-		
+
+		function errback(err) {
+			// Used as errback for when calls;
+			// remove the loadingNode and re-throw if an error was passed
+			put(loadingNode, "!");
+			
+			if(err){
+				if(self._refreshDeferred){
+					self._refreshDeferred.reject(err);
+					delete self._refreshDeferred;
+				}
+				throw err;
+			}
+		}
+
 		// Establish query options, mixing in our own.
 		// (The getter returns a delegated object, so simply using mixin is safe.)
 		options = lang.mixin(this.get("queryOptions"), options, 
 			{start: 0, count: this.minRowsPerPage, query: query});
-		// execute the query
-		var results = query(options);
-		var self = this;
-		// render the result set
-		Deferred.when(this.renderArray(results, preloadNode, options), function(trs){
+		
+		// Protect the query within a _trackError call, but return the QueryResults
+		this._trackError(function(){ return results = query(options); });
+		
+		if(typeof results === "undefined"){
+			// Synchronous error occurred (but was caught by _trackError)
+			errback();
+			return;
+		}
+		
+		// Render the result set
+		Deferred.when(self.renderArray(results, preloadNode, options), function(trs){
 			return Deferred.when(results.total || results.length, function(total){
 				// remove loading node
 				put(loadingNode, "!");
 				// now we need to adjust the height and total count based on the first result set
 				var trCount = trs.length;
-				total = total || trCount;
-				if(!total){
+				if(total === 0){
 					self.noDataNode = put(self.contentNode, "div.dgrid-no-data");
 					self.noDataNode.innerHTML = self.noDataMessage;
 				}
@@ -1382,11 +1502,19 @@ return declare([List, _StoreMixin], {
 				// Redo scroll processing in case the query didn't fill the screen,
 				// or in case scroll position was restored
 				self._processScroll();
+				
+				// If _refreshDeferred is still defined after calling _processScroll,
+				// resolve it now (_processScroll will remove it and resolve it itself
+				// otherwise)
+				if(self._refreshDeferred){
+					self._refreshDeferred.resolve(results);
+					delete self._refreshDeferred;
+				}
+				
 				return trs;
-			});
-		});
-
-		// return results so that callers can handle potential of async error
+			}, errback);
+		}, errback);
+		
 		return results;
 	},
 	
@@ -1399,7 +1527,9 @@ return declare([List, _StoreMixin], {
 		//			specifying it in the options here will override the instance
 		//			property's value for this specific refresh call only.
 		
-		var keep = (options && options.keepScrollPosition);
+		var self = this,
+			keep = (options && options.keepScrollPosition),
+			dfd, results;
 		
 		// Fall back to instance property if option is not defined
 		if(typeof keep === "undefined"){ keep = this.keepScrollPosition; }
@@ -1410,13 +1540,48 @@ return declare([List, _StoreMixin], {
 		this.inherited(arguments);
 		if(this.store){
 			// render the query
-			var self = this;
-			this._trackError(function(){
-				return self.renderQuery(function(queryOptions){
-					return self.store.query(self.query, queryOptions);
-				});
+			dfd = this._refreshDeferred = new Deferred();
+			
+			// renderQuery calls _trackError internally
+			results = self.renderQuery(function(queryOptions){
+				return self.store.query(self.query, queryOptions);
+			});
+			if(typeof results === "undefined"){
+				// Synchronous error occurred; reject the refresh promise.
+				dfd.reject();
+			}
+			
+			// Internally, _refreshDeferred will always be resolved with an object
+			// containing `results` (QueryResults) and `rows` (the rendered rows);
+			// externally the promise will resolve simply with the QueryResults, but
+			// the event will be emitted with both under respective properties.
+			return dfd.then(function(results){
+				// Emit on a separate turn to enable event to be used consistently for
+				// initial render, regardless of whether the backing store is async
+				setTimeout(function() {
+					listen.emit(self.domNode, "dgrid-refresh-complete", {
+						bubbles: true,
+						cancelable: false,
+						grid: self,
+						results: results // QueryResults object (may be a wrapped promise)
+					});
+				}, 0);
+				
+				// Delete the Deferred immediately so nothing tries to re-resolve
+				delete self._refreshDeferred;
+				
+				// Resolve externally with just the QueryResults
+				return results;
+			}, function(err){
+				delete self._refreshDeferred;
+				throw err;
 			});
 		}
+	},
+	
+	resize: function(){
+		this.inherited(arguments);
+		this._processScroll();
 	},
 	
 	_calcRowHeight: function(rowElement){
@@ -1437,12 +1602,16 @@ return declare([List, _StoreMixin], {
 		var grid = this,
 			scrollNode = grid.bodyNode,
 			// grab current visible top from event if provided, otherwise from node
-			visibleTop = (evt && evt.scrollTop) || scrollNode.scrollTop,
+			visibleTop = (evt && evt.scrollTop) || this.getScrollPosition().y,
 			visibleBottom = scrollNode.offsetHeight + visibleTop,
 			priorPreload, preloadNode, preload = grid.preload,
 			lastScrollTop = grid.lastScrollTop,
 			requestBuffer = grid.bufferRows * grid.rowHeight,
-			searchBuffer = requestBuffer - grid.rowHeight; // Avoid rounding causing multiple queries
+			searchBuffer = requestBuffer - grid.rowHeight, // Avoid rounding causing multiple queries
+			// References related to emitting dgrid-refresh-complete if applicable
+			refreshDfd,
+			lastResults,
+			lastRows;
 		
 		// XXX: I do not know why this happens.
 		// munging the actual location of the viewport relative to the preload node by a few pixels in either
@@ -1501,10 +1670,7 @@ return declare([List, _StoreMixin], {
 					preloadNode.style.height = (preloadNode.offsetHeight + reclaimedHeight) + "px";
 				}
 				// we remove the elements after expanding the preload node so that the contraction doesn't alter the scroll position
-				var trashBin = put("div");
-				for(var i = 0; i < toDelete.length; i++){
-					put(trashBin, toDelete[i]); // remove it from the DOM
-				}
+				var trashBin = put("div", toDelete);
 				setTimeout(function(){
 					// we can defer the destruction until later
 					put(trashBin, "!");
@@ -1627,12 +1793,18 @@ return declare([List, _StoreMixin], {
 				var results = preload.query(options),
 					trackedResults = grid._trackError(function(){ return results; });
 				
-				if(trackedResults === undefined){ return; } // sync query failed
+				if(trackedResults === undefined){
+					// Sync query failed
+					put(loadingNode, "!");
+					return;
+				}
 
 				// Isolate the variables in case we make multiple requests
 				// (which can happen if we need to render on both sides of an island of already-rendered rows)
 				(function(loadingNode, scrollNode, below, keepScrollTo, results){
-					Deferred.when(grid.renderArray(results, loadingNode, options), function(){
+					lastRows = Deferred.when(grid.renderArray(results, loadingNode, options), function(rows){
+						lastResults = results;
+						
 						// can remove the loading node now
 						beforeNode = loadingNode.nextSibling;
 						put(loadingNode, "!");
@@ -1663,10 +1835,23 @@ return declare([List, _StoreMixin], {
 						}
 						// make sure we have covered the visible area
 						grid._processScroll();
+						return rows;
+					}, function (e) {
+						put(loadingNode, "!");
+						throw e;
 					});
 				}).call(this, loadingNode, scrollNode, below, keepScrollTo, results);
 				preload = preload.previous;
 			}
+		}
+		
+		// After iterating, if additional requests have been made mid-refresh,
+		// resolve the refresh promise based on the latest results obtained
+		if (lastRows && (refreshDfd = this._refreshDeferred)) {
+			delete this._refreshDeferred;
+			Deferred.when(lastRows, function() {
+				refreshDfd.resolve(lastResults);
+			});
 		}
 	}
 });
@@ -1679,6 +1864,10 @@ define("dgrid/_StoreMixin", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/_b
 function(kernel, declare, lang, Deferred, listen, put){
 	// This module isolates the base logic required by store-aware list/grid
 	// components, e.g. OnDemandList/Grid and the Pagination extension.
+	
+	// Noop function, needed for _trackError when callback due to a bug in 1.8
+	// (see http://bugs.dojotoolkit.org/ticket/16667)
+	function noop(value){ return value; }
 	
 	function emitError(err){
 		// called by _trackError in context of list/grid, if an error is encountered
@@ -1941,7 +2130,7 @@ function(kernel, declare, lang, Deferred, listen, put){
 			}
 			
 			// wrap in when call to handle reporting of potential async error
-			return Deferred.when(result, null, lang.hitch(this, emitError));
+			return Deferred.when(result, noop, lang.hitch(this, emitError));
 		},
 		
 		newRow: function(){

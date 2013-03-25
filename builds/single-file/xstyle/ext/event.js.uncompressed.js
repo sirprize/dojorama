@@ -1,8 +1,8 @@
-define("xstyle/ext/event", ['../elemental'], function(elemental){
+define("xstyle/ext/event", ['../xstyle'], function(xstyle){
 	var module, hasAddEventListener = !!document.addEventListener;
 	return module = {
 		onProperty: function(name, value, rule){
-			elemental.addRenderer(name, value, rule, function(element){
+			xstyle.addRenderer(name, value, rule, function(element){
 				module.on(element, name.slice(2), function(e){
 	console.log("execute event", value);
 				});

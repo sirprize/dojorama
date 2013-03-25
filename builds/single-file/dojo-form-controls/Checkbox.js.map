@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"Checkbox.js",
+"lineCount":2,
+"mappings":"A,SAAAA,MAAA,kHAMG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,QAOQJ,EAAA,EAASI,CAAT,+JASkBC,QAAAA,GACjBC,cAAA,CAAeC,SAAf,CAKAC,iBANiBH,CAMEI,YANFJ,cATlB,cAkBWK,QAAAA,GAGNC,eAHMD,EAGaR,CAAAU,IAAA,CAAYD,eAAZ,kBAHbD,EAING,QAAA,aAAsBX,CAAAU,IAAA,CAAYD,eAAZ;UAAtB,CAJMD,CAlBX,YA0BSI,QAAAA,GACRC,QAAA,CAASZ,CAAA,CAAGa,YAAH,UAA2Bf,CAAAgB,MAAA,MAAiB,QAAA,CAAUC,CAAV,EACjDL,QAAA,WAAoBG,YAAAP,QAApB,CADiD,CAAjB,CAA3B,CAAT,CADQK,CA1BT,iBAgCcK,QAAAA,CAAUC,CAAVD,EACbH,YAAAP,QADaU,GACYC,CACzBC,UAAA,aAAuBD,CAAvB,CACAE,qBAAA,CAAqBC,QAAA,SAArB,CAHaJ,CAhCd,eAsCYK,QAAAA,CAASJ,CAATI,EASXR,YAAAI,MATWI,EASWJ,CATXI,MASoBJ,CATpBI,MASyCJ,CATzCI,iBAWDJ,EAXCI,GAYPJ,CAZOI,IAeRC,cAfQD,EAgBPX,QAAA,WAAoBO,CAApB,CAhBOI,CAtCZ,eA0DYE,QAAAA,SAIJjB,aAJIiB,CAIWN,UAJXM,IA1DZ,EAPR,CANH;",
+"sources":["Checkbox.js.uncompressed.js"],
+"names":["define","declare","lang","domAttr","on","_FormWidget","postMixInProperties","inherited","arguments","checkedAttr","checked","_fillContent","srcNodeRef","has","set","postCreate","own","domNode","hitch","ev","_setCheckedAttr","value","_set","_handleOnChange","get","_setValueAttr","_created","_getValueAttr"]
+}

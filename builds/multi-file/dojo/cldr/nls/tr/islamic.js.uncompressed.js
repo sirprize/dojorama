@@ -1,13 +1,9 @@
 define(
 "dojo/cldr/nls/tr/islamic", //begin v1.x content
 {
-	"dateFormatItem-yM": "MM/y",
-	"dateFormatItem-yyyyMMMEd": "dd MMM y G E",
-	"dateFormatItem-yQ": "y/Q",
+	"dateFormatItem-yyyyMMMEd": "d MMM y G E",
 	"dayPeriods-format-wide-pm": "ÖS",
-	"dateFormatItem-MMMEd": "dd MMM E",
-	"dateFormatItem-hms": "h:mm:ss a",
-	"dateFormatItem-yQQQ": "y/QQQ",
+	"dateFormatItem-MMMEd": "d MMMM E",
 	"days-standAlone-wide": [
 		"Pazar",
 		"Pazartesi",
@@ -17,7 +13,6 @@ define(
 		"Cuma",
 		"Cumartesi"
 	],
-	"dateFormatItem-MMM": "LLL",
 	"months-standAlone-narrow": [
 		"1",
 		"2",
@@ -32,6 +27,7 @@ define(
 		"11",
 		"12"
 	],
+	"dateFormatItem-Gy": "y G",
 	"dayPeriods-format-wide-am": "ÖÖ",
 	"quarters-standAlone-abbr": [
 		"Ç1",
@@ -39,6 +35,7 @@ define(
 		"Ç3",
 		"Ç4"
 	],
+	"dateFormatItem-y": "y G",
 	"dateFormatItem-yyyy": "y G",
 	"months-standAlone-abbr": [
 		"Muharrem",
@@ -55,7 +52,6 @@ define(
 		"Zilhicce"
 	],
 	"dateFormatItem-Ed": "d E",
-	"dateFormatItem-yMMM": "MMM y",
 	"days-standAlone-narrow": [
 		"P",
 		"P",
@@ -65,22 +61,16 @@ define(
 		"C",
 		"C"
 	],
-	"dateFormatItem-yyyyMMMM": "MMMM y G",
-	"dateFormat-long": "dd MMMM y G",
-	"dateFormatItem-Hm": "HH:mm",
-	"dateFormatItem-yyMM": "MM.yy G",
-	"dateFormat-medium": "dd MMM y G",
-	"dateFormatItem-Hms": "HH:mm:ss",
-	"dateFormatItem-yyMMM": "MMM yy G",
-	"dateFormatItem-yyQQQQ": "QQQQ yy G",
-	"dateFormatItem-yMd": "dd.MM.yyyy",
+	"dateFormatItem-GyMMMd": "dd MMM y G",
+	"dateFormat-long": "d MMMM y G",
+	"dateFormat-medium": "d MMM y G",
 	"quarters-standAlone-wide": [
 		"1. çeyrek",
 		"2. çeyrek",
 		"3. çeyrek",
 		"4. çeyrek"
 	],
-	"dateFormatItem-ms": "mm:ss",
+	"dateFormatItem-yyyyQQQQ": "G y/QQQQ",
 	"quarters-standAlone-narrow": [
 		"1.",
 		"2.",
@@ -104,14 +94,13 @@ define(
 	"dateFormatItem-yyyyMd": "dd.MM.y G",
 	"dateFormatItem-yyyyMMMd": "dd MMM y G",
 	"dateFormatItem-yyyyMEd": "dd.MM.y G E",
-	"dateFormatItem-MMMd": "dd MMM",
+	"dateFormatItem-MMMd": "d MMMM",
 	"quarters-format-narrow": [
 		"1.",
 		"2.",
 		"3.",
 		"4."
 	],
-	"dateFormatItem-yyQ": "Q yy G",
 	"months-format-abbr": [
 		"Muharrem",
 		"Safer",
@@ -126,7 +115,6 @@ define(
 		"Zilkade",
 		"Zilhicce"
 	],
-	"dateFormatItem-H": "HH",
 	"quarters-format-abbr": [
 		"Ç1",
 		"Ç2",
@@ -142,8 +130,6 @@ define(
 		"Cum",
 		"Cmt"
 	],
-	"dateFormatItem-mmss": "mm:ss",
-	"dateFormatItem-M": "L",
 	"days-format-narrow": [
 		"P",
 		"P",
@@ -153,9 +139,10 @@ define(
 		"C",
 		"C"
 	],
-	"dateFormatItem-yMMMd": "dd MMM y",
+	"dateFormatItem-GyMMMEd": "d MMM y G E",
+	"dateFormatItem-GyMMM": "MMM y G",
+	"dateFormatItem-yyyyQQQ": "G y/QQQ",
 	"dateFormatItem-MEd": "dd.MM E",
-	"dateFormatItem-yyyyQQQ": "QQQ y G",
 	"days-standAlone-short": [
 		"Pa",
 		"Pt",
@@ -165,7 +152,6 @@ define(
 		"Cu",
 		"Ct"
 	],
-	"dateFormatItem-hm": "h:mm a",
 	"days-standAlone-abbr": [
 		"Paz",
 		"Pzt",
@@ -175,13 +161,10 @@ define(
 		"Cum",
 		"Cmt"
 	],
-	"dateFormat-short": "dd.MM.yyyy G",
+	"dateFormat-short": "d.MM.y G",
 	"dateFormatItem-yyyyM": "MM.y G",
-	"dateFormatItem-yMMMEd": "d MMM y E",
-	"dateFormat-full": "dd MMMM y G EEEE",
+	"dateFormat-full": "d MMMM y G EEEE",
 	"dateFormatItem-Md": "dd.MM",
-	"dateFormatItem-yyyyQ": "Q y G",
-	"dateFormatItem-yMEd": "dd.MM.yyyy E",
 	"months-format-wide": [
 		"Muharrem",
 		"Safer",
@@ -206,7 +189,6 @@ define(
 		"Ct"
 	],
 	"dateFormatItem-yyyyMMM": "MMM y G",
-	"dateFormatItem-d": "d",
 	"quarters-format-wide": [
 		"1. çeyrek",
 		"2. çeyrek",

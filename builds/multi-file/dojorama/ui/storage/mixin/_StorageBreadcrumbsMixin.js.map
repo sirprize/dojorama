@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"_StorageBreadcrumbsMixin.js",
+"lineCount":2,
+"mappings":"A,SAEAA,MAAA,iKAIG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,QAKQF,EAAA,2DAWSG,QAAAA,GACRC,cAAA,CAAeC,SAAf,CACAC,uBAFQH,CAEiB,IAAIF,CAAJ,IAA0BM,oBAA1B,CAEzBC,sBAAAC,KAJQN,QAKGD,CAAAQ,UALHP,KAMCQ,WAAAC,SAAA,QAAAC,SAAA,EANDV,CASRK,sBAAAM,aATQX,QAUGD,CAAAa,kBAVHZ,KAWCQ,WAAAC,SAAA,WAAAC,SAAA,EAXDV,EAXT;QA0BMa,QAAAA,GACLZ,cAAA,CAAeC,SAAf,CACAC,uBAAAU,QAAA,EAFKA,CA1BN,iCA+B8BC,QAAAA,GAM7BX,sBAAAY,IAAA,UAJIV,qBAAAC,KAIJ,CAHID,qBAAAM,aAGJ,EAN6BG,CA/B9B,wBAwCqBE,QAAAA,GACpBb,sBAAAc,KAAA,EADoBD,CAxCrB,EALR,CAJH;",
+"sources":["_StorageBreadcrumbsMixin.js.uncompressed.js"],
+"names":["define","declare","BreadcrumbsWidget","nls","postCreate","inherited","arguments","breadcrumbsWidget","breadcrumbsNode","breadcrumbsItems","home","homeLabel","router","getRoute","assemble","storageIndex","storageIndexLabel","startup","setStorageIndexBreadcrumbsItems","set","showStorageBreadcrumbs","show"]
+}

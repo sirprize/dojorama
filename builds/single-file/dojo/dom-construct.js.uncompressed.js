@@ -1,5 +1,5 @@
-define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./dom-attr", "./on"],
-		function(exports, dojo, has, win, dom, attr, on){
+define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./dom-attr"],
+		function(exports, dojo, has, win, dom, attr){
 	// module:
 	//		dojo/dom-construct
 	// summary:
@@ -35,6 +35,21 @@ define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/w
 			tw.post = "</" + tw.reverse().join("></") + ">";
 			// the last line is destructive: it reverses the array,
 			// but we don't care at this point
+		}
+	}
+
+	var tested, html5domfix;
+	if(has("ie") <= 8){
+		html5domfix = function(){
+			if(tested){ return; }
+			tested = true;
+			var div = d.create('div', { innerHTML:"<nav>a</nav>"});
+			if(div.childNodes.length !== 1){
+				'abbr article aside audio canvas details figcaption figure footer header ' +
+				'hgroup mark meter nav output progress section summary time video'.replace(/\b\w+\b/g,function(n){
+					d.createElement(n);
+				});
+			}
 		}
 	}
 
@@ -77,6 +92,10 @@ define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/w
 		if(!masterId){
 			doc[masterName] = masterId = ++masterNum + "";
 			masterNode[masterId] = doc.createElement("div");
+		}
+
+		if(has("ie") <= 8){
+			if(!tested){ html5domfix(); }
 		}
 
 		// make sure the frag is a string.

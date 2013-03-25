@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"_ReleaseBreadcrumbsMixin.js",
+"lineCount":3,
+"mappings":"A,SAEAA,MAAA,iKAIG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,QAKQF,EAAA,2DAWSG,QAAAA,GACRC,cAAA,CAAeC,SAAf,CACAC,uBAFQH,CAEiB,IAAIF,CAAJ,IAA0BM,oBAA1B,CAEzBC,sBAAAC,KAJQN,QAKGD,CAAAQ,UALHP,KAMCQ,WAAAC,SAAA,QAAAC,SAAA,EANDV,CASRK,sBAAAM,aATQX,QAUGD,CAAAa,kBAVHZ,KAWCQ,WAAAC,SAAA,gBAAAC,SAAA,EAXDV,CAcRK;qBAAAQ,cAdQb,QAeGD,CAAAe,mBAfHd,KAgBCQ,WAAAC,SAAA,iBAAAC,SAAA,EAhBDV,EAXT,SA+BMe,QAAAA,GACLd,cAAA,CAAeC,SAAf,CACAC,uBAAAY,QAAA,EAFKA,CA/BN,iCAoC8BC,QAAAA,GAM7Bb,sBAAAc,IAAA,UAJIZ,qBAAAC,KAIJ,CAHID,qBAAAM,aAGJ,EAN6BK,CApC9B,kCA6C+BE,QAAAA,GAO9Bf,sBAAAc,IAAA,UALIZ,qBAAAC,KAKJ,CAJID,qBAAAM,aAIJ,CAHIN,qBAAAQ,cAGJ,EAP8BK,CA7C/B;iCAuD+BC,QAAAA,CAAUC,CAAVD,EAO9BhB,sBAAAc,IAAA,UALIZ,qBAAAC,KAKJ,CAJID,qBAAAM,aAIJ,QAHaS,CAGb,GAP8BD,CAvD/B,wBAiEqBE,QAAAA,GACpBlB,sBAAAmB,KAAA,EADoBD,CAjErB,EALR,CAJH;",
+"sources":["_ReleaseBreadcrumbsMixin.js.uncompressed.js"],
+"names":["define","declare","BreadcrumbsWidget","nls","postCreate","inherited","arguments","breadcrumbsWidget","breadcrumbsNode","breadcrumbsItems","home","homeLabel","router","getRoute","assemble","releaseIndex","releaseIndexLabel","releaseCreate","releaseCreateLabel","startup","setReleaseIndexBreadcrumbsItems","set","setReleaseCreateBreadcrumbsItems","setReleaseUpdateBreadcrumbsItems","label","showReleaseBreadcrumbs","show"]
+}

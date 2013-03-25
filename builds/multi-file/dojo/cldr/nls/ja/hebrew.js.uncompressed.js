@@ -1,13 +1,11 @@
 define(
 "dojo/cldr/nls/ja/hebrew", //begin v1.x content
 {
-	"dateFormatItem-yM": "y/M",
-	"dateFormatItem-yQ": "y/Q",
+	"dateFormatItem-yyyyMMMEd": "Gy年M月d日(E)",
 	"months-standAlone-abbr-leap": "アダル II",
 	"dayPeriods-format-wide-pm": "午後",
 	"dateFormatItem-MMMEd": "M月d日(E)",
 	"dateFormatItem-hms": "aK:mm:ss",
-	"dateFormatItem-yQQQ": "yQQQ",
 	"dateFormatItem-MMM": "M月",
 	"months-standAlone-narrow": [
 		"1",
@@ -24,11 +22,13 @@ define(
 		"12",
 		"13"
 	],
+	"dateFormatItem-Gy": "Gy年",
 	"dayPeriods-format-wide-am": "午前",
 	"months-format-narrow-leap": "7",
 	"months-format-abbr-leap": "アダル II",
-	"dateFormatItem-y": "y年",
+	"dateFormatItem-y": "Gy年",
 	"timeFormat-full": "H時mm分ss秒 zzzz",
+	"dateFormatItem-yyyy": "Gy年",
 	"months-standAlone-narrow-leap": "7",
 	"months-standAlone-abbr": [
 		"ティスレ",
@@ -46,7 +46,6 @@ define(
 		"エルル"
 	],
 	"dateFormatItem-Ed": "d日(E)",
-	"dateFormatItem-yMMM": "y年M月",
 	"days-standAlone-narrow": [
 		"日",
 		"月",
@@ -59,12 +58,13 @@ define(
 	"eraAbbr": [
 		"AM"
 	],
-	"dateFormat-long": "y年M月d日",
+	"dateFormatItem-GyMMMd": "Gy年M月d日",
+	"dateFormat-long": "Gy年M月d日",
 	"timeFormat-medium": "H:mm:ss",
 	"dateFormatItem-Hm": "H:mm",
-	"dateFormat-medium": "yyyy/MM/dd",
+	"dateFormat-medium": "Gy/MM/dd",
 	"dateFormatItem-Hms": "H:mm:ss",
-	"dateFormatItem-yMd": "y/M/d",
+	"dateFormatItem-yyyyQQQQ": "GyQQQQ",
 	"months-standAlone-wide": [
 		"ティスレ",
 		"へシボン",
@@ -80,6 +80,9 @@ define(
 		"アヴ",
 		"エルル"
 	],
+	"dateFormatItem-yyyyMd": "Gy/M/d",
+	"dateFormatItem-yyyyMMMd": "Gy年M月d日",
+	"dateFormatItem-yyyyMEd": "Gy/M/d(E)",
 	"dateFormatItem-MMMd": "M月d日",
 	"timeFormat-long": "H:mm:ss z",
 	"months-format-abbr": [
@@ -115,7 +118,9 @@ define(
 		"土"
 	],
 	"dateFormatItem-M": "M月",
-	"dateFormatItem-yMMMd": "y年M月d日",
+	"dateFormatItem-GyMMMEd": "Gy年M月d日(E)",
+	"dateFormatItem-GyMMM": "Gy年M月",
+	"dateFormatItem-yyyyQQQ": "Gy/QQQ",
 	"dateFormatItem-MEd": "M/d(E)",
 	"months-format-narrow": [
 		"1",
@@ -143,11 +148,10 @@ define(
 	],
 	"dateFormatItem-hm": "aK:mm",
 	"months-standAlone-wide-leap": "アダル II",
-	"dateFormat-short": "yyyy/MM/dd",
-	"dateFormatItem-yMMMEd": "y年M月d日(E)",
-	"dateFormat-full": "y年M月d日EEEE",
+	"dateFormat-short": "Gy/MM/dd",
+	"dateFormatItem-yyyyM": "Gy/M",
+	"dateFormat-full": "Gy年M月d日EEEE",
 	"dateFormatItem-Md": "M/d",
-	"dateFormatItem-yMEd": "y/M/d(E)",
 	"months-format-wide": [
 		"ティスレ",
 		"へシボン",
@@ -172,6 +176,7 @@ define(
 		"金",
 		"土"
 	],
+	"dateFormatItem-yyyyMMM": "Gy年M月",
 	"dateFormatItem-d": "d日",
 	"quarters-format-wide": [
 		"第1四半期",

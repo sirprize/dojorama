@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"Button.js",
+"lineCount":2,
+"mappings":"A,SAAAA,MAAA,6BAAoC,yFAAA,MAAA,KAApC,CAOG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,CAMCC,CAND,QAQQL,EAAA,EAASK,CAAT,yIAcWC,QAAAA,CAASC,CAATD,EACNC,CADMD,EACQH,CAAAK,IAAA,CAAYD,CAAZ,kBADRD,EAENG,QAAA,SAAkBR,CAAAS,KAAA,CAAUH,CAAAI,UAAV,CAAlB,CAFML,CAdX,YAoBSM,QAAAA,GACRC,cAAA,CAAeC,SAAf,CAEAC,SAAA,CAASX,CAAA,CAAGY,YAAH,SAA0Bf,CAAAgB,MAAA,MAAiB,QAAA,CAAUC,CAAV,KAC7CC,aAD6C,OAE5CjB,EAAAkB,KAAA,CAAWF,CAAX,CAF4C;QAM7CG,YAAA,CAAaH,CAAb,CAN6C,EAO5CA,CAAAI,eAAA,EAP4C,CAAjB,CAA1B,CAAT,CAHQV,CApBT,SAmCMS,QAAAA,CAASH,CAATG,WAnCN,eAuCYE,QAAAA,CAASC,CAATD,EACXP,YAAAL,UADWY,CACcC,CACzBC,UAAA,SAAmBD,CAAnB,CAFWD,CAvCZ,EARR,CAPH;",
+"sources":["Button.js.uncompressed.js"],
+"names":["define","declare","lang","event","domAttr","on","_FormWidget","_fillContent","srcNodeRef","has","set","trim","innerHTML","postCreate","inherited","arguments","own","domNode","hitch","ev","disabled","stop","onClick","preventDefault","_setLabelAttr","label","_set"]
+}

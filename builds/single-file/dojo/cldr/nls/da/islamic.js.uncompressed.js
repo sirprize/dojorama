@@ -1,13 +1,9 @@
 define(
 "dojo/cldr/nls/da/islamic", //begin v1.x content
 {
-	"dateFormatItem-yM": "M/y",
 	"dateFormatItem-yyyyMMMEd": "E d. MMM y G",
-	"dateFormatItem-yQ": "Q yyyy",
 	"dateFormatItem-MMMEd": "E d. MMM",
 	"dateFormatItem-hms": "h.mm.ss a",
-	"dateFormatItem-yQQQ": "QQQ y",
-	"dateFormatItem-MMdd": "dd/MM",
 	"days-standAlone-wide": [
 		"søndag",
 		"mandag",
@@ -18,16 +14,17 @@ define(
 		"lørdag"
 	],
 	"dateFormatItem-MMM": "MMM",
+	"dateFormatItem-Gy": "y G",
 	"quarters-standAlone-abbr": [
 		"K1",
 		"K2",
 		"K3",
 		"K4"
 	],
+	"dateFormatItem-y": "y G",
 	"timeFormat-full": "HH.mm.ss zzzz",
 	"dateFormatItem-yyyy": "y G",
-	"dateFormatItem-Ed": "E d.",
-	"dateFormatItem-yMMM": "MMM y",
+	"dateFormatItem-Ed": "E 'd'. d.",
 	"days-standAlone-narrow": [
 		"S",
 		"M",
@@ -37,14 +34,15 @@ define(
 		"F",
 		"L"
 	],
+	"eraAbbr": [
+		"AH"
+	],
+	"dateFormatItem-GyMMMd": "d. MMM y G",
 	"dateFormat-long": "d. MMMM y G",
 	"timeFormat-medium": "HH.mm.ss",
 	"dateFormatItem-Hm": "HH.mm",
-	"dateFormatItem-yyMM": "MM/y G",
 	"dateFormat-medium": "d. MMM y G",
 	"dateFormatItem-Hms": "HH.mm.ss",
-	"dateFormatItem-yyMMM": "MMM y G",
-	"dateFormatItem-yMd": "d/M/y",
 	"quarters-standAlone-wide": [
 		"1. kvartal",
 		"2. kvartal",
@@ -52,15 +50,13 @@ define(
 		"4. kvartal"
 	],
 	"dateFormatItem-ms": "mm.ss",
+	"dateFormatItem-yyyyQQQQ": "QQQQ y G",
 	"dateFormatItem-yyyyMd": "d/M/y G",
 	"dateFormatItem-yyyyMMMd": "d. MMM y G",
-	"dateFormatItem-MMMMEd": "E d. MMMM",
 	"dateFormatItem-yyyyMEd": "E d/M/y G",
 	"dateFormatItem-MMMd": "d. MMM",
-	"dateFormatItem-yyQ": "Q. 'kvartal' y G",
 	"timeFormat-long": "HH.mm.ss z",
 	"timeFormat-short": "HH.mm",
-	"dateFormatItem-H": "HH",
 	"quarters-format-abbr": [
 		"K1",
 		"K2",
@@ -76,7 +72,6 @@ define(
 		"fre.",
 		"lør."
 	],
-	"dateFormatItem-M": "M",
 	"days-format-narrow": [
 		"S",
 		"M",
@@ -86,7 +81,9 @@ define(
 		"F",
 		"L"
 	],
-	"dateFormatItem-yMMMd": "d. MMM y",
+	"dateFormatItem-M": "M",
+	"dateFormatItem-GyMMMEd": "E d. MMM y G",
+	"dateFormatItem-GyMMM": "MMM y G",
 	"dateFormatItem-yyyyQQQ": "QQQ y G",
 	"dateFormatItem-MEd": "E d/M",
 	"days-standAlone-short": [
@@ -108,13 +105,10 @@ define(
 		"fre",
 		"lør"
 	],
-	"dateFormat-short": "d/M/y G",
+	"dateFormat-short": "d/M/y",
 	"dateFormatItem-yyyyM": "M/y G",
-	"dateFormatItem-yMMMEd": "E d. MMM y",
 	"dateFormat-full": "EEEE d. MMMM y G",
 	"dateFormatItem-Md": "d/M",
-	"dateFormatItem-yyyyQ": "Q y G",
-	"dateFormatItem-yMEd": "E d/M/y",
 	"days-format-short": [
 		"sø",
 		"ma",

@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"coptic.js",
+"lineCount":2,
+"mappings":"A,SAAAA,MAAA,4BAGC,oBAHD,CAGuB,gIAAA,MAAA,KAHvB,CAkBC,oBAlBD,CAkBuB,gIAAA,MAAA,KAlBvB,CAiCC,wBAjCD,CAiC2B,gIAAA,MAAA,KAjC3B;AAgDC,wBAhDD,CAgD2B,gIAAA,MAAA,KAhD3B;",
+"sources":["coptic.js.uncompressed.js"],
+"names":["define"]
+}

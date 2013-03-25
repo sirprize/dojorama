@@ -95,7 +95,7 @@ var d09 = [
     "dojo/store/util/QueryResults",
     "dojo/store/util/SimpleQueryEngine",
     // dojo-sm2-playlist
-    "dojo-sm2-playlist/Playlist",
+    "dojo-sm2-playlist/Playlist"
 ];
 
 var mijit = [

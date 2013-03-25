@@ -1,6 +1,13 @@
-define("xstyle/ext/widget", ['../elemental'], function(elemental){
-	function parse(value, callback, type){
+define("xstyle/ext/widget", ['../xstyle'], function(xstyle){
+	var nextId = 0;
+	function parse(value, callback, type, rule){
 		var Class, prototype;
+		if(rule){
+			var widgetCssClass = 'x-widget-' + nextId++; 
+			// create new rule for the generated elements
+			rule.addSheetRule('.' + widgetCssClass, rule.cssText);
+			widgetCssClass = ' ' + widgetCssClass; // make it suitable for direct addition to className
+		}
 		if(value.eachProperty){
 			var props = {/*cssText: value.cssText*/};
 			value.eachProperty(function(name, value){
@@ -41,7 +48,8 @@ define("xstyle/ext/widget", ['../elemental'], function(elemental){
 						}
 					}
 					callback(function(element){
-						new Class(props, element);
+						var widget = new Class(props, element);
+						widget.domNode.className += widgetCssClass;
 					});
 				}
 			}else{
@@ -105,10 +113,10 @@ define("xstyle/ext/widget", ['../elemental'], function(elemental){
 			//	}
 			return {
 				then: function(callback){
-					parse(value[1].eachProperty ? value[1] : rule, function(renderer){
-						elemental.addRenderer(name, value, rule, renderer);
+					parse(value[0].eachProperty ? value[0] : rule, function(renderer){
+						xstyle.addRenderer(name, value, rule, renderer);
 						callback();
-					}, typeof value == "string" && value); 
+					}, typeof value == "string" && value, rule); 
 				}
 			}
 		}/*,
@@ -122,7 +130,7 @@ define("xstyle/ext/widget", ['../elemental'], function(elemental){
 			//	}
 			return function(name, propertyValue){
 				require([value], function(Class){
-					elemental.addRenderer(rule, function(element){
+					xstyle.addRenderer(rule, function(element){
 						new Class(parse(propertyValue), element);
 					});
 				});

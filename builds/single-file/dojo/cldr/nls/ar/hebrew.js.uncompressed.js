@@ -1,14 +1,12 @@
 define(
 "dojo/cldr/nls/ar/hebrew", //begin v1.x content
 {
-	"dateFormatItem-yM": "M/yyyy",
-	"dateFormatItem-yQ": "Q yyyy",
+	"dateFormatItem-yyyyMMMEd": "E، d MMM، y G",
 	"dayPeriods-format-wide-pm": "م",
 	"eraNames": [
 		"ص"
 	],
 	"dateFormatItem-MMMEd": "E، d MMM",
-	"dateFormatItem-yQQQ": "QQQ y",
 	"days-standAlone-wide": [
 		"الأحد",
 		"الاثنين",
@@ -18,8 +16,11 @@ define(
 		"الجمعة",
 		"السبت"
 	],
+	"dateFormatItem-Gy": "y G",
 	"dayPeriods-format-wide-am": "ص",
+	"dateFormatItem-y": "y G",
 	"timeFormat-full": "h:mm:ss a zzzz",
+	"dateFormatItem-yyyy": "y G",
 	"months-standAlone-abbr": [
 		"تشري",
 		"مرحشوان",
@@ -36,7 +37,6 @@ define(
 		"أيلول"
 	],
 	"dateFormatItem-Ed": "E، d",
-	"dateFormatItem-yMMM": "MMM y",
 	"days-standAlone-narrow": [
 		"ح",
 		"ن",
@@ -49,10 +49,11 @@ define(
 	"eraAbbr": [
 		"ص"
 	],
-	"dateFormat-long": "d MMMM، y",
+	"dateFormatItem-GyMMMd": "d MMM، y G",
+	"dateFormat-long": "d MMMM، y G",
 	"timeFormat-medium": "h:mm:ss a",
-	"dateFormat-medium": "dd/MM/yyyy",
-	"dateFormatItem-yMd": "d/M/yyyy",
+	"dateFormat-medium": "dd/MM/y G",
+	"dateFormatItem-yyyyQQQQ": "QQQQ y G",
 	"quarters-standAlone-narrow": [
 		"١",
 		"٢",
@@ -74,6 +75,9 @@ define(
 		"آب",
 		"أيلول"
 	],
+	"dateFormatItem-yyyyMd": "d/M/y G",
+	"dateFormatItem-yyyyMMMd": "d MMM، y G",
+	"dateFormatItem-yyyyMEd": "E، d/M/y G",
 	"dateFormatItem-MMMd": "d MMM",
 	"quarters-format-narrow": [
 		"١",
@@ -107,7 +111,9 @@ define(
 		"الجمعة",
 		"السبت"
 	],
-	"dateFormatItem-yMMMd": "d MMM، y",
+	"dateFormatItem-GyMMMEd": "E، d MMM، y G",
+	"dateFormatItem-GyMMM": "MMM y G",
+	"dateFormatItem-yyyyQQQ": "QQQ y G",
 	"dateFormatItem-MEd": "E، d/M",
 	"days-standAlone-short": [
 		"الأحد",
@@ -127,11 +133,10 @@ define(
 		"الجمعة",
 		"السبت"
 	],
-	"dateFormat-short": "d/M/yyyy",
-	"dateFormatItem-yMMMEd": "E، d MMM، y",
-	"dateFormat-full": "EEEE، d MMMM، y",
+	"dateFormat-short": "d/M/y GGGGG",
+	"dateFormatItem-yyyyM": "M/y G",
+	"dateFormat-full": "EEEE، d MMMM، y G",
 	"dateFormatItem-Md": "d/M",
-	"dateFormatItem-yMEd": "E، d/M/yyyy",
 	"months-format-wide": [
 		"تشري",
 		"مرحشوان",
@@ -156,6 +161,7 @@ define(
 		"الجمعة",
 		"السبت"
 	],
+	"dateFormatItem-yyyyMMM": "MMM y G",
 	"quarters-format-wide": [
 		"الربع الأول",
 		"الربع الثاني",
@@ -163,9 +169,6 @@ define(
 		"الربع الرابع"
 	],
 	"months-format-wide-leap": "آذار الثاني",
-	"eraNarrow": [
-		"ص"
-	],
 	"days-format-wide": [
 		"الأحد",
 		"الاثنين",
@@ -174,6 +177,9 @@ define(
 		"الخميس",
 		"الجمعة",
 		"السبت"
+	],
+	"eraNarrow": [
+		"ص"
 	]
 }
 //end v1.x content

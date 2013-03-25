@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"_ReleaseComponentTitleMixin.js",
+"lineCount":1,
+"mappings":"A,SAEAA,MAAA,8HAGG,QAAA,CACCC,CADD,CAECC,CAFD,QAIQD,EAAA,gBAQSE,QAAAA,GACRC,cAAA,CAAeC,SAAf,CACAC,sBAAAC,UAFQJ,CAE0BD,CAAAM,aAF1BL,CART,EAJR,CAHH;",
+"sources":["_ReleaseComponentTitleMixin.js.uncompressed.js"],
+"names":["define","declare","nls","postCreate","inherited","arguments","sectionTitleNode","innerHTML","sectionTitle"]
+}

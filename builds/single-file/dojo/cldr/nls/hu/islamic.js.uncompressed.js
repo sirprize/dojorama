@@ -1,15 +1,13 @@
 define(
 "dojo/cldr/nls/hu/islamic", //begin v1.x content
 {
-	"dateFormatItem-yM": "y-M",
-	"dateFormatItem-yQ": "y Q",
+	"dateFormatItem-yyyyMMMEd": "G y. MMM d., E",
 	"dayPeriods-format-wide-pm": "du.",
 	"eraNames": [
 		"MF"
 	],
-	"dateFormatItem-MMMEd": "MMM. d., E",
+	"dateFormatItem-MMMEd": "MMM d., E",
 	"dateFormatItem-hms": "a h:mm:ss",
-	"dateFormatItem-yQQQ": "y QQQ",
 	"days-standAlone-wide": [
 		"vasárnap",
 		"hétfő",
@@ -40,7 +38,6 @@ define(
 		"N3",
 		"N4"
 	],
-	"dateFormatItem-y": "y",
 	"timeFormat-full": "H:mm:ss zzzz",
 	"months-standAlone-abbr": [
 		"Moh.",
@@ -56,8 +53,7 @@ define(
 		"Dsül k.",
 		"Dsül h."
 	],
-	"dateFormatItem-Ed": "d E",
-	"dateFormatItem-yMMM": "y MMM",
+	"dateFormatItem-Ed": "d., E",
 	"days-standAlone-narrow": [
 		"V",
 		"H",
@@ -70,20 +66,20 @@ define(
 	"eraAbbr": [
 		"MF"
 	],
-	"dateFormat-long": "y. MMMM d.",
+	"dateFormatItem-GyMMMd": "G y. MMM d.",
+	"dateFormat-long": "G y. MMMM d.",
 	"timeFormat-medium": "H:mm:ss",
 	"dateFormatItem-Hm": "H:mm",
-	"dateFormat-medium": "yyyy.MM.dd.",
+	"dateFormat-medium": "G y.MM.dd.",
 	"dateFormatItem-Hms": "H:mm:ss",
 	"dayPeriods-format-narrow-pm": "du.",
-	"dateFormatItem-yMd": "yyyy.MM.dd.",
 	"quarters-standAlone-wide": [
 		"1. negyedév",
 		"2. negyedév",
 		"3. negyedév",
 		"4. negyedév"
 	],
-	"dateFormatItem-ms": "mm:ss",
+	"dateFormatItem-yyyyQQQQ": "G y. QQQQ",
 	"dayPeriods-format-narrow-am": "de.",
 	"quarters-standAlone-narrow": [
 		"1.",
@@ -105,6 +101,9 @@ define(
 		"Dsül kade",
 		"Dsül hedse"
 	],
+	"dateFormatItem-yyyyMd": "G y.MM.dd.",
+	"dateFormatItem-yyyyMMMd": "G y. MMM d.",
+	"dateFormatItem-yyyyMEd": "G y.MM.dd., E",
 	"dateFormatItem-MMMd": "MMM d.",
 	"timeFormat-long": "H:mm:ss z",
 	"months-format-abbr": [
@@ -122,8 +121,7 @@ define(
 		"Dsül h."
 	],
 	"timeFormat-short": "H:mm",
-	"dateFormatItem-H": "HH",
-	"dateFormatItem-MMMMd": "MMMM d.",
+	"dateFormatItem-H": "H",
 	"quarters-format-abbr": [
 		"N1",
 		"N2",
@@ -139,7 +137,6 @@ define(
 		"P",
 		"Szo"
 	],
-	"dateFormatItem-M": "L",
 	"days-format-narrow": [
 		"V",
 		"H",
@@ -149,7 +146,9 @@ define(
 		"P",
 		"Sz"
 	],
-	"dateFormatItem-yMMMd": "y. MMM d.",
+	"dateFormatItem-GyMMMEd": "G y. MMM d., E",
+	"dateFormatItem-GyMMM": "G y. MMM",
+	"dateFormatItem-yyyyQQQ": "G y. QQQ",
 	"dateFormatItem-MEd": "M. d., E",
 	"days-standAlone-short": [
 		"V",
@@ -170,11 +169,10 @@ define(
 		"P",
 		"Szo"
 	],
-	"dateFormat-short": "yyyy.MM.dd.",
-	"dateFormatItem-yMMMEd": "y. MMM d., E",
-	"dateFormat-full": "y. MMMM d., EEEE",
+	"dateFormat-short": "GGGGG y.MM.dd.",
+	"dateFormatItem-yyyyM": "G y.M.",
+	"dateFormat-full": "G y. MMMM d., EEEE",
 	"dateFormatItem-Md": "M. d.",
-	"dateFormatItem-yMEd": "yyyy.MM.dd., E",
 	"months-format-wide": [
 		"Moharrem",
 		"Safar",
@@ -189,15 +187,12 @@ define(
 		"Dsül kade",
 		"Dsül hedse"
 	],
-	"dateFormatItem-d": "d",
+	"dateFormatItem-yyyyMMM": "G y. MMM",
 	"quarters-format-wide": [
 		"I. negyedév",
 		"II. negyedév",
 		"III. negyedév",
 		"IV. negyedév"
-	],
-	"eraNarrow": [
-		"MF"
 	],
 	"days-format-wide": [
 		"vasárnap",
@@ -207,6 +202,9 @@ define(
 		"csütörtök",
 		"péntek",
 		"szombat"
+	],
+	"eraNarrow": [
+		"MF"
 	],
 	"dateFormatItem-h": "a h"
 }

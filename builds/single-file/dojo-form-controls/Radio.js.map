@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"Radio.js",
+"lineCount":1,
+"mappings":"A,SAAAA,MAAA,gEAGG,QAAA,CACCC,CADD,CAECC,CAFD,QAIQD,EAAA,EAASC,CAAT,iBAJR,CAHH;",
+"sources":["Radio.js.uncompressed.js"],
+"names":["define","declare","Checkbox"]
+}

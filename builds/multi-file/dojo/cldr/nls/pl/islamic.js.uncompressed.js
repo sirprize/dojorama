@@ -1,13 +1,9 @@
 define(
 "dojo/cldr/nls/pl/islamic", //begin v1.x content
 {
-	"dateFormatItem-yM": "MM.yyyy",
 	"dateFormatItem-yyyyMMMEd": "E, d MMM y G",
-	"dateFormatItem-yQ": "yyyy Q",
 	"dateFormatItem-MMMEd": "E, d MMM",
 	"dateFormatItem-hms": "hh:mm:ss a",
-	"dateFormatItem-yQQQ": "y QQQ",
-	"dateFormatItem-MMdd": "d.MM",
 	"days-standAlone-wide": [
 		"niedziela",
 		"poniedziałek",
@@ -17,8 +13,8 @@ define(
 		"piątek",
 		"sobota"
 	],
-	"dateFormatItem-MMM": "LLL",
 	"dateTimeFormat-short": "{1}, {0}",
+	"dateFormatItem-Gy": "y G",
 	"dateTimeFormat-medium": "{1}, {0}",
 	"quarters-standAlone-abbr": [
 		"1 kw.",
@@ -26,7 +22,7 @@ define(
 		"3 kw.",
 		"4 kw."
 	],
-	"dateFormatItem-y": "y",
+	"dateFormatItem-y": "y G",
 	"dateFormatItem-yyyy": "y G",
 	"months-standAlone-abbr": [
 		"Muh.",
@@ -43,7 +39,6 @@ define(
 		"Zu al-h."
 	],
 	"dateFormatItem-Ed": "E, d",
-	"dateFormatItem-yMMM": "LLL y",
 	"days-standAlone-narrow": [
 		"N",
 		"P",
@@ -53,22 +48,16 @@ define(
 		"P",
 		"S"
 	],
-	"dateFormatItem-yyyyMM": "MM.yyyy G",
-	"dateFormatItem-yyyyMMMM": "LLLL y G",
-	"dateFormat-long": "d MMMM, y G",
-	"dateFormatItem-Hm": "HH:mm",
+	"dateFormatItem-GyMMMd": "d MMM y G",
+	"dateFormat-long": "d MMMM y G",
 	"dateFormat-medium": "d MMM y G",
-	"dateFormatItem-Hms": "HH:mm:ss",
-	"dateFormatItem-yyMMM": "LLL yy G",
-	"dateFormatItem-yMd": "d.MM.yyyy",
 	"quarters-standAlone-wide": [
 		"I kwartał",
 		"II kwartał",
 		"III kwartał",
 		"IV kwartał"
 	],
-	"dateFormatItem-yMMMM": "LLLL y",
-	"dateFormatItem-ms": "mm:ss",
+	"dateFormatItem-yyyyQQQQ": "QQQQ y G",
 	"quarters-standAlone-narrow": [
 		"K1",
 		"K2",
@@ -89,11 +78,10 @@ define(
 		"Zu al-kada",
 		"Zu al-hidżdża"
 	],
-	"dateFormatItem-yyyyMd": "dd.MM.yyyy G",
+	"dateFormatItem-yyyyMd": "d.MM.y G",
 	"dateFormatItem-yyyyMMMd": "d MMM y G",
-	"dateFormatItem-yyyyMEd": "E, dd.MM.yyyy G",
+	"dateFormatItem-yyyyMEd": "E, d.MM.y G",
 	"dateFormatItem-MMMd": "d MMM",
-	"dateFormatItem-yyQ": "Q y G",
 	"months-format-abbr": [
 		"Muh.",
 		"Saf.",
@@ -108,8 +96,6 @@ define(
 		"Zu al-k.",
 		"Zu al-h."
 	],
-	"dateFormatItem-H": "HH",
-	"dateFormatItem-MMMMd": "d MMMM",
 	"quarters-format-abbr": [
 		"K1",
 		"K2",
@@ -125,7 +111,6 @@ define(
 		"pt.",
 		"sob."
 	],
-	"dateFormatItem-M": "L",
 	"days-format-narrow": [
 		"N",
 		"P",
@@ -135,9 +120,10 @@ define(
 		"P",
 		"S"
 	],
-	"dateFormatItem-yMMMd": "d MMM y",
+	"dateFormatItem-GyMMMEd": "E, d MMM y G",
+	"dateFormatItem-GyMMM": "LLL y G",
+	"dateFormatItem-yyyyQQQ": "QQQ y G",
 	"dateFormatItem-MEd": "E, d.MM",
-	"dateFormatItem-yyyyQQQ": "G y QQQ",
 	"months-format-narrow": [
 		"1",
 		"2",
@@ -171,12 +157,10 @@ define(
 		"pt.",
 		"sob."
 	],
-	"dateFormat-short": "dd.MM.yyyy G",
-	"dateFormatItem-yMMMEd": "E, d MMM y",
-	"dateFormat-full": "EEEE, d MMMM, y G",
+	"dateFormat-short": "dd.MM.y G",
+	"dateFormatItem-yyyyM": "MM.y G",
+	"dateFormat-full": "EEEE, d MMMM y G",
 	"dateFormatItem-Md": "d.MM",
-	"dateFormatItem-yMEd": "E, d.MM.yyyy",
-	"dateFormatItem-yyyyQ": "G y Q",
 	"months-format-wide": [
 		"Muharram",
 		"Safar",
@@ -200,7 +184,7 @@ define(
 		"pt.",
 		"sob."
 	],
-	"dateFormatItem-d": "d",
+	"dateFormatItem-yyyyMMM": "LLL y G",
 	"quarters-format-wide": [
 		"I kwartał",
 		"II kwartał",

@@ -1,13 +1,11 @@
 define(
 "dojo/cldr/nls/ro/buddhist", //begin v1.x content
 {
-	"dateFormatItem-yM": "MM.yyyy",
-	"dateFormatItem-yQ": "'trimestrul' Q y",
 	"eraNames": [
 		"era budistă"
 	],
 	"dateFormatItem-MMMEd": "E d MMM",
-	"dateFormatItem-yQQQ": "QQQ y",
+	"dateTimeFormat-full": "{1}, {0}",
 	"days-standAlone-wide": [
 		"duminică",
 		"luni",
@@ -31,6 +29,8 @@ define(
 		"N",
 		"D"
 	],
+	"dateTimeFormat-short": "{1}, {0}",
+	"dateTimeFormat-medium": "{1}, {0}",
 	"quarters-standAlone-abbr": [
 		"T1",
 		"T2",
@@ -53,7 +53,6 @@ define(
 		"dec."
 	],
 	"dateFormatItem-Ed": "E d",
-	"dateFormatItem-yMMM": "MMM y",
 	"days-standAlone-narrow": [
 		"D",
 		"L",
@@ -68,7 +67,6 @@ define(
 	],
 	"dateFormat-long": "d MMMM y G",
 	"dateFormat-medium": "d MMM y G",
-	"dateFormatItem-yMd": "dd.MM.yyyy",
 	"quarters-standAlone-wide": [
 		"trimestrul I",
 		"trimestrul al II-lea",
@@ -81,6 +79,7 @@ define(
 		"T3",
 		"T4"
 	],
+	"dateTimeFormat-long": "{1}, {0}",
 	"months-standAlone-wide": [
 		"ianuarie",
 		"februarie",
@@ -140,7 +139,6 @@ define(
 		"V",
 		"S"
 	],
-	"dateFormatItem-yMMMd": "d MMM y",
 	"dateFormatItem-MEd": "E, dd.MM",
 	"months-format-narrow": [
 		"I",
@@ -174,11 +172,9 @@ define(
 		"Vi",
 		"Sâ"
 	],
-	"dateFormat-short": "d/M/yyyy",
-	"dateFormatItem-yMMMEd": "E, d MMM y",
+	"dateFormat-short": "d/M/y",
 	"dateFormat-full": "EEEE, d MMMM, y G",
 	"dateFormatItem-Md": "dd.MM",
-	"dateFormatItem-yMEd": "E, dd.MM.yyyy",
 	"months-format-wide": [
 		"ianuarie",
 		"februarie",

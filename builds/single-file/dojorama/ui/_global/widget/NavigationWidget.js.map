@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"NavigationWidget.js",
+"lineCount":3,
+"mappings":"A,SAAAA,OAAA,SACA,+DADA,+jCAIAC;MAAA,+CAAsD,0MAAA,MAAA,KAAtD,CAUG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,CAMCC,CAND,CAOCC,CAPD,CAQCC,CARD,CASCC,CATD,QAWQR,EAAA,EAASC,CAAT,CAAsBC,CAAtB,CAAuCC,CAAvC,CAAoDC,CAApD,8BAGaG,CAHb,aAKUE,QAAAA,CAAUC,CAAVD,EACTE,WADSF,CACKC,CAAAC,OADLF,CALV,YASSG,QAAAA,OACJC,EAAaA,QAAAA,CAAUC,CAAVD,CAAgBE,CAAhBF,CAAuBG,CAAvBH,EACTC,CAAAG,UADSJ,CACQE,CACjBD,EAAAI,KAFSL,CAEGG,CAEZG,SAAA,CAASd,CAAA,CAAGS,CAAH,SAAkBR,CAAAc,MAAA,MAAiB,QAAA,CAAUC,CAAV,EACxCA,CAAAC,eAAA,EACAC;SAAA,CAAUP,CAAV,CAFwC,CAAjB,CAAlB,CAAT,CAJSH,CAWjBW,eAAA,CAAeC,SAAf,CACAC,UAAA,EACApB,EAAAc,MAAA,MAAiBP,CAAjB,CAAA,CAA6Bc,aAA7B,CAA4CnB,CAAAoB,UAA5C,CAA2DjB,WAAAkB,SAAA,QAAAC,SAAA,EAA3D,CACAxB,EAAAc,MAAA,MAAiBP,CAAjB,CAAA,CAA6BkB,qBAA7B,CAAoDvB,CAAAwB,kBAApD,CAA2ErB,WAAAkB,SAAA,gBAAAC,SAAA,EAA3E,CACAxB,EAAAc,MAAA,MAAiBP,CAAjB,CAAA,CAA6BoB,gBAA7B,CAA+CzB,CAAA0B,aAA/C,CAAiEvB,WAAAkB,SAAA,WAAAC,SAAA,EAAjE,CAhBQlB,CATT,EAXR,CAVH;",
+"sources":["NavigationWidget.js.uncompressed.js"],
+"names":["require","define","declare","_WidgetBase","_TemplatedMixin","_StateAware","_ToggleMixin","on","lang","template","nls","constructor","params","router","postCreate","setNavItem","node","label","url","innerHTML","href","own","hitch","ev","preventDefault","push","inherited","arguments","hide","homeNode","labelHome","getRoute","assemble","releaseIndexNode","labelReleaseIndex","storageNode","labelStorage"]
+}

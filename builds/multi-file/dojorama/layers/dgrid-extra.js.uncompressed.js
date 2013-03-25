@@ -5,10 +5,10 @@ define("dgrid/OnDemandGrid", ["dojo/_base/declare", "./Grid", "./OnDemandList"],
 });
 },
 'dgrid/Grid':function(){
-define("dgrid/Grid", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "dojo/_base/sniff"],
-function(kernel, declare, listen, has, put, List){
+define("dgrid/Grid", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "./util/misc", "dojo/_base/sniff"],
+function(kernel, declare, listen, has, put, List, miscUtil){
 	var contentBoxSizing = has("ie") < 8 && !has("quirks");
-	var invalidClassChars = /[^\._a-zA-Z0-9-]/g;	
+	var invalidClassChars = /[^\._a-zA-Z0-9-]/g;
 	function appendIfNode(parent, subNode){
 		if(subNode && subNode.nodeType){
 			parent.appendChild(subNode);
@@ -38,7 +38,7 @@ function(kernel, declare, listen, has, put, List){
 			// summary:
 			//		Get the cell object by node, or event, id, plus a columnId
 			
-			if(target.row && target.row instanceof this._Row){ return target; }
+			if(target.column && target.element){ return target; }
 			
 			if(target.target && target.target.nodeType){
 				// event
@@ -63,7 +63,7 @@ function(kernel, declare, listen, has, put, List){
 			if(!element && typeof columnId != "undefined"){
 				var row = this.row(target),
 					rowElement = row.element;
-				if(rowElement){ 
+				if(rowElement){
 					var elements = rowElement.getElementsByTagName("td");
 					for(var i = 0; i < elements.length; i++){
 						if(elements[i].columnId == columnId){
@@ -81,17 +81,7 @@ function(kernel, declare, listen, has, put, List){
 				};
 			}
 		},
-		_columnsCss: function(rule){
-			// This is an attempt at integration with xstyle, will probably change
-			rule.fullSelector = function(){
-				return this.parent.fullSelector() + " .dgrid-cell";
-			};
-			for(var i = 0;i < rule.children.length;i++){
-				var child = rule.children[i];
-				child.field = child.className = child.selector.substring(1); 
-			}
-			return rule.children;
-		},
+		
 		createRowCells: function(tag, each, subRows){
 			// summary:
 			//		Generates the grid for each row (used by renderHeader and and renderRow)
@@ -111,7 +101,7 @@ function(kernel, declare, listen, has, put, List){
 				subRow = subRows[si];
 				// for single-subrow cases in modern browsers, TR can be skipped
 				// http://jsperf.com/table-without-trs
-				tr = (sl == 1 && !has("ie")) ? tbody : put(tbody, "tr");
+				tr = put(tbody, "tr");
 				if(subRow.className){
 					put(tr, "." + subRow.className);
 				}
@@ -161,18 +151,24 @@ function(kernel, declare, listen, has, put, List){
 		},
 		
 		renderRow: function(object, options){
+			var self = this;
 			var row = this.createRowCells("td", function(td, column){
 				var data = object;
-				// we support the field, get, and formatter properties like the DataGrid
+				// Support get function or field property (similar to DataGrid)
 				if(column.get){
 					data = column.get(object);
 				}else if("field" in column && column.field != "_item"){
 					data = data[column.field];
 				}
-				if(column.formatter){
-					td.innerHTML = column.formatter(data);
+				
+				// Support formatter, with or without formatterScope
+				var formatter = column.formatter,
+					formatterScope = self.formatterScope;
+				if(formatter){
+					td.innerHTML = typeof formatter === "string" && formatterScope ?
+						formatterScope[formatter](data, object) : formatter(data, object);
 				}else if(column.renderCell){
-					// A column can provide a renderCell method to do its own DOM manipulation, 
+					// A column can provide a renderCell method to do its own DOM manipulation,
 					// event handling, etc.
 					appendIfNode(td, column.renderCell(object, data, td, options));
 				}else if(data != null){
@@ -223,26 +219,45 @@ function(kernel, declare, listen, has, put, List){
 			}, this.subRows && this.subRows.headerRows);
 			this._rowIdToObject[row.id = this.id + "-header"] = this.columns;
 			headerNode.appendChild(row);
-			// if it columns are sortable, resort on clicks
-			listen(row, "click,keydown", function(event){
+			
+			// If the columns are sortable, re-sort on clicks.
+			// Use a separate listener property to be managed by renderHeader in case
+			// of subsequent calls.
+			if(this._sortListener){
+				this._sortListener.remove();
+			}
+			this._sortListener = listen(row, "click,keydown", function(event){
 				// respond to click, space keypress, or enter keypress
 				if(event.type == "click" || event.keyCode == 32 /* space bar */ || (!has("opera") && event.keyCode == 13) /* enter */){
 					var target = event.target,
-						field, descending, parentNode, sort;
+						field, sort, newSort, eventObj;
 					do{
 						if(target.sortable){
-							// stash node subject to DOM manipulations,
-							// to be referenced then removed by sort()
-							grid._sortNode = target;
-							
-							field = target.field || target.columnId;
-							
-							// if the click is on the same column as the active sort,
+							// If the click is on the same column as the active sort,
 							// reverse sort direction
-							descending = (sort = grid._sort[0]) && sort.attribute == field &&
-								!sort.descending;
+							newSort = [{
+								attribute: (field = target.field || target.columnId),
+								descending: (sort = grid._sort[0]) && sort.attribute == field &&
+									!sort.descending
+							}];
 							
-							return grid.set("sort", field, descending);
+							// Emit an event with the new sort
+							eventObj = {
+								bubbles: true,
+								cancelable: true,
+								grid: grid,
+								parentType: event.type,
+								sort: newSort
+							};
+							
+							if (listen.emit(target, "dgrid-sort", eventObj)){
+								// Stash node subject to DOM manipulations,
+								// to be referenced then removed by sort()
+								grid._sortNode = target;
+								grid.set("sort", newSort);
+							}
+							
+							break;
 						}
 					}while((target = target.parentNode) && target != headerNode);
 				}
@@ -278,6 +293,10 @@ function(kernel, declare, listen, has, put, List){
 		destroy: function(){
 			// Run _destroyColumns first to perform any column plugin tear-down logic.
 			this._destroyColumns();
+			if(this._sortListener){
+				this._sortListener.remove();
+			}
+			
 			this.inherited(arguments);
 		},
 		
@@ -285,21 +304,41 @@ function(kernel, declare, listen, has, put, List){
 			// summary:
 			//		Extension of List.js sort to update sort arrow in UI
 			
-			this.inherited(arguments); // normalize _sort first
+			// Normalize _sort first via inherited logic, then update the sort arrow
+			this.inherited(arguments);
+			this.updateSortArrow(this._sort);
+		},
+		
+		updateSortArrow: function(sort, updateSort){
+			// summary:
+			//		Method responsible for updating the placement of the arrow in the
+			//		appropriate header cell.  Typically this should not be called (call
+			//		set("sort", ...) when actually updating sort programmatically), but
+			//		this method may be used by code which is customizing sort (e.g.
+			//		by reacting to the dgrid-sort event, canceling it, then
+			//		performing logic and calling this manually).
+			// sort: Array
+			//		Standard sort parameter - array of object(s) containing attribute
+			//		and optionally descending property
+			// updateSort: Boolean?
+			//		If true, will update this._sort based on the passed sort array
+			//		(i.e. to keep it in sync when custom logic is otherwise preventing
+			//		it from being updated); defaults to false
 			
-			// clean up UI from any previous sort
+			// Clean up UI from any previous sort
 			if(this._lastSortedArrow){
-				// remove the sort classes from parent node
+				// Remove the sort classes from the parent node
 				put(this._lastSortedArrow, "<!dgrid-sort-up!dgrid-sort-down");
-				// destroy the lastSortedArrow node
+				// Destroy the lastSortedArrow node
 				put(this._lastSortedArrow, "!");
 				delete this._lastSortedArrow;
 			}
 			
-			if(!this._sort[0]){ return; } // nothing to do if no sort is specified
+			if(updateSort){ this._sort = sort; }
+			if(!sort[0]){ return; } // nothing to do if no sort is specified
 			
-			var prop = this._sort[0].attribute,
-				desc = this._sort[0].descending,
+			var prop = sort[0].attribute,
+				desc = sort[0].descending,
 				target = this._sortNode, // stashed if invoked from header click
 				columns, column, i;
 			
@@ -326,11 +365,13 @@ function(kernel, declare, listen, has, put, List){
 				this.resize();
 			}
 		},
+		
 		styleColumn: function(colId, css){
 			// summary:
 			//		Dynamically creates a stylesheet rule to alter a column's style.
 			
-			return this.addCssRule("#" + this.domNode.id + " .dgrid-column-" + colId, css);
+			return this.addCssRule("#" + miscUtil.escapeCssIdentifier(this.domNode.id) +
+				" .dgrid-column-" + colId, css);
 		},
 		
 		/*=====
@@ -355,7 +396,7 @@ function(kernel, declare, listen, has, put, List){
 					column.field = columnId;
 				}
 				columnId = column.id = column.id || (isNaN(columnId) ? columnId : (prefix + columnId));
-				if(prefix){ this.columns[columnId] = column; }
+				if(isArray){ this.columns[columnId] = column; }
 				
 				// allow further base configuration in subclasses
 				if(this._configColumn){
@@ -377,7 +418,9 @@ function(kernel, declare, listen, has, put, List){
 			//		destroy methods (defined by plugins) and calls them.  This is called
 			//		immediately before configuring a new column structure.
 			
-			var subRowsLength = this.subRows.length,
+			var subRows = this.subRows,
+				// if we have column sets, then we don't need to do anything with the missing subRows, ColumnSet will handle it
+				subRowsLength = subRows && subRows.length,
 				i, j, column, len;
 			
 			// First remove rows (since they'll be refreshed after we're done),
@@ -386,8 +429,8 @@ function(kernel, declare, listen, has, put, List){
 			this.cleanup();
 			
 			for(i = 0; i < subRowsLength; i++){
-				for(j = 0, len = this.subRows[i].length; j < len; j++){
-					column = this.subRows[i][j];
+				for(j = 0, len = subRows[i].length; j < len; j++){
+					column = subRows[i][j];
 					if(typeof column.destroy === "function"){ column.destroy(); }
 				}
 			}
@@ -395,16 +438,28 @@ function(kernel, declare, listen, has, put, List){
 		
 		configStructure: function(){
 			// configure the columns and subRows
-			var subRows = this.subRows;
+			var subRows = this.subRows,
+				columns = this._columns = this.columns;
+			
+			// Reset this.columns unless it was already passed in as an object
+			this.columns = !columns || columns instanceof Array ? {} : columns;
+			
 			if(subRows){
-				// we have subRows, but no columns yet, need to create the columns
-				this.columns = {};
+				// Process subrows, which will in turn populate the this.columns object
 				for(var i = 0; i < subRows.length; i++){
 					subRows[i] = this._configColumns(i + "-", subRows[i]);
 				}
 			}else{
-				this.subRows = [this._configColumns("", this.columns)];
+				this.subRows = [this._configColumns("", columns)];
 			}
+		},
+		
+		_getColumns: function(){
+			// _columns preserves what was passed to set("columns"), but if subRows
+			// was set instead, columns contains the "object-ified" version, which
+			// was always accessible in the past, so maintain that accessibility going
+			// forward.
+			return this._columns || this.columns;
 		},
 		_setColumns: function(columns){
 			this._destroyColumns();
@@ -414,11 +469,13 @@ function(kernel, declare, listen, has, put, List){
 			// re-run logic
 			this._updateColumns();
 		},
+		
 		_setSubRows: function(subrows){
 			this._destroyColumns();
 			this.subRows = subrows;
 			this._updateColumns();
 		},
+		
 		setColumns: function(columns){
 			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 1.0");
 			this.set("columns", columns);
@@ -434,10 +491,21 @@ function(kernel, declare, listen, has, put, List){
 			
 			this.configStructure();
 			this.renderHeader();
+			
 			this.refresh();
 			// re-render last collection if present
 			this._lastCollection && this.renderArray(this._lastCollection);
-			this.resize();
+			
+			// After re-rendering the header, re-apply the sort arrow if needed.
+			if(this._started){
+				if(this._sort && this._sort.length){
+					this.updateSortArrow(this._sort);
+				} else {
+					// Only call resize directly if we didn't call updateSortArrow,
+					// since that calls resize itself when it updates.
+					this.resize();
+				}
+			}
 		}
 	});
 	
@@ -452,10 +520,99 @@ function(kernel, declare, listen, has, put, List){
 
 },
 'dgrid/Selection':function(){
-define("dgrid/Selection", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query"],
+define("dgrid/Selection", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
 function(kernel, declare, Deferred, on, has, aspect, List, touchUtil, put){
 
-var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey";
+// Add feature test for user-select CSS property for optionally disabling
+// text selection.
+// (Can't use dom.setSelectable prior to 1.8.2 because of bad sniffs, see #15990)
+has.add("css-user-select", function(global, doc, element){
+	var style = element.style,
+		prefixes = ["Khtml", "O", "ms", "Moz", "Webkit"],
+		i = prefixes.length,
+		name = "userSelect";
+
+	// Iterate prefixes from most to least likely
+	do{
+		if(typeof style[name] !== "undefined"){
+			// Supported; return property name
+			return name;
+		}
+	}while(i-- && (name = prefixes[i] + "UserSelect"));
+
+	// Not supported if we didn't return before now
+	return false;
+});
+
+// Also add a feature test for the onselectstart event, which offers a more
+// graceful fallback solution than node.unselectable.
+has.add("dom-selectstart", typeof document.onselectstart !== "undefined");
+
+var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey",
+	hasUserSelect = has("css-user-select");
+
+function makeUnselectable(node, unselectable){
+	// Utility function used in fallback path for recursively setting unselectable
+	var value = node.unselectable = unselectable ? "on" : "",
+		elements = node.getElementsByTagName("*"),
+		i = elements.length;
+	
+	while(--i){
+		if(elements[i].tagName === "INPUT" || elements[i].tagName === "TEXTAREA"){
+			continue; // Don't prevent text selection in text input fields.
+		}
+		elements[i].unselectable = value;
+	}
+}
+
+function setSelectable(grid, selectable){
+	// Alternative version of dojo/dom.setSelectable based on feature detection.
+	
+	// For FF < 21, use -moz-none, which will respect -moz-user-select: text on
+	// child elements (e.g. form inputs).  In FF 21, none behaves the same.
+	// See https://developer.mozilla.org/en-US/docs/CSS/user-select
+	var node = grid.bodyNode,
+		value = selectable ? "text" : has("ff") < 21 ? "-moz-none" : "none";
+	
+	if(hasUserSelect){
+		node.style[hasUserSelect] = value;
+	}else if(has("dom-selectstart")){
+		// For browsers that don't support user-select but support selectstart (IE<10),
+		// we can hook up an event handler as necessary.  Since selectstart bubbles,
+		// it will handle any child elements as well.
+		// Note, however, that both this and the unselectable fallback below are
+		// incapable of preventing text selection from outside the targeted node.
+		if(!selectable && !grid._selectstartHandle){
+			grid._selectstartHandle = on(node, "selectstart", function(evt){
+				var tag = evt.target && evt.target.tagName;
+				
+				// Prevent selection except where a text input field is involved.
+				if(tag !== "INPUT" && tag !== "TEXTAREA"){
+					evt.preventDefault();
+				}
+			});
+		}else if(selectable && grid._selectstartHandle){
+			grid._selectstartHandle.remove();
+			delete grid._selectstartHandle;
+		}
+	}else{
+		// For browsers that don't support either user-select or selectstart (Opera),
+		// we need to resort to setting the unselectable attribute on all nodes
+		// involved.  Since this doesn't automatically apply to child nodes, we also
+		// need to re-apply it whenever rows are rendered.
+		makeUnselectable(node, !selectable);
+		if(!selectable && !grid._unselectableHandle){
+			grid._unselectableHandle = aspect.after(grid, "renderRow", function(row){
+				makeUnselectable(row, true);
+				return row;
+			});
+		}else if(selectable && grid._unselectableHandle){
+			grid._unselectableHandle.remove();
+			delete grid._unselectableHandle;
+		}
+	}
+}
+
 return declare(null, {
 	// summary:
 	//		Add selection capabilities to a grid. The grid will have a selection property and
@@ -474,10 +631,26 @@ return declare(null, {
 	//		If true, the selection object will be cleared when refresh is called.
 	deselectOnRefresh: true,
 	
-	//allowSelectAll: Boolean
+	// allowSelectAll: Boolean
 	//		If true, allow ctrl/cmd+A to select all rows.
 	//		Also consulted by the selector plugin for showing select-all checkbox.
 	allowSelectAll: false,
+	
+	// selection:
+	//		An object where the property names correspond to 
+	//		object ids and values are true or false depending on whether an item is selected
+	selection: {},
+	
+	// selectionMode: String
+	//		The selection mode to use, can be "none", "multiple", "single", or "extended".
+	selectionMode: "extended",
+	
+	// allowTextSelection: Boolean
+	//		Whether to still allow text within cells to be selected.  The default
+	//		behavior is to allow text selection only when selectionMode is none;
+	//		setting this property to either true or false will explicitly set the
+	//		behavior regardless of selectionMode.
+	allowTextSelection: undefined,
 	
 	create: function(){
 		this.selection = {};
@@ -485,16 +658,22 @@ return declare(null, {
 	},
 	postCreate: function(){
 		this.inherited(arguments);
+		
+		// Force selectionMode setter to run.
+		var selectionMode = this.selectionMode;
+		this.selectionMode = "";
+		this._setSelectionMode(selectionMode);
+		
 		this._initSelectionEvents(); // first time; set up event hooks
 	},
 	
-	// selection:
-	//		An object where the property names correspond to 
-	//		object ids and values are true or false depending on whether an item is selected
-	selection: {},
-	// selectionMode: String
-	//		The selection mode to use, can be "none", "multiple", "single", or "extended".
-	selectionMode: "extended",
+	destroy: function(){
+		this.inherited(arguments);
+		
+		// Remove any handles added for cross-browser text selection prevention.
+		if(this._selectstartHandle){ this._selectstartHandle.remove(); }
+		if(this._unselectableHandle){ this._unselectableHandle.remove(); }
+	},
 	
 	_setSelectionMode: function(mode){
 		// summary:
@@ -505,68 +684,113 @@ return declare(null, {
 		this.clearSelection();
 		
 		this.selectionMode = mode;
+		
+		// Compute name of selection handler for this mode once
+		// (in the form of _fooSelectionHandler)
+		this._selectionHandlerName = "_" + mode + "SelectionHandler";
+		
+		// Also re-run allowTextSelection setter in case it is in automatic mode.
+		this._setAllowTextSelection(this.allowTextSelection);
 	},
 	setSelectionMode: function(mode){
 		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 1.0");
 		this.set("selectionMode", mode);
 	},
 	
-	_handleSelect: function(event, currentTarget){
-		// don't run if selection mode is none,
+	_setAllowTextSelection: function(allow){
+		if(typeof allow !== "undefined"){
+			setSelectable(this, allow);
+		}else{
+			setSelectable(this, this.selectionMode === "none");
+		}
+		this.allowTextSelection = allow;
+	},
+	
+	_handleSelect: function(event, target){
+		// Don't run if selection mode doesn't have a handler (incl. "none"),
 		// or if coming from a dgrid-cellfocusin from a mousedown
-		if(this.selectionMode == "none" ||
+		if(!this[this._selectionHandlerName] ||
 				(event.type == "dgrid-cellfocusin" && event.parentType == "mousedown") ||
-				(event.type == "mouseup" && currentTarget != this._waitForMouseUp)){
+				(event.type == "mouseup" && target != this._waitForMouseUp)){
 			return;
 		}
 		this._waitForMouseUp = null;
 		this._selectionTriggerEvent = event;
-		var ctrlKey = !event.keyCode ? event[ctrlEquiv] : event.ctrlKey;
+		
+		// Don't call select handler for ctrl+navigation
 		if(!event.keyCode || !event.ctrlKey || event.keyCode == 32){
-			var mode = this.selectionMode,
-				row = currentTarget,
-				rowObj = this.row(row),
-				lastRow = this._lastSelected;
-			
-			if(mode == "single"){
-				if(lastRow === row){
-					// Allow ctrl to toggle selection, even within single select mode.
-					this.select(row, null, !ctrlKey || !this.isSelected(row));
-				}else{
-					this.clearSelection();
-					this.select(row);
-					this._lastSelected = row;
-				}
-			}else if(this.selection[rowObj.id] && !event.shiftKey && event.type == "mousedown"){
-				// we wait for the mouse up if we are clicking a selected item so that drag n' drop
-				// is possible without losing our selection
-				this._waitForMouseUp = row;
+			// If clicking a selected item, wait for mouseup so that drag n' drop
+			// is possible without losing our selection
+			if(!event.shiftKey && event.type == "mousedown" && this.isSelected(target)){
+				this._waitForMouseUp = target;
 			}else{
-				var value;
-				// clear selection first for non-ctrl-clicks in extended mode,
-				// as well as for right-clicks on unselected targets
-				if((event.button != 2 && mode == "extended" && !ctrlKey) ||
-						(event.button == 2 && !(this.selection[rowObj.id]))){
-					this.clearSelection(rowObj.id, true);
-				}
-				if(!event.shiftKey){
-					// null == toggle; undefined == true;
-					lastRow = value = ctrlKey ? null : undefined;
-				}
-				this.select(row, lastRow, value);
-
-				if(!lastRow){
-					// update lastRow reference for potential subsequent shift+select
-					// (current row was already selected by earlier logic)
-					this._lastSelected = row;
-				}
-			}
-			if(!event.keyCode && (event.shiftKey || ctrlKey)){
-				// prevent selection in firefox
-				event.preventDefault();
+				this[this._selectionHandlerName](event, target);
 			}
 		}
 		this._selectionTriggerEvent = null;
+	},
+	
+	_singleSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "single" mode, where only one target may be
+		//		selected at a time.
+		
+		var ctrlKey = event.keyCode ? event.ctrlKey : event[ctrlEquiv];
+		if(this._lastSelected === target){
+			// Allow ctrl to toggle selection, even within single select mode.
+			this.select(target, null, !ctrlKey || !this.isSelected(target));
+		}else{
+			this.clearSelection();
+			this.select(target);
+			this._lastSelected = target;
+		}
+	},
+	
+	_multipleSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "multiple" mode, where shift can be held to
+		//		select ranges, ctrl/cmd can be held to toggle, and clicks/keystrokes
+		//		without modifier keys will add to the current selection.
+		
+		var lastRow = this._lastSelected,
+			ctrlKey = event.keyCode ? event.ctrlKey : event[ctrlEquiv],
+			value;
+		
+		if(!event.shiftKey){
+			// Toggle if ctrl is held; otherwise select
+			value = ctrlKey ? null : true;
+			lastRow = null;
+		}
+		this.select(target, lastRow, value);
+
+		if(!lastRow){
+			// Update reference for potential subsequent shift+select
+			// (current row was already selected above)
+			this._lastSelected = target;
+		}
+	},
+	
+	_extendedSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "extended" mode, which is like multiple mode
+		//		except that clicks/keystrokes without modifier keys will clear
+		//		the previous selection.
+		
+		// Clear selection first for right-clicks outside selection and non-ctrl-clicks;
+		// otherwise, extended mode logic is identical to multiple mode
+		if(event.button === 2 ? !this.isSelected(target) :
+				!(event.keyCode ? event.ctrlKey : event[ctrlEquiv])){
+			this.clearSelection(null, true);
+		}
+		this._multipleSelectionHandler(event, target);
+	},
+	
+	_toggleSelectionHandler: function(event, target){
+		// summary:
+		//		Selection handler for "toggle" mode which simply toggles the selection
+		//		of the given target.  Primarily useful for touch input.
+		
+		this.select(target, null, null);
 	},
 
 	_initSelectionEvents: function(){
@@ -577,21 +801,6 @@ return declare(null, {
 		var grid = this,
 			selector = this.selectionDelegate;
 		
-		// This is to stop IE8+'s web accelerator and selection.
-		// It also stops selection in Chrome/Safari.
-		on(this.domNode, "selectstart", function(event){
-			// In IE, this also bubbles from text selection inside editor fields;
-			// we don't want to prevent that!
-			var tag = event.target && event.target.tagName;
-			if(tag != "INPUT" && tag != "TEXTAREA"){
-				event.preventDefault();
-			}
-		});
-		
-		function focus(event){
-			grid._handleSelect(event, this);
-		}
-		
 		if(has("touch")){
 			// listen for touch taps if available
 			on(this.contentNode, touchUtil.selector(selector, touchUtil.tap), function(evt){
@@ -599,9 +808,18 @@ return declare(null, {
 			});
 		}else{
 			// listen for actions that should cause selections
-			on(this.contentNode, on.selector(selector, this.selectionEvents), focus);
+			on(this.contentNode, on.selector(selector, this.selectionEvents), function(event){
+				grid._handleSelect(event, this);
+			});
 		}
-
+		
+		// Also hook up spacebar (for ctrl+space)
+		if(this.addKeyHandler){
+			this.addKeyHandler(32, function(event){
+				grid._handleSelect(event, event.target);
+			});
+		}
+		
 		// If allowSelectAll is true, allow ctrl/cmd+A to (de)select all rows.
 		// (Handler further checks against _allowSelectAll, which may be updated
 		// if selectionMode is changed post-init.)
@@ -672,7 +890,7 @@ return declare(null, {
 		if(!row.element){
 			row = this.row(row);
 		}
-		if(this.allowSelect(row)){
+		if(!value || this.allowSelect(row)){
 			var selection = this.selection;
 			var previousValue = selection[row.id];
 			if(value === null){
@@ -709,7 +927,7 @@ return declare(null, {
 					toElement.compareDocumentPosition(fromElement) == 2 :
 					toElement.sourceIndex > fromElement.sourceIndex)) ? "down" : "up";
 				while(row.element != toElement && (row = this[traverser](row))){
-					this.select(row);
+					this.select(row, null, value);
 				}
 			}
 		}
@@ -742,14 +960,21 @@ return declare(null, {
 		}
 	},
 	isSelected: function(object){
-		if(!object){
+		// summary:
+		//		Returns true if the indicated row is selected.
+		
+		if(typeof object === "undefined" || object === null){
 			return false;
 		}
 		if(!object.element){
 			object = this.row(object);
 		}
-
-		return !!this.selection[object.id];
+		
+		// First check whether the given row is indicated in the selection hash;
+		// failing that, check if allSelected is true (testing against the
+		// allowSelect method if possible)
+		return (object.id in this.selection) ? !!this.selection[object.id] :
+			this.allSelected && (!object.data || this.allowSelect(object));
 	},
 	
 	refresh: function(){
@@ -760,7 +985,7 @@ return declare(null, {
 			this._fireSelectionEvent && this._fireSelectionEvent();
 		}
 		this._lastSelected = null;
-		this.inherited(arguments);
+		return this.inherited(arguments);
 	},
 	
 	renderArray: function(){
@@ -790,13 +1015,12 @@ define("dgrid/Keyboard", [
 	"dojo/_base/declare",
 	"dojo/aspect",
 	"dojo/on",
-	"./List",
 	"dojo/_base/lang",
 	"dojo/has",
 	"put-selector/put",
 	"dojo/_base/Deferred",
 	"dojo/_base/sniff"
-], function(declare, aspect, on, List, lang, has, put, Deferred){
+], function(declare, aspect, on, lang, has, put, Deferred){
 
 var delegatingInputTypes = {
 		checkbox: 1,
@@ -806,8 +1030,8 @@ var delegatingInputTypes = {
 	hasGridCellClass = /\bdgrid-cell\b/,
 	hasGridRowClass = /\bdgrid-row\b/;
 
-has.add("dom-contains", function(){
-	return !!document.createElement("a").contains;
+has.add("dom-contains", function(global, doc, element){
+	return !!element.contains; // not supported by FF < 9
 });
 
 function contains(parent, node){
@@ -821,11 +1045,36 @@ function contains(parent, node){
 	}
 }
 
-return declare(null, {
+var Keyboard = declare(null, {
 	// summary:
-	//		Add keyboard navigation capability to a grid/list
+	//		Adds keyboard navigation capability to a list or grid.
+	
+	// pageSkip: Number
+	//		Number of rows to jump by when page up or page down is pressed.
 	pageSkip: 10,
+	
 	tabIndex: 0,
+	
+	// keyMap: Object
+	//		Hash which maps key codes to functions to be executed (in the context
+	//		of the instance) for key events within the grid's body.
+	keyMap: null,
+	
+	// headerKeyMap: Object
+	//		Hash which maps key codes to functions to be executed (in the context
+	//		of the instance) for key events within the grid's header row.
+	headerKeyMap: null,
+	
+	postMixInProperties: function(){
+		this.inherited(arguments);
+		
+		if(!this.keyMap){
+			this.keyMap = lang.mixin({}, Keyboard.defaultKeyMap);
+		}
+		if(!this.headerKeyMap){
+			this.headerKeyMap = lang.mixin({}, Keyboard.defaultHeaderKeyMap);
+		}
+	},
 	
 	postCreate: function(){
 		this.inherited(arguments);
@@ -837,76 +1086,34 @@ return declare(null, {
 			return target.type && (!delegatingInputTypes[target.type] || event.keyCode == 32);
 		}
 		
-		function navigateArea(areaNode){
-			var isFocusableClass = grid.cellNavigation ? hasGridCellClass : hasGridRowClass,
-				cellFocusedElement = areaNode,
-				next;
+		function enableNavigation(areaNode){
+			var cellNavigation = grid.cellNavigation,
+				isFocusableClass = cellNavigation ? hasGridCellClass : hasGridRowClass,
+				isHeader = areaNode === grid.headerNode,
+				initialNode = areaNode;
 			
-			function focusOnCell(element, event, dontFocus){
-				var cellOrRowType = grid.cellNavigation ? "cell" : "row",
-					cell = grid[cellOrRowType](element);
-				
-				element = cell && cell.element;
-				if(!element){ return; }
-				event = lang.mixin({ grid: grid }, event);
-				if(event.type){
-					event.parentType = event.type;
-				}
-				if(!event.bubbles){
-					// IE doesn't always have a bubbles property already true.
-					// Opera throws if you try to set it to true if it is already true.
-					event.bubbles = true;
-				}
-				// clean up previously-focused element
-				// remove the class name and the tabIndex attribute
-				put(cellFocusedElement, "!dgrid-focus[!tabIndex]");
-				if(cellFocusedElement){
-					if(has("ie") < 8){
-						// clean up after workaround below (for non-input cases)
-						cellFocusedElement.style.position = "";
-					}
-					
-					// Expose object representing focused cell or row losing focus, via
-					// event.cell or event.row; which is set depends on cellNavigation.
-					event[cellOrRowType] = grid[cellOrRowType](cellFocusedElement);
-					on.emit(element, "dgrid-cellfocusout", event);
-				}
-				cellFocusedElement = element;
-				
-				// Expose object representing focused cell or row gaining focus, via
-				// event.cell or event.row; which is set depends on cellNavigation.
-				// Note that yes, the same event object is being reused; on.emit
-				// performs a shallow copy of properties into a new event object.
-				event[cellOrRowType] = cell;
-				
-				if(!dontFocus){
-					if(has("ie") < 8){
-						// setting the position to relative magically makes the outline
-						// work properly for focusing later on with old IE.
-						// (can't be done a priori with CSS or screws up the entire table)
-						element.style.position = "relative";
-					}
-					element.tabIndex = grid.tabIndex;
-					element.focus();
-				}
-				put(element, ".dgrid-focus");
-				on.emit(cellFocusedElement, "dgrid-cellfocusin", event);
+			function initHeader(){
+				grid._focusedHeaderNode = initialNode =
+					cellNavigation ? grid.headerNode.getElementsByTagName("th")[0] : grid.headerNode;
+				if(initialNode){ initialNode.tabIndex = grid.tabIndex; }
 			}
 			
-			while((next = cellFocusedElement.firstChild) && !isFocusableClass.test(next.className)){
-				cellFocusedElement = next;
-			}
-			if(next){ cellFocusedElement = next; }
-			
-			if(areaNode === grid.contentNode){
+			if(isHeader){
+				// Initialize header now (since it's already been rendered),
+				// and aspect after future renderHeader calls to reset focus.
+				initHeader();
+				aspect.after(grid, "renderHeader", initHeader, true);
+			}else{
 				aspect.after(grid, "renderArray", function(ret){
 					// summary:
 					//		Ensures the first element of a grid is always keyboard selectable after data has been
 					//		retrieved if there is not already a valid focused element.
 					
 					return Deferred.when(ret, function(ret){
+						var focusedNode = grid._focusedNode || initialNode;
+						
 						// do not update the focused element if we already have a valid one
-						if(isFocusableClass.test(cellFocusedElement.className) && contains(areaNode, cellFocusedElement)){
+						if(isFocusableClass.test(focusedNode.className) && contains(areaNode, focusedNode)){
 							return ret;
 						}
 						
@@ -915,111 +1122,309 @@ return declare(null, {
 						// even when data is loaded asynchronously
 						for(var i = 0, elements = areaNode.getElementsByTagName("*"), element; (element = elements[i]); ++i){
 							if(isFocusableClass.test(element.className)){
-								cellFocusedElement = element;
+								focusedNode = grid._focusedNode = element;
 								break;
 							}
 						}
 						
-						cellFocusedElement.tabIndex = grid.tabIndex;
-						
+						focusedNode.tabIndex = grid.tabIndex;
 						return ret;
 					});
 				});
-			}else if(isFocusableClass.test(cellFocusedElement.className)){
-				cellFocusedElement.tabIndex = grid.tabIndex;
 			}
 			
-			on(areaNode, "mousedown", function(event){
+			grid._listeners.push(on(areaNode, "mousedown", function(event){
 				if(!handledEvent(event)){
-					focusOnCell(event.target, event);
+					grid._focusOnNode(event.target, isHeader, event);
 				}
-			});
+			}));
 			
-			on(areaNode, "keydown", function(event){
+			grid._listeners.push(on(areaNode, "keydown", function(event){
 				// For now, don't squash browser-specific functionalities by letting
 				// ALT and META function as they would natively
 				if(event.metaKey || event.altKey) {
 					return;
 				}
 				
-				var focusedElement = event.target;
-				var keyCode = event.keyCode;
-				if(handledEvent(event)){
-					// text boxes and other inputs that can use direction keys should be ignored and not affect cell/row navigation
-					return;
+				var handler = grid[isHeader ? "headerKeyMap" : "keyMap"][event.keyCode];
+				
+				// Text boxes and other inputs that can use direction keys should be ignored and not affect cell/row navigation
+				if(handler && !handledEvent(event)){
+					handler.call(grid, event);
 				}
-				var move = {
-					32: 0, // space bar
-					33: -grid.pageSkip, // page up
-					34: grid.pageSkip,// page down
-					37: -1, // left
-					38: -1, // up
-					39: 1, // right
-					40: 1, // down
-					35: 10000, //end
-					36: -10000 // home
-				}[keyCode];
-				if(isNaN(move)){
-					return;
-				}
-				var nextSibling, columnId, cell = grid.cell(cellFocusedElement);
-				var orientation;
-				if(keyCode == 37 || keyCode == 39){
-					// horizontal movement (left and right keys)
-					if(!grid.cellNavigation){
-						return; // do nothing for row-only navigation
-					}
-					orientation = "right";
-				}else{
-					// other keys are vertical
-					orientation = "down";
-					columnId = cell && cell.column && cell.column.id;
-					cell = grid.row(cellFocusedElement);
-				}
-				if(move){
-					cell = cell && grid[orientation](cell, move, true);
-				}
-				var nextFocus = cell && cell.element;
-				if(nextFocus){
-					if(columnId){
-						nextFocus = grid.cell(nextFocus, columnId).element;
-					}
-					if(grid.cellNavigation){
-						var inputs = nextFocus.getElementsByTagName("input");
-						var inputFocused;
-						for(var i = 0;i < inputs.length; i++){
-							var input = inputs[i];
-							if((input.tabIndex != -1 || "lastValue" in input) && !input.disabled){
-								// focusing here requires the same workaround for IE<8,
-								// though here we can get away with doing it all at once.
-								if(has("ie") < 8){ input.style.position = "relative"; }
-								input.focus();
-								if(has("ie") < 8){ input.style.position = ""; }
-								inputFocused = true;
-								break;
-							}
-						}
-					}
-					focusOnCell(nextFocus, event, inputFocused);
-				}
-				event.preventDefault();
-			});
-			
-			return function(target){
-				target = target || cellFocusedElement;
-				focusOnCell(target, { target: target });
-			}
+			}));
 		}
 		
 		if(this.tabableHeader){
-			this.focusHeader = navigateArea(this.headerNode);
+			enableNavigation(this.headerNode);
+			on(this.headerNode, "dgrid-cellfocusin", function(){
+				grid.scrollTo({ x: this.scrollLeft });
+			});
+		}
+		enableNavigation(this.contentNode);
+	},
+	
+	addKeyHandler: function(key, callback, isHeader){
+		// summary:
+		//		Adds a handler to the keyMap on the instance.
+		//		Supports binding additional handlers to already-mapped keys.
+		// key: Number
+		//		Key code representing the key to be handled.
+		// callback: Function
+		//		Callback to be executed (in instance context) when the key is pressed.
+		// isHeader: Boolean
+		//		Whether the handler is to be added for the grid body (false, default)
+		//		or the header (true).
+		
+		// Aspects may be about 10% slower than using an array-based appraoch,
+		// but there is significantly less code involved (here and above).
+		return aspect.after( // Handle
+			this[isHeader ? "headerKeyMap" : "keyMap"], key, callback, true);
+	},
+	
+	_focusOnNode: function(element, isHeader, event){
+		var focusedNodeProperty = "_focused" + (isHeader ? "Header" : "") + "Node",
+			focusedNode = this[focusedNodeProperty],
+			cellOrRowType = this.cellNavigation ? "cell" : "row",
+			cell = this[cellOrRowType](element),
+			inputs,
+			input,
+			numInputs,
+			inputFocused,
+			i;
+		
+		element = cell && cell.element;
+		if(!element){ return; }
+		
+		if(this.cellNavigation){
+			inputs = element.getElementsByTagName("input");
+			for(i = 0, numInputs = inputs.length; i < numInputs; i++){
+				input = inputs[i];
+				if((input.tabIndex != -1 || "lastValue" in input) && !input.disabled){
+					// Employ workaround for focus rectangle in IE < 8
+					if(has("ie") < 8){ input.style.position = "relative"; }
+					input.focus();
+					if(has("ie") < 8){ input.style.position = ""; }
+					inputFocused = true;
+					break;
+				}
+			}
 		}
 		
-		this.focus = navigateArea(this.contentNode);
+		event = lang.mixin({ grid: this }, event);
+		if(event.type){
+			event.parentType = event.type;
+		}
+		if(!event.bubbles){
+			// IE doesn't always have a bubbles property already true.
+			// Opera throws if you try to set it to true if it is already true.
+			event.bubbles = true;
+		}
+		if(focusedNode){
+			// Clean up previously-focused element
+			// Remove the class name and the tabIndex attribute
+			put(focusedNode, "!dgrid-focus[!tabIndex]");
+			if(has("ie") < 8){
+				// Clean up after workaround below (for non-input cases)
+				focusedNode.style.position = "";
+			}
+			
+			// Expose object representing focused cell or row losing focus, via
+			// event.cell or event.row; which is set depends on cellNavigation.
+			event[cellOrRowType] = this[cellOrRowType](focusedNode);
+			on.emit(element, "dgrid-cellfocusout", event);
+		}
+		focusedNode = this[focusedNodeProperty] = element;
+		
+		// Expose object representing focused cell or row gaining focus, via
+		// event.cell or event.row; which is set depends on cellNavigation.
+		// Note that yes, the same event object is being reused; on.emit
+		// performs a shallow copy of properties into a new event object.
+		event[cellOrRowType] = cell;
+		
+		if(!inputFocused){
+			if(has("ie") < 8){
+				// setting the position to relative magically makes the outline
+				// work properly for focusing later on with old IE.
+				// (can't be done a priori with CSS or screws up the entire table)
+				element.style.position = "relative";
+			}
+			element.tabIndex = this.tabIndex;
+			element.focus();
+		}
+		put(element, ".dgrid-focus");
+		on.emit(focusedNode, "dgrid-cellfocusin", event);
+	},
+	
+	focusHeader: function(element){
+		this._focusOnNode(element || this._focusedHeaderNode, true);
+	},
+	
+	focus: function(element){
+		this._focusOnNode(element || this._focusedNode, false);
 	}
 });
-});
 
+// Common functions used in default keyMap (called in instance context)
+
+var moveFocusVertical = Keyboard.moveFocusVertical = function(event, steps){
+	var cellNavigation = this.cellNavigation,
+		target = this[cellNavigation ? "cell" : "row"](event),
+		columnId = cellNavigation && target.column.id,
+		next = this.down(this._focusedNode, steps, true);
+	
+	// Navigate within same column if cell navigation is enabled
+	if(cellNavigation){ next = this.cell(next, columnId); }
+	this._focusOnNode(next, false, event);
+	
+	event.preventDefault();
+};
+
+var moveFocusUp = Keyboard.moveFocusUp = function(event){
+	moveFocusVertical.call(this, event, -1);
+};
+
+var moveFocusDown = Keyboard.moveFocusDown = function(event){
+	moveFocusVertical.call(this, event, 1);
+};
+
+var moveFocusPageUp = Keyboard.moveFocusPageUp = function(event){
+	moveFocusVertical.call(this, event, -this.pageSkip);
+};
+
+var moveFocusPageDown = Keyboard.moveFocusPageDown = function(event){
+	moveFocusVertical.call(this, event, this.pageSkip);
+};
+
+var moveFocusHorizontal = Keyboard.moveFocusHorizontal = function(event, steps){
+	if(!this.cellNavigation){ return; }
+	var isHeader = !this.row(event), // header reports row as undefined
+		currentNode = this["_focused" + (isHeader ? "Header" : "") + "Node"];
+	
+	this._focusOnNode(this.right(currentNode, steps), isHeader, event);
+	event.preventDefault();
+};
+
+var moveFocusLeft = Keyboard.moveFocusLeft = function(event){
+	moveFocusHorizontal.call(this, event, -1);
+};
+
+var moveFocusRight = Keyboard.moveFocusRight = function(event){
+	moveFocusHorizontal.call(this, event, 1);
+};
+
+var moveHeaderFocusEnd = Keyboard.moveHeaderFocusEnd = function(event, scrollToBeginning){
+	// Header case is always simple, since all rows/cells are present
+	var nodes;
+	if(this.cellNavigation){
+		nodes = this.headerNode.getElementsByTagName("th");
+		this._focusOnNode(nodes[scrollToBeginning ? 0 : nodes.length - 1], true, event);
+	}
+	// In row-navigation mode, there's nothing to do - only one row in header
+	
+	// Prevent browser from scrolling entire page
+	event.preventDefault();
+};
+
+var moveHeaderFocusHome = Keyboard.moveHeaderFocusHome = function(event){
+	moveHeaderFocusEnd.call(this, event, true);
+};
+
+var moveFocusEnd = Keyboard.moveFocusEnd = function(event, scrollToTop){
+	// summary:
+	//		Handles requests to scroll to the beginning or end of the grid.
+	
+	// Assume scrolling to top unless event is specifically for End key
+	var self = this,
+		cellNavigation = this.cellNavigation,
+		contentNode = this.contentNode,
+		contentPos = scrollToTop ? 0 : contentNode.scrollHeight,
+		scrollPos = contentNode.scrollTop + contentPos,
+		endChild = contentNode[scrollToTop ? "firstChild" : "lastChild"],
+		hasPreload = endChild.className.indexOf("dgrid-preload") > -1,
+		endTarget = hasPreload ? endChild[(scrollToTop ? "next" : "previous") + "Sibling"] : endChild,
+		endPos = endTarget.offsetTop + (scrollToTop ? 0 : endTarget.offsetHeight),
+		handle;
+	
+	if(hasPreload){
+		// Find the nearest dgrid-row to the relevant end of the grid
+		while(endTarget && endTarget.className.indexOf("dgrid-row") < 0){
+			endTarget = endTarget[(scrollToTop ? "next" : "previous") + "Sibling"];
+		}
+		// If none is found, there are no rows, and nothing to navigate
+		if(!endTarget){ return; }
+	}
+	
+	// Grid content may be lazy-loaded, so check if content needs to be
+	// loaded first
+	if(!hasPreload || endChild.offsetHeight < 1){
+		// End row is loaded; focus the first/last row/cell now
+		if(cellNavigation){
+			// Preserve column that was currently focused
+			endTarget = this.cell(endTarget, this.cell(event).column.id);
+		}
+		this._focusOnNode(endTarget, false, event);
+	}else{
+		// In IE < 9, the event member references will become invalid by the time
+		// _focusOnNode is called, so make a (shallow) copy up-front
+		if(!has("dom-addeventlistener")){
+			event = lang.mixin({}, event);
+		}
+		
+		// If the topmost/bottommost row rendered doesn't reach the top/bottom of
+		// the contentNode, we are using OnDemandList and need to wait for more
+		// data to render, then focus the first/last row in the new content.
+		handle = aspect.after(this, "renderArray", function(rows){
+			handle.remove();
+			return Deferred.when(rows, function(rows){
+				var target = rows[scrollToTop ? 0 : rows.length - 1];
+				if(cellNavigation){
+					// Preserve column that was currently focused
+					target = self.cell(target, self.cell(event).column.id);
+				}
+				self._focusOnNode(target, false, event);
+			});
+		});
+	}
+	
+	if(scrollPos === endPos){
+		// Grid body is already scrolled to end; prevent browser from scrolling
+		// entire page instead
+		event.preventDefault();
+	}
+};
+
+var moveFocusHome = Keyboard.moveFocusHome = function(event){
+	moveFocusEnd.call(this, event, true);
+};
+
+function preventDefault(event){
+	event.preventDefault();
+}
+
+Keyboard.defaultKeyMap = {
+	32: preventDefault, // space
+	33: moveFocusPageUp, // page up
+	34: moveFocusPageDown, // page down
+	35: moveFocusEnd, // end
+	36: moveFocusHome, // home
+	37: moveFocusLeft, // left
+	38: moveFocusUp, // up
+	39: moveFocusRight, // right
+	40: moveFocusDown // down
+};
+
+// Header needs fewer default bindings (no vertical), so bind it separately
+Keyboard.defaultHeaderKeyMap = {
+	32: preventDefault, // space
+	35: moveHeaderFocusEnd, // end
+	36: moveHeaderFocusHome, // home
+	37: moveFocusLeft, // left
+	39: moveFocusRight // right
+};
+
+return Keyboard;
+});
 },
 'dgrid/editor':function(){
 define("dgrid/editor", [
@@ -1042,7 +1447,7 @@ function updateInputValue(input, value){
 	// common code for updating value of a standard input
 	input.value = value;
 	if(input.type == "radio" || input.type == "checkbox"){
-		input.checked = !!value;
+		input.checked = input.defaultChecked = !!value;
 	}
 }
 
@@ -1074,7 +1479,7 @@ function setProperty(grid, cellElement, oldValue, value, triggerEvent){
 	// Updates dirty hash and fires dgrid-datachange event for a changed value.
 	var cell, row, column, eventObject;
 	// test whether old and new values are inequal, with coercion (e.g. for Dates)
-	if(!(oldValue >= value && oldValue <= value)){
+	if((oldValue && oldValue.valueOf()) != (value && value.valueOf())){
 		cell = grid.cell(cellElement);
 		row = cell.row;
 		column = cell.column;
@@ -1215,6 +1620,7 @@ function createSharedEditor(column, originalRenderCell){
 	// shared usage across an entire column (for columns with editOn specified).
 	
 	var cmp = createEditor(column),
+		grid = column.grid,
 		isWidget = cmp.domNode,
 		node = cmp.domNode || cmp,
 		focusNode = cmp.focusNode || node,
@@ -1229,13 +1635,23 @@ function createSharedEditor(column, originalRenderCell){
 	
 	function onblur(){
 		var parentNode = node.parentNode,
-			cell = column.grid.cell(node),
 			i = parentNode.children.length - 1,
 			options = { alreadyHooked: true },
-			renderedNode;
+			cell = grid.cell(node);
 		
+		// emit an event immediately prior to removing an editOn editor
+		on.emit(cell.element, "dgrid-editor-hide", {
+			grid: grid,
+			cell: cell,
+			column: column,
+			editor: cmp,
+			bubbles: true,
+			cancelable: false
+		});
 		// Remove the editor from the cell, to be reused later.
 		parentNode.removeChild(node);
+		
+		put(cell.element, "!dgrid-cell-editing");
 		
 		// Clear out the rest of the cell's contents, then re-render with new value.
 		while(i--){ put(parentNode.firstChild, "!"); }
@@ -1250,7 +1666,7 @@ function createSharedEditor(column, originalRenderCell){
 	
 	function dismissOnKey(evt){
 		// Contains logic for reacting to enter/escape keypresses to save/cancel edits.
-		// Returns boolean specifying whether this key event should dismiss the field.
+		// Calls `focusNode.blur()` in cases where field should be dismissed.
 		var key = evt.keyCode || evt.which;
 		
 		if(key == 27){ // escape: revert + dismiss
@@ -1272,19 +1688,19 @@ function createSharedEditor(column, originalRenderCell){
 	return cmp;
 }
 
-function showEditor(cmp, column, cell, value){
+function showEditor(cmp, column, cellElement, value){
 	// Places a shared editor into the newly-active cell in the column.
 	// Also called when rendering an editor in an "always-on" editor column.
 	
-	var grid = column.grid,
-		editor = column.editor,
-		isWidget = cmp.domNode;
+	var isWidget = cmp.domNode,
+		grid = column.grid;
 	
 	// for regular inputs, we can update the value before even showing it
 	if(!isWidget){ updateInputValue(cmp, value); }
 	
-	cell.innerHTML = "";
-	put(cell, cmp.domNode || cmp);
+	cellElement.innerHTML = "";
+	put(cellElement, ".dgrid-cell-editing");
+	put(cellElement, cmp.domNode || cmp);
 	
 	if(isWidget){
 		// For widgets, ensure startup is called before setting value,
@@ -1301,7 +1717,18 @@ function showEditor(cmp, column, cell, value){
 	cmp._dgridLastValue = value;
 	// if this is an editor with editOn, also update activeValue
 	// (activeOptions will have been updated previously)
-	if(activeCell){ activeValue = value; }
+	if(activeCell){ 
+		activeValue = value; 
+		// emit an event immediately prior to placing a shared editor
+		on.emit(cellElement, "dgrid-editor-show", {
+			grid: grid,
+			cell: grid.cell(cellElement),
+			column: column,
+			editor: cmp,
+			bubbles: true,
+			cancelable: false
+		});
+	}
 }
 
 function edit(cell) {
@@ -1318,6 +1745,8 @@ function edit(cell) {
 	var row, column, cellElement, dirty, field, value, cmp, dfd;
 	
 	if(!cell.column){ cell = this.cell(cell); }
+	if(!cell || !cell.element){ return null; }
+	
 	column = cell.column;
 	field = column.field;
 	cellElement = cell.element.contents || cell.element;

@@ -1,13 +1,9 @@
 define(
 "dojo/cldr/nls/de/buddhist", //begin v1.x content
 {
-	"dateFormatItem-yM": "M.y G",
-	"dateFormatItem-yyMMdd": "dd.MM.y G",
-	"dateFormatItem-yQ": "Q y G",
+	"dateFormatItem-yyyyMMMEd": "E, d. MMM y G",
 	"dayPeriods-format-wide-pm": "nachm.",
 	"dateFormatItem-MMMEd": "E, d. MMM",
-	"dateFormatItem-yQQQ": "QQQ y G",
-	"dateFormatItem-MMdd": "dd.MM.",
 	"days-standAlone-wide": [
 		"Sonntag",
 		"Montag",
@@ -17,7 +13,6 @@ define(
 		"Freitag",
 		"Samstag"
 	],
-	"dateFormatItem-MMM": "LLL",
 	"months-standAlone-narrow": [
 		"J",
 		"F",
@@ -50,8 +45,7 @@ define(
 		"Nov",
 		"Dez"
 	],
-	"dateFormatItem-Ed": "E d.",
-	"dateFormatItem-yMMM": "MMM y G",
+	"dateFormatItem-Ed": "E, d.",
 	"days-standAlone-narrow": [
 		"S",
 		"M",
@@ -61,23 +55,19 @@ define(
 		"F",
 		"S"
 	],
-	"dateFormatItem-yyyyMMMM": "MMMM y G",
+	"eraAbbr": [
+		"BE"
+	],
+	"dateFormatItem-GyMMMd": "d. MMM y G",
 	"dateFormat-long": "d. MMMM y G",
-	"dateFormatItem-Hm": "HH:mm",
-	"dateFormatItem-MMd": "d.MM.",
-	"dateFormatItem-yyMM": "MM.y G",
-	"dateFormat-medium": "d. MMM y G",
-	"dateFormatItem-Hms": "HH:mm:ss",
-	"dateFormatItem-yyMMM": "MMM y G",
-	"dateFormatItem-yyQQQQ": "QQQQ y G",
-	"dateFormatItem-yMd": "d.M.y G",
+	"dateFormat-medium": "dd.MM.y G",
 	"quarters-standAlone-wide": [
 		"1. Quartal",
 		"2. Quartal",
 		"3. Quartal",
 		"4. Quartal"
 	],
-	"dateFormatItem-ms": "mm:ss",
+	"dateFormatItem-yyyyQQQQ": "QQQQ y G",
 	"months-standAlone-wide": [
 		"Januar",
 		"Februar",
@@ -92,8 +82,10 @@ define(
 		"November",
 		"Dezember"
 	],
+	"dateFormatItem-yyyyMd": "d.M.y GGGGG",
+	"dateFormatItem-yyyyMMMd": "d. MMM y G",
+	"dateFormatItem-yyyyMEd": "E, d.M.y GGGGG",
 	"dateFormatItem-MMMd": "d. MMM",
-	"dateFormatItem-yyQ": "Q y G",
 	"months-format-abbr": [
 		"Jan.",
 		"Feb.",
@@ -109,7 +101,6 @@ define(
 		"Dez."
 	],
 	"dateFormatItem-H": "HH 'Uhr'",
-	"dateFormatItem-MMMMdd": "dd. MMMM",
 	"days-format-abbr": [
 		"So.",
 		"Mo.",
@@ -119,7 +110,6 @@ define(
 		"Fr.",
 		"Sa."
 	],
-	"dateFormatItem-M": "L",
 	"days-format-narrow": [
 		"S",
 		"M",
@@ -129,7 +119,9 @@ define(
 		"F",
 		"S"
 	],
-	"dateFormatItem-yMMMd": "d. MMM y G",
+	"dateFormatItem-GyMMMEd": "E, d. MMM y G",
+	"dateFormatItem-GyMMM": "MMM y G",
+	"dateFormatItem-yyyyQQQ": "QQQ y G",
 	"dateFormatItem-MEd": "E, d.M.",
 	"months-format-narrow": [
 		"J",
@@ -163,11 +155,10 @@ define(
 		"Fr",
 		"Sa"
 	],
-	"dateFormat-short": "d.M.yyyy",
-	"dateFormatItem-yMMMEd": "E, d. MMM y G",
-	"dateFormat-full": "EEEE d. MMMM y G",
+	"dateFormat-short": "dd.MM.yy GGGGG",
+	"dateFormatItem-yyyyM": "M.y GGGGG",
+	"dateFormat-full": "EEEE, d. MMMM y G",
 	"dateFormatItem-Md": "d.M.",
-	"dateFormatItem-yMEd": "E, d.M.y G",
 	"months-format-wide": [
 		"Januar",
 		"Februar",
@@ -191,7 +182,7 @@ define(
 		"Fr.",
 		"Sa."
 	],
-	"dateFormatItem-d": "d",
+	"dateFormatItem-yyyyMMM": "MMM y G",
 	"quarters-format-wide": [
 		"1. Quartal",
 		"2. Quartal",

@@ -1,15 +1,14 @@
 define(
 "dojo/cldr/nls/ca/buddhist", //begin v1.x content
 {
-	"dateFormatItem-yM": "MM/yyyy GGGGG",
-	"dateFormatItem-yQ": "Q yyyy GGGGG",
+	"dateFormatItem-yM": "MM/y GGGGG",
 	"dayPeriods-format-wide-pm": "p.m.",
 	"eraNames": [
 		"eB"
 	],
 	"dateFormatItem-MMMEd": "E d MMM",
 	"dateFormatItem-hms": "h:mm:ss a",
-	"dateFormatItem-yQQQ": "QQQ y G",
+	"dateFormatItem-yQQQ": "QQQ y GGGGG",
 	"days-standAlone-wide": [
 		"Diumenge",
 		"Dilluns",
@@ -77,7 +76,6 @@ define(
 	"dateFormat-medium": "d MMM y G",
 	"dateFormatItem-Hms": "HH:mm:ss",
 	"dayPeriods-format-narrow-pm": "p.m.",
-	"dateFormatItem-yMd": "d/M/yyyy",
 	"quarters-standAlone-wide": [
 		"1r trimestre",
 		"2n trimestre",
@@ -116,6 +114,7 @@ define(
 		"de nov.",
 		"de des."
 	],
+	"dateFormatItem-yQQQQ": "QQQQ y G",
 	"timeFormat-short": "H.mm",
 	"dateFormatItem-H": "HH",
 	"quarters-format-abbr": [
@@ -143,7 +142,6 @@ define(
 		"dv",
 		"ds"
 	],
-	"dateFormatItem-yMMMd": "d MMM y",
 	"dateFormatItem-MEd": "E, d/M",
 	"months-format-narrow": [
 		"G",
@@ -178,11 +176,11 @@ define(
 		"dv",
 		"ds"
 	],
-	"dateFormat-short": "dd/MM/yyyy GGGGG",
+	"dateFormat-short": "dd/MM/y GGGGG",
 	"dateFormatItem-yMMMEd": "E, d MMM y G",
 	"dateFormat-full": "EEEE, dd MMMM y G",
 	"dateFormatItem-Md": "d/M",
-	"dateFormatItem-yMEd": "E, dd/MM/yyyy GGGGG",
+	"dateFormatItem-yMEd": "E, dd/MM/y GGGGG",
 	"months-format-wide": [
 		"de gener",
 		"de febrer",

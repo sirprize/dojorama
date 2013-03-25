@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"chinese.js",
+"lineCount":2,
+"mappings":"A,SAAAA,MAAA,6BAGC,mBAHD,SAIC,sBAJD,UAKC,oBALD,UAMC,mBAND,QAOC,kBAPD,KAQC,kBARD,KASC,mBATD,UAUC,mBAVD,QAWC,0BAXD,WAYC,wBAZD,WAaC,qBAbD,KAcC,oBAdD,WAeC,iBAfD,SAgBC,mBAhBD,SAiBC,kBAjBD,SAkBC,yBAlBD,SAmBC,oBAnBD;AAoBC,iBApBD,cAqBC,qBArBD,QAsBC,uBAtBD;",
+"sources":["chinese.js.uncompressed.js"],
+"names":["define"]
+}

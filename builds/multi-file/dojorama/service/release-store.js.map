@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"release-store.js",
+"lineCount":1,
+"mappings":"A,SAAAA,MAAA,kCACsCC,OAAAC,UAAA,CAAkB,uBAAlB,CAAAC,KADtC,CAEIF,OAAAC,UAAA,CAAkB,uBAAlB,CAAAE,SAFJ;",
+"sources":["release-store.js.uncompressed.js"],
+"names":["define","require","rawConfig","deps","callback"]
+}

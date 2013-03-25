@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"RowWidget.js",
+"lineCount":1,
+"mappings":"A,SAAAA,MAAA,2GAIG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,QAOQH,EAAA,EAASC,CAAT,CAAqBC,CAArB,uKAGSE,QAAAA,CAAUC,CAAVD,EACRE,WAAAC,UADQH,CACgBC,CACxBG,UAAA,MAAgBH,CAAhB,CAFQD,CAHT,cAQWK,QAAAA,CAAUC,CAAVD,EACVE,aAAAJ,UADUE,CACgBC,CAC1BF,UAAA,QAAkBE,CAAlB,CAFUD,CARX,EAPR,CAJH;",
+"sources":["RowWidget.js.uncompressed.js"],
+"names":["define","declare","WidgetBase","TemplatedMixin","template","_setIdAttr","id","idNode","innerHTML","_set","_setDataAttr","data","dataNode"]
+}

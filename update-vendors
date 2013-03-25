@@ -1,0 +1,35 @@
+cd ./vendor/dojo/dojo
+git pull
+cd ../util
+git pull
+
+cd ../../kriszyp/put-selector
+git pull
+cd ../xstyle
+git pull
+
+cd ../../scottschiller/SoundManager2
+git pull
+
+cd ../../sirprize/dobolo
+git pull
+cd ../dojo-data-model
+git pull
+cd ../dojo-form-controls
+git pull
+cd ../dojo-local-storage
+git pull
+cd ../dojo-sm2-playlist
+git pull
+cd ../dojomat
+git pull
+cd ../mijit
+git pull
+cd ../routed
+git pull
+
+cd ../../SitePen/dgrid
+git pull
+
+cd ../../twitter/bootstrap
+git pull

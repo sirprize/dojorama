@@ -1,0 +1,8 @@
+{
+"version":3,
+"file":"_ReleaseActionsMixin.js",
+"lineCount":2,
+"mappings":"A,SAEAA,MAAA,qJAIG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,QAKQF,EAAA,mCAUSG,QAAAA,GACRC,cAAA,CAAeC,SAAf,CAEAC,mBAHQH,CAGa,IAAIF,CAAJ,kBAGFC,CAAAK,WAHE,KAIJC,WAAAC,SAAA,gBAAAC,SAAA,EAJI,yBAKAF,WAAAG,oBAAA,EALA,SAQFT,CAAAU,YARE,KASJJ,WAAAC,SAAA,iBAAAC,SAAA,EATI;AAUAF,WAAAG,oBAAA,EAVA,IAalBE,gBAbkB,CAHbV,CAVT,SA6BMW,QAAAA,GACLV,cAAA,CAAeC,SAAf,CACAC,mBAAAQ,QAAA,EAFKA,CA7BN,oBAkCiBC,QAAAA,GAChBT,kBAAAU,KAAA,EADgBD,CAlCjB,EALR,CAJH;",
+"sources":["_ReleaseActionsMixin.js.uncompressed.js"],
+"names":["define","declare","ActionsWidget","nls","postCreate","inherited","arguments","actionsWidget","indexLabel","router","getRoute","assemble","getCurrentRouteName","createLabel","actionsNode","startup","showReleaseActions","show"]
+}
