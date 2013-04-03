@@ -1,3 +1,4 @@
 //>>built
 define("dojo/ready",["./_base/kernel","./has","require","./domReady","./_base/lang"],function(b,h,k,a,l){var p=0,e=[],m=0;h=function(){p=1;b._postLoad=b.config.afterOnLoad=!0;g()};var g=function(){if(!m){for(m=1;p&&(!a||0==a._Q.length)&&k.idle()&&e.length;){var b=e.shift();try{b()}catch(c){c.info=c.message,k.signal("error",c)}}m=0}};k.on("idle",g);a&&(a._onQEmpty=g);var q=b.ready=b.addOnLoad=function(a,c,f){var d=l._toArray(arguments);"number"!=typeof a?(f=c,c=a,a=1E3):d.shift();f=f?l.hitch.apply(b,
 d):function(){c()};f.priority=a;for(d=0;d<e.length&&a>=e[d].priority;d++);e.splice(d,0,f);g()},n=b.config.addOnLoad;if(n)q[l.isArray(n)?"apply":"call"](b,n);a?a(h):h();return q});
+//@ sourceMappingURL=ready.js.map

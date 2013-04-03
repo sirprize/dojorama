@@ -1,3 +1,4 @@
 //>>built
 define("dojo-data-model/QueryResults",["dojo/_base/array","dojo/_base/lang","dojo/Deferred","dojo/promise/Promise","dojo/when"],function(d,m,n,p,q){var l=function(a,k){var e=null,f=function(a){var b=[],c=null;d.forEach(a,function(a){c=k();c.deserialize(a);b[b.length]=c});return b},g=function(a,b){a[b]=function(){var c=arguments;return a.then(function(a){Array.prototype.unshift.call(c,f(a));return l(d[b].apply(d,c),k)})}},h=function(a,b){a[b]||(a[b]=function(){var c=arguments;Array.prototype.unshift.call(c,
 a);return d[b].apply(d,c)})};if(a)a.then?(e=new n,a.then(function(a){e.resolve(f(a))},function(a){e.reject(a)},function(a){e.progress(a)}),a=m.delegate(new p,e.promise),g(a,"forEach"),g(a,"filter"),g(a,"map")):(a=f(a),h(a,"forEach"),h(a,"filter"),h(a,"map"));else return a;a.total||(a.total=q(a,function(a){return a.length}));return a};return l});
+//@ sourceMappingURL=QueryResults.js.map

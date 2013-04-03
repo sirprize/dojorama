@@ -1,2 +1,3 @@
 //>>built
 define("dojorama/ui/_global/mixin/_NavigationMixin",["dojo/_base/declare","../widget/NavigationWidget"],function(a,b){return a([],{navigationWidget:null,postCreate:function(){this.inherited(arguments);this.navigationWidget=new b({router:this.router},this.navigationNode)},startup:function(){this.inherited(arguments);this.navigationWidget.startup()},showNavigation:function(){this.navigationWidget.show()}})});
+//@ sourceMappingURL=_NavigationMixin.js.map

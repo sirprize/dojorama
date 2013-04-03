@@ -1,4 +1,4 @@
-define("xstyle/ext/widget", ['../xstyle'], function(xstyle){
+define("xstyle/ext/widget", ['../main'], function(xstyle){
 	var nextId = 0;
 	function parse(value, callback, type, rule){
 		var Class, prototype;

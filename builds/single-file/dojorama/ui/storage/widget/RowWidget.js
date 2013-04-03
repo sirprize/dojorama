@@ -1,2 +1,3 @@
 //>>built
 define("dojorama/ui/storage/widget/RowWidget",["dojo/_base/declare","mijit/_WidgetBase","mijit/_TemplatedMixin"],function(b,c,d,e){return b([c,d],{templateString:'\x3ctr\x3e\x3ctd data-dojo-attach-point\x3d"idNode"\x3e\x3c/td\x3e\x3ctd data-dojo-attach-point\x3d"dataNode"\x3e\x3c/td\x3e\x3c/tr\x3e',_setIdAttr:function(a){this.idNode.innerHTML=a;this._set("id",a)},_setDataAttr:function(a){this.dataNode.innerHTML=a;this._set("data",a)}})});
+//@ sourceMappingURL=RowWidget.js.map

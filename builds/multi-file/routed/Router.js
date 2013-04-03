@@ -1,2 +1,3 @@
 //>>built
 define("routed/Router",["./Route"],function(h){return function(f){var g=null,b=[],a=null;for(a in f)f.hasOwnProperty(a)&&(b[a]=f[a]);return{addRoute:function(d,c){b[d]=c},route:function(d){var c,a,e=[];for(c in b)if(b.hasOwnProperty(c)&&(e=b[c].match(d.getPathname()))){g=c;for(a in e)e.hasOwnProperty(a)&&d.setPathParam(a,e[a]);return d}return null},getCurrentRoute:function(){return b[g]||null},getCurrentRouteName:function(){return g},getRoute:function(a){return b[a]||void 0}}}});
+//@ sourceMappingURL=Router.js.map

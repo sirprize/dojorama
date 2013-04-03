@@ -1,10 +1,9 @@
-define("xstyle/ext/event", ['../xstyle'], function(xstyle){
+define("xstyle/ext/event", ['../main'], function(xstyle){
 	var module, hasAddEventListener = !!document.addEventListener;
 	return module = {
 		onProperty: function(name, value, rule){
 			xstyle.addRenderer(name, value, rule, function(element){
 				module.on(element, name.slice(2), function(e){
-	console.log("execute event", value);
 				});
 			});
 		},

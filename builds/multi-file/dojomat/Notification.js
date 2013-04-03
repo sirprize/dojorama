@@ -1,3 +1,4 @@
 //>>built
 define("dojomat/Notification",["dojo/_base/declare","dojo/_base/json","dojo/has","dojo/cookie"],function(e,b,a,c){return e([],{id:"dojomat-notification",get:function(){return a("native-localstorage")&&a("native-history-state")?b.fromJson(localStorage.getItem(this.id)):b.fromJson(c(this.id))},clear:function(){a("native-localstorage")&&a("native-history-state")?localStorage.removeItem(this.id):c(this.id,null,{expires:-1,path:"/"})},set:function(d){a("native-localstorage")&&a("native-history-state")?
 localStorage.setItem(this.id,b.toJson(d)):c(this.id,b.toJson(d),{expires:1,path:"/"})}})});
+//@ sourceMappingURL=Notification.js.map

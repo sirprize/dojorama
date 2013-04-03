@@ -1,3 +1,4 @@
 //>>built
 define("dobolo/ScrollTopSpyHelper","dojo/_base/declare dojo/Evented dojo/dom-geometry dojo/_base/lang dojo/_base/window dojo/dom dojo/on ./Util".split(" "),function(b,d,g,k,l,q,m,n){return b([d],{scroller:null,constructor:function(e,b,f,d){var a;f=f||0;var h=null,p=n.throttle(function(c){var b=e===l.doc?0:g.position(e).y;for(a=c.length-1;0<=a;a-=1)if(g.position(c[a],!1).y<=0+f+b){if(h===c[a])break;h=c[a];this.emit("active",{bubbles:!0,cancelable:!0,node:c[a]});break}},d||100,this);this.scroller=m(e,
 "scroll",k.hitch(this,function(a){node=p(b)}))},destroy:function(){this.scroller&&this.scroller.remove&&this.scroller.remove()}})});
+//@ sourceMappingURL=ScrollTopSpyHelper.js.map

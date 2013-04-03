@@ -1,3 +1,4 @@
 //>>built
 define("dojo/request/handlers",["../json","../_base/kernel","../_base/array","../has"],function(h,k,l,c){function d(a){var b=f[a.options.handleAs];a.data=b?b(a):a.data||a.text;return a}c.add("activex","undefined"!==typeof ActiveXObject);var g;if(c("activex")){var m=["Msxml2.DOMDocument.6.0","Msxml2.DOMDocument.4.0","MSXML2.DOMDocument.3.0","MSXML.DOMDocument"];g=function(a){var b=a.data;if(!b||!b.documentElement){var c=a.text;l.some(m,function(a){try{var e=new ActiveXObject(a);e.async=!1;e.loadXML(c);
 b=e}catch(d){return!1}return!0})}return b}}var f={javascript:function(a){return k.eval(a.text||"")},json:function(a){return h.parse(a.text||null)},xml:g};d.register=function(a,b){f[a]=b};return d});
+//@ sourceMappingURL=handlers.js.map

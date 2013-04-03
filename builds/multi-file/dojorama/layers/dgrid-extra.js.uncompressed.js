@@ -161,18 +161,12 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 					data = data[column.field];
 				}
 				
-				// Support formatter, with or without formatterScope
-				var formatter = column.formatter,
-					formatterScope = self.formatterScope;
-				if(formatter){
-					td.innerHTML = typeof formatter === "string" && formatterScope ?
-						formatterScope[formatter](data, object) : formatter(data, object);
-				}else if(column.renderCell){
+				if(column.renderCell){
 					// A column can provide a renderCell method to do its own DOM manipulation,
 					// event handling, etc.
 					appendIfNode(td, column.renderCell(object, data, td, options));
-				}else if(data != null){
-					td.appendChild(document.createTextNode(data));
+				}else{
+					defaultRenderCell.call(column, object, data, td, options);
 				}
 			}, options && options.subRows);
 			// row gets a wrapper div for a couple reasons:
@@ -509,12 +503,23 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		}
 	});
 	
+	function defaultRenderCell(object, data, td, options){
+		if(this.formatter){
+			// Support formatter, with or without formatterScope
+			var formatter = this.formatter,
+				formatterScope = this.grid.formatterScope;
+			td.innerHTML = typeof formatter === "string" && formatterScope ?
+				formatterScope[formatter](data, object) : formatter(data, object);
+		}else if(data != null){
+			td.appendChild(document.createTextNode(data)); 
+		}
+	}
+	
 	// expose appendIfNode and default implementation of renderCell,
 	// e.g. for use by column plugins
 	Grid.appendIfNode = appendIfNode;
-	Grid.defaultRenderCell = function(object, data, td, options){
-		if(data != null){ td.appendChild(document.createTextNode(data)); }
-	};
+	Grid.defaultRenderCell = defaultRenderCell;
+	
 	return Grid;
 });
 

@@ -38,18 +38,20 @@ define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/w
 		}
 	}
 
-	var tested, html5domfix;
+	var html5domfix;
 	if(has("ie") <= 8){
-		html5domfix = function(){
-			if(tested){ return; }
-			tested = true;
-			var div = d.create('div', { innerHTML:"<nav>a</nav>"});
+		html5domfix = function(doc){
+			doc.__dojo_html5_tested = "yes";
+			var div = create('div', {innerHTML: "<nav>a</nav>", style: {visibility: "hidden"}}, doc.body);
 			if(div.childNodes.length !== 1){
 				'abbr article aside audio canvas details figcaption figure footer header ' +
-				'hgroup mark meter nav output progress section summary time video'.replace(/\b\w+\b/g,function(n){
-					d.createElement(n);
-				});
+				'hgroup mark meter nav output progress section summary time video'.replace(
+					/\b\w+\b/g, function(n){
+						doc.createElement(n);
+					}
+				);
 			}
+			destroy(div);
 		}
 	}
 
@@ -95,7 +97,9 @@ define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/w
 		}
 
 		if(has("ie") <= 8){
-			if(!tested){ html5domfix(); }
+			if(!doc.__dojo_html5_tested && doc.body){
+				html5domfix(doc);
+			}
 		}
 
 		// make sure the frag is a string.
@@ -207,7 +211,7 @@ define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/w
 		return node; // DomNode
 	};
 
-	exports.create = function create(/*DOMNode|String*/ tag, /*Object*/ attrs, /*DOMNode|String?*/ refNode, /*String?*/ pos){
+	var create = exports.create = function create(/*DOMNode|String*/ tag, /*Object*/ attrs, /*DOMNode|String?*/ refNode, /*String?*/ pos){
 		// summary:
 		//		Create an element, allowing for optional attribute decoration
 		//		and placement.
@@ -318,10 +322,11 @@ define("dojo/dom-construct", ["exports", "./_base/kernel", "./sniff", "./_base/w
 			_empty(node);
 		}
 		if(parent){
-			parent.removeChild(node);
+			// removeNode(false) doesn't leak in IE 6+, but removeChild() and removeNode(true) are known to leak under IE 8- while 9+ is TBD
+			has("ie") && 'removeNode' in node ? node.removeNode(false) : parent.removeChild(node);
 		}
 	}
-	exports.destroy = function destroy(/*DOMNode|String*/ node){
+	var destroy = exports.destroy = function destroy(/*DOMNode|String*/ node){
 		// summary:
 		//		Removes a node from its parent, clobbering it and all of its
 		//		children.

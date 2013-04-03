@@ -1933,7 +1933,6 @@
 				},
 				{
 					 location:"../xstyle",
-					 main:"css",
 					 name:"xstyle"
 				},
 				{
@@ -2014,7 +2013,7 @@ define(["./has"], function(has){
 			has.add("ios", os);
 		}
 		has.add("android", parseFloat(dua.split("Android ")[1]) || undefined);
-		has.add("bb", (dua.indexOf("BlackBerry") >= 0 || dua.indexOf("BB10")) && parseFloat(dua.split("Version/")[1]) || undefined);
+		has.add("bb", (dua.indexOf("BlackBerry") >= 0 || dua.indexOf("BB10") >= 0) && parseFloat(dua.split("Version/")[1]) || undefined);
 
 		has.add("svg", typeof SVGAngle !== "undefined");
 
@@ -5390,7 +5389,7 @@ define(["./Evented"], function(Evented){
 
 },
 'dojo/Evented':function(){
-define(["./aspect", "./on"], function(aspect, on){
+define("dojo/Evented", ["./aspect", "./on"], function(aspect, on){
 	// module:
 	//		dojo/Evented
 
@@ -12069,18 +12068,20 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		}
 	}
 
-	var tested, html5domfix;
+	var html5domfix;
 	if(has("ie") <= 8){
-		html5domfix = function(){
-			if(tested){ return; }
-			tested = true;
-			var div = d.create('div', { innerHTML:"<nav>a</nav>"});
+		html5domfix = function(doc){
+			doc.__dojo_html5_tested = "yes";
+			var div = create('div', {innerHTML: "<nav>a</nav>", style: {visibility: "hidden"}}, doc.body);
 			if(div.childNodes.length !== 1){
 				'abbr article aside audio canvas details figcaption figure footer header ' +
-				'hgroup mark meter nav output progress section summary time video'.replace(/\b\w+\b/g,function(n){
-					d.createElement(n);
-				});
+				'hgroup mark meter nav output progress section summary time video'.replace(
+					/\b\w+\b/g, function(n){
+						doc.createElement(n);
+					}
+				);
 			}
+			destroy(div);
 		}
 	}
 
@@ -12126,7 +12127,9 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		}
 
 		if(has("ie") <= 8){
-			if(!tested){ html5domfix(); }
+			if(!doc.__dojo_html5_tested && doc.body){
+				html5domfix(doc);
+			}
 		}
 
 		// make sure the frag is a string.
@@ -12238,7 +12241,7 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		return node; // DomNode
 	};
 
-	exports.create = function create(/*DOMNode|String*/ tag, /*Object*/ attrs, /*DOMNode|String?*/ refNode, /*String?*/ pos){
+	var create = exports.create = function create(/*DOMNode|String*/ tag, /*Object*/ attrs, /*DOMNode|String?*/ refNode, /*String?*/ pos){
 		// summary:
 		//		Create an element, allowing for optional attribute decoration
 		//		and placement.
@@ -12349,10 +12352,11 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 			_empty(node);
 		}
 		if(parent){
-			parent.removeChild(node);
+			// removeNode(false) doesn't leak in IE 6+, but removeChild() and removeNode(true) are known to leak under IE 8- while 9+ is TBD
+			has("ie") && 'removeNode' in node ? node.removeNode(false) : parent.removeChild(node);
 		}
 	}
-	exports.destroy = function destroy(/*DOMNode|String*/ node){
+	var destroy = exports.destroy = function destroy(/*DOMNode|String*/ node){
 		// summary:
 		//		Removes a node from its parent, clobbering it and all of its
 		//		children.
@@ -15076,7 +15080,7 @@ define([
 
 },
 'dojo/NodeList-dom':function(){
-define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-class", "./dom-construct", "./dom-geometry", "./dom-attr", "./dom-style"], function(dojo, query, array, lang, domCls, domCtr, domGeom, domAttr, domStyle){
+define("dojo/NodeList-dom", ["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-class", "./dom-construct", "./dom-geometry", "./dom-attr", "./dom-style"], function(dojo, query, array, lang, domCls, domCtr, domGeom, domAttr, domStyle){
 
 	// module:
 	//		dojo/NodeList-dom.js
@@ -15961,7 +15965,7 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 		}
 	}
 
-	var dojotouchmove, nativeTouchMoveEvent, hoveredNode;
+	var hoveredNode;
 
 	if(hasTouch){
 		if(msPointer){
@@ -15996,9 +16000,29 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 					doClicks(evt, "touchmove", "touchend"); // init click generation
 				}, true);
 
+				function copyEventProps(evt){
+					// Make copy of event object and also set bubbles:true.  Used when calling on.emit().
+					var props = lang.delegate(evt, {
+						bubbles: true
+					});
+
+					if(has("ios") >= 6){
+						// On iOS6 "touches" became a non-enumerable property, which 
+						// is not hit by for...in.  Ditto for the other properties below.
+						props.touches = evt.touches;
+						props.altKey = evt.altKey;
+						props.changedTouches = evt.changedTouches;
+						props.ctrlKey = evt.ctrlKey;
+						props.metaKey = evt.metaKey;
+						props.shiftKey = evt.shiftKey;
+						props.targetTouches = evt.targetTouches;
+					}
+
+					return props;
+				}
+				
 				on(win.doc, "touchmove", function(evt){
 					lastTouch = (new Date()).getTime();
-					nativeTouchMoveEvent = evt;
 
 					var newNode = win.doc.elementFromPoint(
 						evt.pageX - (ios4 ? 0 : win.global.pageXOffset), // iOS 4 expects page coords
@@ -16023,11 +16047,9 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 							hoveredNode = newNode;
 						}
 
-						// Emit synthetic "dojotouchmove" as a way of triggering listeners to synthetic dojotouchmove event
-						// defined below.
-						on.emit(newNode, "dojotouchmove", {
-							bubbles: true
-						});
+						// Unlike a listener on "touchmove", on(node, "dojotouchmove", listener) fires when the finger
+						// drags over the specified node, regardless of which node the touch started on.
+						on.emit(newNode, "dojotouchmove", copyEventProps(evt));
 					}
 				});
 
@@ -16040,35 +16062,16 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 						evt.pageY - (ios4 ? 0 : win.global.pageYOffset)
 					) || win.body(); // if out of the screen
 
-					on.emit(node, "dojotouchend", lang.delegate(evt, {
-						bubbles: true
-					}));
+					on.emit(node, "dojotouchend", copyEventProps(evt));
 				});
 			});
-
-
-			// Unlike a listener on "touchmove", on(node, dojotouchmove, listener) fires when the finger
-			// drags over the specified node, regardless of which node the touch started on.
-			// The listener is called with the native touchmove event object, so that evt.preventDefault() works,
-			// but target is set to the node currently being dragged over, and stopPropagation() refers to the synthetic
-			// event.
-			dojotouchmove = function(node, listener){
-				return on(node, "dojotouchmove", function(syntheticEvent){
-					listener(lang.delegate(nativeTouchMoveEvent, {
-						target: syntheticEvent.target,
-						stopPropagation: function(){
-							syntheticEvent.stopPropagation();
-						}
-					}));
-				});
-			};
 		}
 	}
 
 	//device neutral events - touch.press|move|release|cancel/over/out
 	var touch = {
 		press: dualEvent("mousedown", "touchstart", "MSPointerDown"),
-		move: dualEvent("mousemove", dojotouchmove, "MSPointerMove"),
+		move: dualEvent("mousemove", "dojotouchmove", "MSPointerMove"),
 		release: dualEvent("mouseup", "dojotouchend", "MSPointerUp"),
 		cancel: dualEvent(mouse.leave, "touchcancel", hasTouch?"MSPointerCancel":null),
 		over: dualEvent("mouseover", "dojotouchover", "MSPointerOver"),
@@ -16203,7 +16206,7 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 
 },
 'dojo/Stateful':function(){
-define(["./_base/declare", "./_base/lang", "./_base/array", "./when"], function(declare, lang, array, when){
+define("dojo/Stateful", ["./_base/declare", "./_base/lang", "./_base/array", "./when"], function(declare, lang, array, when){
 	// module:
 	//		dojo/Stateful
 
@@ -22743,7 +22746,7 @@ define([
 define([
     "routed/Request",
     "routed/Router",
-    "mijit/registry",
+    "dojo/has!dijit?dijit/registry:mijit/registry",
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
@@ -25498,7 +25501,7 @@ define([
 },
 'url:dobolo/templates/Calendar.html':"<div class=\"calendar dropdown-menu\">\n    <div class=\"calendar-days\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody></tbody>\n        </table>\n    </div>\n    <div class=\"calendar-months\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n    <div class=\"calendar-years\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n</div>",
 'dojo/NodeList-traverse':function(){
-define(["./query", "./_base/lang", "./_base/array"], function(dquery, lang, array){
+define("dojo/NodeList-traverse", ["./query", "./_base/lang", "./_base/array"], function(dquery, lang, array){
 
 // module:
 //		dojo/NodeList-traverse
@@ -27982,8 +27985,8 @@ return declare([List, _StoreMixin], {
 
 },
 'dgrid/_StoreMixin':function(){
-define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "put-selector/put"],
-function(kernel, declare, lang, Deferred, listen, put){
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "dojo/aspect", "put-selector/put"],
+function(kernel, declare, lang, Deferred, listen, aspect, put){
 	// This module isolates the base logic required by store-aware list/grid
 	// components, e.g. OnDemandList/Grid and the Pagination extension.
 	
@@ -28045,7 +28048,13 @@ function(kernel, declare, lang, Deferred, listen, put){
 			this.query = {};
 			this.queryOptions = {};
 			this.dirty = {};
-			this._updating = {}; // tracks rows that are mid-update
+			this._updating = {}; // Tracks rows that are mid-update
+			this._columnsWithSet = {};
+
+			// Reset _columnsWithSet whenever column configuration is reset
+			aspect.before(this, "configStructure", lang.hitch(this, function(){
+				this._columnsWithSet = {};
+			}));
 		},
 		
 		_configColumn: function(column){
@@ -28053,16 +28062,8 @@ function(kernel, declare, lang, Deferred, listen, put){
 			//		Implements extension point provided by Grid to store references to
 			//		any columns with `set` methods, for use during `save`.
 			if (column.set){
-				if(!this._columnsWithSet){ this._columnsWithSet = {}; }
 				this._columnsWithSet[column.field] = column;
 			}
-		},
-		
-		_configColumns: function(){
-			// summary:
-			//		Extends Grid to reset _StoreMixin's hash when columns are updated
-			this._columnsWithSet = null;
-			return this.inherited(arguments);
 		},
 		
 		_setStore: function(store, query, queryOptions){
@@ -28183,15 +28184,14 @@ function(kernel, declare, lang, Deferred, listen, put){
 					for(key in dirtyObj){
 						object[key] = dirtyObj[key];
 					}
-					if(colsWithSet){
-						// Apply any set methods in column definitions.
-						// Note that while in the most common cases column.set is intended
-						// to return transformed data for the key in question, it is also
-						// possible to directly modify the object to be saved.
-						for(key in colsWithSet){
-							data = colsWithSet[key].set(object);
-							if(data !== undefined){ object[key] = data; }
-						}
+					
+					// Apply any set methods in column definitions.
+					// Note that while in the most common cases column.set is intended
+					// to return transformed data for the key in question, it is also
+					// possible to directly modify the object to be saved.
+					for(key in colsWithSet){
+						data = colsWithSet[key].set(object);
+						if(data !== undefined){ object[key] = data; }
 					}
 					
 					updating[id] = true;
@@ -28441,18 +28441,12 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 					data = data[column.field];
 				}
 				
-				// Support formatter, with or without formatterScope
-				var formatter = column.formatter,
-					formatterScope = self.formatterScope;
-				if(formatter){
-					td.innerHTML = typeof formatter === "string" && formatterScope ?
-						formatterScope[formatter](data, object) : formatter(data, object);
-				}else if(column.renderCell){
+				if(column.renderCell){
 					// A column can provide a renderCell method to do its own DOM manipulation,
 					// event handling, etc.
 					appendIfNode(td, column.renderCell(object, data, td, options));
-				}else if(data != null){
-					td.appendChild(document.createTextNode(data));
+				}else{
+					defaultRenderCell.call(column, object, data, td, options);
 				}
 			}, options && options.subRows);
 			// row gets a wrapper div for a couple reasons:
@@ -28789,12 +28783,23 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		}
 	});
 	
+	function defaultRenderCell(object, data, td, options){
+		if(this.formatter){
+			// Support formatter, with or without formatterScope
+			var formatter = this.formatter,
+				formatterScope = this.grid.formatterScope;
+			td.innerHTML = typeof formatter === "string" && formatterScope ?
+				formatterScope[formatter](data, object) : formatter(data, object);
+		}else if(data != null){
+			td.appendChild(document.createTextNode(data)); 
+		}
+	}
+	
 	// expose appendIfNode and default implementation of renderCell,
 	// e.g. for use by column plugins
 	Grid.appendIfNode = appendIfNode;
-	Grid.defaultRenderCell = function(object, data, td, options){
-		if(data != null){ td.appendChild(document.createTextNode(data)); }
-	};
+	Grid.defaultRenderCell = defaultRenderCell;
+	
 	return Grid;
 });
 

@@ -4,7 +4,7 @@
 define("dojomat/Application", [
     "routed/Request",
     "routed/Router",
-    "mijit/registry",
+    "dojo/has!dijit?dijit/registry:mijit/registry",
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
