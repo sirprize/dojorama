@@ -442,7 +442,11 @@
 		dojoSniffConfig
 			// map of configuration variables
 			// give the data-dojo-config as sniffed from the document (if any)
-			= {};
+			= {},
+
+		insertPointSibling
+			// the nodes used to locate where scripts are injected into the document
+			= 0;
 
 	if( 1 ){
 		var consumePendingCacheInsert = function(referenceModule){
@@ -485,6 +489,14 @@
 				dest.sort(function(lhs, rhs){ return rhs[3] - lhs[3]; });
 				return dest;
 			},
+
+			computeAliases = function(config, dest){
+				forEach(config, function(pair){
+					// take a fixed-up copy...
+					dest.push([isString(pair[0]) ? new RegExp("^" + escapeString(pair[0]) + "$") : pair[0], pair[1]]);
+				});
+			},
+
 
 			fixupPackageInfo = function(packageInfo){
 				// calculate the precise (name, location, main, mappings) for a package
@@ -594,12 +606,7 @@
 				computeMapProg(mix(paths, config.paths), pathsMapProg);
 
 				// aliases
-				forEach(config.aliases, function(pair){
-					if(isString(pair[0])){
-						pair[0] = new RegExp("^" + escapeString(pair[0]) + "$");
-					}
-					aliases.push(pair);
-				});
+				computeAliases(config.aliases, aliases);
 
 				if(booting){
 					delayedModuleConfig.push({config:config.config});
@@ -642,20 +649,23 @@
 					dojoDir = match[3] || "";
 					defaultConfig.baseUrl = defaultConfig.baseUrl || dojoDir;
 
-					// sniff configuration on attribute in script element
-					src = (script.getAttribute("data-dojo-config") || script.getAttribute("djConfig"));
-					if(src){
-						dojoSniffConfig = req.eval("({ " + src + " })", "data-dojo-config");
-					}
+					// remember an insertPointSibling
+					insertPointSibling = script;
+				}
 
-					// sniff requirejs attribute
-					if( 0 ){
-						var dataMain = script.getAttribute("data-main");
-						if(dataMain){
-							dojoSniffConfig.deps = dojoSniffConfig.deps || [dataMain];
-						}
+				// sniff configuration on attribute in script element
+				if((src = (script.getAttribute("data-dojo-config") || script.getAttribute("djConfig")))){
+					dojoSniffConfig = req.eval("({ " + src + " })", "data-dojo-config");
+
+					// remember an insertPointSibling
+					insertPointSibling = script;
+				}
+
+				// sniff requirejs attribute
+				if( 0 ){
+					if((src = script.getAttribute("data-main"))){
+						dojoSniffConfig.deps = dojoSniffConfig.deps || [src];
 					}
-					break;
 				}
 			}
 		}
@@ -915,7 +925,7 @@
 			}
 		},
 
-		getModuleInfo_ = function(mid, referenceModule, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate){
+		getModuleInfo_ = function(mid, referenceModule, packs, modules, baseUrl, mapProgs, pathsMapProg, aliases, alwaysCreate){
 			// arguments are passed instead of using lexical variables so that this function my be used independent of the loader (e.g., the builder)
 			// alwaysCreate is useful in this case so that getModuleInfo never returns references to real modules owned by the loader
 			var pid, pack, midInPackage, mapItem, url, result, isRelative, requestedMid;
@@ -964,7 +974,7 @@
 					}
 				});
 				if(candidate){
-					return getModuleInfo_(candidate, 0, packs, modules, baseUrl, mapProgs, pathsMapProg, alwaysCreate);
+					return getModuleInfo_(candidate, 0, packs, modules, baseUrl, mapProgs, pathsMapProg, aliases, alwaysCreate);
 				}
 
 				result = modules[mid];
@@ -995,7 +1005,7 @@
 		},
 
 		getModuleInfo = function(mid, referenceModule){
-			return getModuleInfo_(mid, referenceModule, packs, modules, req.baseUrl, mapProgs, pathsMapProg);
+			return getModuleInfo_(mid, referenceModule, packs, modules, req.baseUrl, mapProgs, pathsMapProg, aliases);
 		},
 
 		resolvePluginResourceId = function(plugin, prid, referenceModule){
@@ -1275,7 +1285,7 @@
 			// This is useful for testing frameworks (at least).
 			var module = getModule(moduleId, referenceModule);
 			setArrived(module);
-			mix(module, {def:0, executed:0, injected:0, node:0, url:0});
+			mix(module, {def:0, executed:0, injected:0, node:0});
 		};
 	}
 
@@ -1643,13 +1653,16 @@
 			// error in IE from appending to a node that isn't properly closed; see
 			// dojo/tests/_base/loader/requirejs/simple-badbase.html for an example
 			// don't use scripts with type dojo/... since these may be removed; see #15809
-			var scripts = doc.getElementsByTagName("script"), i = 0, sibling, insertPoint;
-			while(1){
-				if(!/^dojo/.test((sibling = scripts[i++]) && sibling.type)){
-					insertPoint= sibling.parentNode;
-					break;
+			// prefer to use the insertPoint computed during the config sniff in case a script is removed; see #16958
+			var scripts = doc.getElementsByTagName("script"),
+				i = 0,
+				script;
+			while(!insertPointSibling){
+				if(!/^dojo/.test((script = scripts[i++]) && script.type)){
+					insertPointSibling= script;
 				}
 			}
+
 			req.injectUrl = function(url, callback, owner){
 				// insert a script element to the insert-point element with src=url;
 				// apply callback upon detecting the script has loaded.
@@ -1674,7 +1687,7 @@
 				node.type = "text/javascript";
 				node.charset = "utf-8";
 				node.src = url;
-				insertPoint.insertBefore(node, sibling);
+				insertPointSibling.parentNode.insertBefore(node, insertPointSibling);
 				return node;
 			};
 		}
@@ -1871,6 +1884,7 @@
 
 			// these are used by the builder (at least)
 			computeMapProg:computeMapProg,
+			computeAliases:computeAliases,
 			runMapProg:runMapProg,
 			compactPath:compactPath,
 			getModuleInfo:getModuleInfo_

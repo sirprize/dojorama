@@ -15,21 +15,21 @@ define("dojo/aspect", [], function(){
 			});
 			signal = {
 				remove: function(){
-					signal.cancelled = true;
+					if(advised){
+						advised = dispatcher = advice = null;
+					}
 				},
 				advice: function(target, args){
-					return signal.cancelled ?
-						previous.advice(target, args) : // cancelled, skip to next one
-						advised.apply(target, args);	// called the advised function
+					return advised ?
+						advised.apply(target, args) :  // called the advised function
+						previous.advice(target, args); // cancelled, skip to next one
 				}
 			};
 		}else{
 			// create the remove handler
 			signal = {
 				remove: function(){
-					if(this.advice){
-						// remove the advice to signal that this signal has been removed
-						this.advice = null;
+					if(signal.advice){
 						var previous = signal.previous;
 						var next = signal.next;
 						if(!next && !previous){
@@ -44,6 +44,9 @@ define("dojo/aspect", [], function(){
 								next.previous = previous;
 							}
 						}
+
+						// remove the advice to signal that this signal has been removed
+						dispatcher = advice = signal.advice = null;
 					}
 				},
 				id: nextId++,
@@ -54,7 +57,7 @@ define("dojo/aspect", [], function(){
 		if(previous && !around){
 			if(type == "after"){
 				// add the listener to the end of the list
-				// note that we had to change this loop a little bit to workaround a bizarre IE10 JIT bug 
+				// note that we had to change this loop a little bit to workaround a bizarre IE10 JIT bug
 				while(previous.next && (previous = previous.next)){}
 				previous.next = signal;
 				signal.previous = previous;

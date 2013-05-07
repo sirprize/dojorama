@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/ready':function(){
-define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_base/lang"], function(dojo, has, require, domReady, lang){
+define(["./_base/kernel", "./has", "require", "./domReady", "./_base/lang"], function(dojo, has, require, domReady, lang){
 	// module:
 	//		dojo/ready
 	// note:
@@ -43,14 +43,18 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 			// The last step is necessary so that a user defined dojo.ready() callback is delayed until after the
 			// domReady() calls inside of dojo.	  Failure can be seen on dijit/tests/robot/Dialog_ally.html on IE8
 			// because the dijit/focus.js domReady() callback doesn't execute until after the test starts running.
-			while(isDomReady && (!domReady || domReady._Q.length == 0) && require.idle() && loadQ.length){
+			while(isDomReady && (!domReady || domReady._Q.length == 0) && (require.idle ? require.idle() : true) && loadQ.length){
 				var f = loadQ.shift();
 				try{
 					f();
 				}catch(e){
 					// force the dojo.js on("error") handler do display the message
 					e.info = e.message;
-					require.signal("error", e);
+					if(require.signal){
+						require.signal("error", e);
+					}else{
+						throw e;
+					}
 				}
 			}
 
@@ -59,7 +63,7 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 
 	// Check if we should run the next queue operation whenever require() finishes loading modules or domReady
 	// finishes processing it's queue.
-	require.on("idle", onEvent);
+	require.on && require.on("idle", onEvent);
 	if(domReady){
 		domReady._onQEmpty = onEvent;
 	}
@@ -152,7 +156,7 @@ define("dojo/ready", ["./_base/kernel", "./has", "require", "./domReady", "./_ba
 
 },
 'dojo/domReady':function(){
-define("dojo/domReady", ['./has'], function(has){
+define(['./has'], function(has){
 	var global = this,
 		doc = document,
 		readyStates = { 'loaded': 1, 'complete': 1 },
@@ -279,7 +283,7 @@ define("dojo/domReady", ['./has'], function(has){
 
 },
 'dojo/_base/unload':function(){
-define("dojo/_base/unload", ["./kernel", "./lang", "../on"], function(dojo, lang, on){
+define(["./kernel", "./lang", "../on"], function(dojo, lang, on){
 
 // module:
 //		dojo/unload

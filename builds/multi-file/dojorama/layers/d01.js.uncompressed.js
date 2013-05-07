@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/_base/connect':function(){
-define("dojo/_base/connect", ["./kernel", "../on", "../topic", "../aspect", "./event", "../mouse", "./sniff", "./lang", "../keys"], function(dojo, on, hub, aspect, eventModule, mouse, has, lang){
+define(["./kernel", "../on", "../topic", "../aspect", "./event", "../mouse", "./sniff", "./lang", "../keys"], function(dojo, on, hub, aspect, eventModule, mouse, has, lang){
 // module:
 //		dojo/_base/connect
 
@@ -377,7 +377,7 @@ return connect;
 
 },
 'dojo/on':function(){
-define("dojo/on", ["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], function(aspect, dojo, has){
+define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], function(aspect, dojo, has){
 
 	"use strict";
 	if( 1 ){ // check to make sure we are in a browser, this module should work anywhere
@@ -385,6 +385,11 @@ define("dojo/on", ["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./
 		has.add("jscript", major && (major() + ScriptEngineMinorVersion() / 10));
 		has.add("event-orientationchange", has("touch") && !has("android")); // TODO: how do we detect this?
 		has.add("event-stopimmediatepropagation", window.Event && !!window.Event.prototype && !!window.Event.prototype.stopImmediatePropagation);
+		has.add("event-focusin", function(global, doc, element){
+			// All browsers except firefox support focusin, but too hard to feature test webkit since element.onfocusin
+			// is undefined.  Just return true for IE and use fallback path for other browsers.
+			return !!element.attachEvent;
+		});
 	}
 	var on = function(target, type, listener, dontFix){
 		// summary:
@@ -658,7 +663,7 @@ define("dojo/on", ["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./
 		}while(event && event.bubbles && (target = target.parentNode));
 		return event && event.cancelable && event; // if it is still true (was cancelable and was cancelled), return the event to indicate default action should happen
 	};
-	var captures = {};
+	var captures = has("event-focusin") ? {} : {focusin: "focus", focusout: "blur"};
 	if(!has("event-stopimmediatepropagation")){
 		var stopImmediatePropagation =function(){
 			this.immediatelyStopped = true;
@@ -674,12 +679,6 @@ define("dojo/on", ["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./
 		}
 	} 
 	if(has("dom-addeventlistener")){
-		// normalize focusin and focusout
-		captures = {
-			focusin: "focus",
-			focusout: "blur"
-		};
-
 		// emitter that works with native event handling
 		on.emit = function(target, type, event){
 			if(target.dispatchEvent && document.createEvent){
@@ -912,7 +911,7 @@ define("dojo/on", ["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./
 
 },
 'dojo/topic':function(){
-define("dojo/topic", ["./Evented"], function(Evented){
+define(["./Evented"], function(Evented){
 
 	// module:
 	//		dojo/topic
@@ -953,7 +952,7 @@ define("dojo/topic", ["./Evented"], function(Evented){
 
 },
 'dojo/Evented':function(){
-define("dojo/Evented", ["./aspect", "./on"], function(aspect, on){
+define(["./aspect", "./on"], function(aspect, on){
 	// module:
 	//		dojo/Evented
 
@@ -991,7 +990,7 @@ define("dojo/Evented", ["./aspect", "./on"], function(aspect, on){
 
 },
 'dojo/aspect':function(){
-define("dojo/aspect", [], function(){
+define([], function(){
 
 	// module:
 	//		dojo/aspect
@@ -1008,21 +1007,21 @@ define("dojo/aspect", [], function(){
 			});
 			signal = {
 				remove: function(){
-					signal.cancelled = true;
+					if(advised){
+						advised = dispatcher = advice = null;
+					}
 				},
 				advice: function(target, args){
-					return signal.cancelled ?
-						previous.advice(target, args) : // cancelled, skip to next one
-						advised.apply(target, args);	// called the advised function
+					return advised ?
+						advised.apply(target, args) :  // called the advised function
+						previous.advice(target, args); // cancelled, skip to next one
 				}
 			};
 		}else{
 			// create the remove handler
 			signal = {
 				remove: function(){
-					if(this.advice){
-						// remove the advice to signal that this signal has been removed
-						this.advice = null;
+					if(signal.advice){
 						var previous = signal.previous;
 						var next = signal.next;
 						if(!next && !previous){
@@ -1037,6 +1036,9 @@ define("dojo/aspect", [], function(){
 								next.previous = previous;
 							}
 						}
+
+						// remove the advice to signal that this signal has been removed
+						dispatcher = advice = signal.advice = null;
 					}
 				},
 				id: nextId++,
@@ -1047,7 +1049,7 @@ define("dojo/aspect", [], function(){
 		if(previous && !around){
 			if(type == "after"){
 				// add the listener to the end of the list
-				// note that we had to change this loop a little bit to workaround a bizarre IE10 JIT bug 
+				// note that we had to change this loop a little bit to workaround a bizarre IE10 JIT bug
 				while(previous.next && (previous = previous.next)){}
 				previous.next = signal;
 				signal.previous = previous;
@@ -1214,7 +1216,7 @@ define("dojo/aspect", [], function(){
 
 },
 'dojo/_base/event':function(){
-define("dojo/_base/event", ["./kernel", "../on", "../has", "../dom-geometry"], function(dojo, on, has, dom){
+define(["./kernel", "../on", "../has", "../dom-geometry"], function(dojo, on, has, dom){
 	// module:
 	//		dojo/_base/event
 
@@ -1276,7 +1278,7 @@ define("dojo/_base/event", ["./kernel", "../on", "../has", "../dom-geometry"], f
 
 },
 'dojo/dom-geometry':function(){
-define("dojo/dom-geometry", ["./sniff", "./_base/window","./dom", "./dom-style"],
+define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		function(has, win, dom, style){
 	// module:
 	//		dojo/dom-geometry
@@ -1884,7 +1886,7 @@ define("dojo/dom-geometry", ["./sniff", "./_base/window","./dom", "./dom-style"]
 
 },
 'dojo/_base/window':function(){
-define("dojo/_base/window", ["./kernel", "./lang", "../sniff"], function(dojo, lang, has){
+define(["./kernel", "./lang", "../sniff"], function(dojo, lang, has){
 // module:
 //		dojo/_base/window
 
@@ -2021,7 +2023,7 @@ return ret;
 
 },
 'dojo/dom':function(){
-define("dojo/dom", ["./sniff", "./_base/window"],
+define(["./sniff", "./_base/window"],
 		function(has, win){
 	// module:
 	//		dojo/dom
@@ -2209,7 +2211,7 @@ define("dojo/dom", ["./sniff", "./_base/window"],
 
 },
 'dojo/dom-style':function(){
-define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
+define(["./sniff", "./dom"], function(has, dom){
 	// module:
 	//		dojo/dom-style
 
@@ -2363,21 +2365,28 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 
 	var _setOpacity =
 		has("ie") < 9 || (has("ie") < 10 && has("quirks")) ? function(/*DomNode*/ node, /*Number*/ opacity){
-			var ov = opacity * 100, opaque = opacity == 1;
-			node.style.zoom = opaque ? "" : 1;
-
-			if(!af(node)){
-				if(opaque){
-					return opacity;
-				}
-				node.style.filter += " progid:" + astr + "(Opacity=" + ov + ")";
-			}else{
-				af(node, 1).Opacity = ov;
-			}
+			if(opacity === ""){ opacity = 1; }
+			var ov = opacity * 100, fullyOpaque = opacity === 1;
 
 			// on IE7 Alpha(Filter opacity=100) makes text look fuzzy so disable it altogether (bug #2661),
-			//but still update the opacity value so we can get a correct reading if it is read later.
-			af(node, 1).Enabled = !opaque;
+			// but still update the opacity value so we can get a correct reading if it is read later:
+			// af(node, 1).Enabled = !fullyOpaque;
+
+			if(fullyOpaque){
+				node.style.zoom = "";
+				if(af(node)){
+					node.style.filter = node.style.filter.replace(
+						new RegExp("\\s*progid:" + astr + "\\([^\\)]+?\\)", "i"), "");
+				}
+			}else{
+				node.style.zoom = 1;
+				if(af(node)){
+					af(node, 1).Opacity = ov;
+				}else{
+					node.style.filter += " progid:" + astr + "(Opacity=" + ov + ")";
+				}
+				af(node, 1).Enabled = true;
+			}
 
 			if(node.tagName.toLowerCase() == "tr"){
 				for(var td = node.firstChild; td; td = td.nextSibling){
@@ -2418,8 +2427,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 		return _pixelNamesCache[type] ? toPixel(node, value) : value;
 	}
 
-	var _floatStyle = has("ie") ? "styleFloat" : "cssFloat",
-		_floatAliases = {"cssFloat": _floatStyle, "styleFloat": _floatStyle, "float": _floatStyle};
+	var _floatAliases = {cssFloat: 1, styleFloat: 1, "float": 1};
 
 	// public API
 
@@ -2451,7 +2459,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 		if(l == 2 && op){
 			return _getOpacity(n);
 		}
-		name = _floatAliases[name] || name;
+		name = _floatAliases[name] ? "cssFloat" in n.style ? "cssFloat" : "styleFloat" : name;
 		var s = style.getComputedStyle(n);
 		return (l == 1) ? s : _toStyleValue(n, name, s[name] || n.style[name]); /* CSS2Properties||String||Number */
 	};
@@ -2503,7 +2511,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 		//	|	});
 
 		var n = dom.byId(node), l = arguments.length, op = (name == "opacity");
-		name = _floatAliases[name] || name;
+		name = _floatAliases[name] ? "cssFloat" in n.style ? "cssFloat" : "styleFloat" : name;
 		if(l == 3){
 			return op ? _setOpacity(n, value) : n.style[name] = value; // Number
 		}
@@ -2518,7 +2526,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 
 },
 'dojo/mouse':function(){
-define("dojo/mouse", ["./_base/kernel", "./on", "./has", "./dom", "./_base/window"], function(dojo, on, has, dom, win){
+define(["./_base/kernel", "./on", "./has", "./dom", "./_base/window"], function(dojo, on, has, dom, win){
 
 	// module:
 	//		dojo/mouse
@@ -2692,7 +2700,7 @@ define("dojo/mouse", ["./_base/kernel", "./on", "./has", "./dom", "./_base/windo
 
 },
 'dojo/_base/sniff':function(){
-define("dojo/_base/sniff", ["./kernel", "./lang", "../sniff"], function(dojo, lang, has){
+define(["./kernel", "./lang", "../sniff"], function(dojo, lang, has){
 	// module:
 	//		dojo/_base/sniff
 
@@ -2788,7 +2796,7 @@ define("dojo/_base/sniff", ["./kernel", "./lang", "../sniff"], function(dojo, la
 
 },
 'dojo/keys':function(){
-define("dojo/keys", ["./_base/kernel", "./sniff"], function(dojo, has){
+define(["./_base/kernel", "./sniff"], function(dojo, has){
 
 	// module:
 	//		dojo/keys

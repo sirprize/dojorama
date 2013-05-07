@@ -3,6 +3,12 @@
  * pre-processing extensions for faster run-time execution. This module is also
  * used by the AMD build process.
  */
+var operatorMatch = {
+	'{': '}',
+	'[': ']',
+	'(': ')'
+};
+var nextId = 1;
 
 document = {
 	createElement: function(){
@@ -25,20 +31,21 @@ var pseudoDefine = function(id, deps, factory){
 			[].push.apply(requiredModules, deps);
 		}
 		pseudoRequire.isBuild = true;
-		xstyle = factory(pseudoRequire);
+		parse = factory(pseudoRequire);
 	};
 var requiredModules = [], base64Module;
 
 if(typeof define == 'undefined'){
 	var fs = require('fs'),
 		pathModule = require('path'),
-		xstyle;
-	define = pseudoDefine; 
-	require('./main');
+		parse;
+	define = pseudoDefine;
+	require('./core/parser');
 }else{
 	define(['build/fs', './build/base64'], function(fsModule, base64){
 		fs = fsModule;
 		base64Module = base64;
+		// must create our own path module for Rhino :/
 		pathModule = {
 			resolve: function(base, target){
 				return (base.replace(/[^\/]+$/, '') + target)
@@ -71,9 +78,9 @@ function main(source, target){
 	var processed = processCss(cssText, basePath);
 	var output = processed.standardCss;
 	if(processed.xstyleCss){
-		output = 'x-xstyle{content:"' + 
+		output += 'x-xstyle{content:"' + 
 				processed.xstyleCss.replace(/["\\\n\r]/g, '\\$&') + 
-					'";}' + output;
+					'";}';
 	}
 	if(target){
 		fs.writeFileSync(target, output);
@@ -95,6 +102,76 @@ var mimeTypes = {
 	png: "image/png"	
 }
 function processCss(cssText, basePath, inlineAllResources){
+	function XRule(){
+		
+	}
+	XRule.prototype = {
+		newCall: function(name){
+			return new Call(name);
+		},
+		newRule: function(){
+			return new XRule();
+		},
+		getDefinition: function(name, includeRules){
+			var parentRule = this;
+			do{
+				var target = parentRule.properties && parentRule.properties[name]
+					|| (includeRules && parentRule.rules && parentRule.rules[name]);
+				parentRule = parentRule.parent;
+			}while(!target && parentRule);
+			return target;
+		},
+		declareProperty: function(name, value, conditional){
+			// TODO: access staticHasFeatures to check conditional
+			xstyleCss.push(name + '=' + value);
+			var properties = (this.properties || (this.properties = {}));
+			properties[name] = true;
+		},
+		setValue: function(name, value){
+			var target = this.getDefinition(name);
+			if(!target || !this.xstyleStarted){
+				if(!this.ruleStarted){
+					this.ruleStarted = true;
+					this.selectorIndex = browserCss.push(this.selector);
+					browserCss.push('{');
+				}
+				if(!target){
+					browserCss.push(name, ':', value, ';');
+				}
+			}
+			if(target){
+				if(!this.xstyleStarted){
+					this.xstyleStarted = true;
+					var starter = '/' + (this.id = nextId++) + '{';
+					browserCss[this.selectorIndex] += ',#' + this.id;
+				}
+				
+				xstyleCss.push((starter || '') + name + ':' + value, '}');
+			}
+		},
+		onRule: function(){
+			browserCss.push('}');
+			if(this.xstyleStarted){
+				xstyleCss.push('}')
+			}
+		}
+	};
+	// a class representing function calls
+	function Call(value){
+		// we store the caller and the arguments
+		this.caller = value;
+		this.args = [];
+	}
+	var CallPrototype = Call.prototype = new XRule;
+	CallPrototype.declareProperty = CallPrototype.setValue = function(name, value){
+		// handle these both as addition of arguments
+		this.args.push(value);
+	};
+	CallPrototype.toString = function(){
+		var operator = this.operator;
+		return operator + this.args + operatorMatch[operator]; 
+	};
+	
 	function insertRule(cssText){
 		//browserCss.push(cssText);
 	}
@@ -139,7 +216,7 @@ function processCss(cssText, basePath, inlineAllResources){
 			return 'url("' + pathModule.join(relativePath, url).replace(/\\/g, '/') + '")';
 		});
 	}
-	xstyle.parse.getStyleSheet = function(importRule, sequence, styleSheet){
+	parse.getStyleSheet = function(importRule, sequence, styleSheet){
 		var path = pathModule.resolve(styleSheet.href, sequence[1].value);
 		var localSource = '';
 		try{
@@ -147,7 +224,7 @@ function processCss(cssText, basePath, inlineAllResources){
 		}catch(e){
 			console.error(e);
 		}
-		browserCss.push(correctUrls(localSource, path));
+		//browserCss.push(correctUrls(localSource, path));
 		return {
 			localSource: localSource,
 			href: path || '.',
@@ -155,10 +232,12 @@ function processCss(cssText, basePath, inlineAllResources){
 			cssRules: []
 		}
 	};
-	var browserCss = [correctUrls(cssText, basePath + "placeholder.css")];
+	var browserCss = [];//[correctUrls(cssText, basePath + "placeholder.css")];
 	var xstyleCss = [];
-	var rootRule = xstyle.parse(cssText, {href:basePath || '.', cssRules:[], insertRule: insertRule});
-	var intrinsicVariables = {
+	var rootRule = new XRule;
+	rootRule.root = true;
+	parse(rootRule, cssText, {href:basePath || '.', cssRules:[], insertRule: insertRule});
+	rootRule.properties = {
 		Math:1,
 		require:1,
 		item: 1,
@@ -167,11 +246,11 @@ function processCss(cssText, basePath, inlineAllResources){
 	}
 	function visit(parent){
 		//browserCss.push(parent.selector + '{' + parent.cssText + '}'); 
-		for(var i in parent.variables){
+		/*for(var i in parent.variables){
 			if(!intrinsicVariables.hasOwnProperty(i)){
 				xstyleCss.push(i,'=',parent.variables[i]);
 			}
-		}
+		}*/
 	}
 	visit(rootRule);
 	//console.log('browserCss', browserCss);

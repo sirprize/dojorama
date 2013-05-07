@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/date/locale':function(){
-define("dojo/date/locale", [
+define([
 	"../_base/lang",
 	"../_base/array",
 	"../date",
@@ -557,7 +557,7 @@ function _buildDateTimeRE(tokens, bundle, options, pattern){
 			case 'E':
 			case 'e':
 			case 'c':
-				s = '\\S+';
+				s = '.+?'; // match anything including spaces until the first pattern delimiter is found such as a comma or space
 				break;
 			case 'h': //hour (1-12)
 				s = '1[0-2]|'+p2+'[1-9]';
@@ -697,7 +697,7 @@ return exports;
 
 },
 'dojo/date':function(){
-define("dojo/date", ["./has", "./_base/lang"], function(has, lang){
+define(["./has", "./_base/lang"], function(has, lang){
 // module:
 //		dojo/date
 
@@ -1046,7 +1046,7 @@ return date;
 
 },
 'dojo/cldr/supplemental':function(){
-define("dojo/cldr/supplemental", ["../_base/lang", "../i18n"], function(lang, i18n){
+define(["../_base/lang", "../i18n"], function(lang, i18n){
 
 // module:
 //		dojo/cldr/supplemental
@@ -1176,7 +1176,7 @@ return supplemental;
 
 },
 'dojo/date/stamp':function(){
-define("dojo/date/stamp", ["../_base/lang", "../_base/array"], function(lang, array){
+define(["../_base/lang", "../_base/array"], function(lang, array){
 
 // module:
 //		dojo/date/stamp

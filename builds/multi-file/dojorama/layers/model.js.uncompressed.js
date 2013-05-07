@@ -3,7 +3,7 @@ require({cache:{
 /*jslint browser: true */
 /*global define: true */
 
-define("dojo-local-storage/LocalStorage", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/json",
@@ -199,7 +199,7 @@ define("dojo-local-storage/LocalStorage", [
 'dojo-data-model/_CrudModel':function(){
 /*global define: true */
 
-define("dojo-data-model/_CrudModel", [
+define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
@@ -352,7 +352,7 @@ define("dojo-data-model/_CrudModel", [
 'dojo-data-model/DataModel':function(){
 /*global define: true */
 
-define("dojo-data-model/DataModel", [
+define([
     "dojo/_base/declare",
     "dojo/Stateful"
 ], function (
@@ -452,7 +452,7 @@ define("dojo-data-model/DataModel", [
 'dojo-data-model/ModelStore':function(){
 /*global define: true */
 
-define("dojo-data-model/ModelStore", [
+define([
     "dojo/_base/lang",
     "dojo/Deferred",
     "dojo/promise/Promise",
@@ -526,7 +526,7 @@ define("dojo-data-model/ModelStore", [
 'dojo-data-model/QueryResults':function(){
 /*global define: true */
 
-define("dojo-data-model/QueryResults", [
+define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/Deferred",
@@ -652,7 +652,7 @@ define("dojo-data-model/QueryResults", [
 'dojo-data-model/Observable':function(){
 /*global define: true */
 
-define("dojo-data-model/Observable", [
+define([
     "dojo/store/Observable"
 ], function (
     Observable
@@ -682,7 +682,7 @@ define("dojo-data-model/Observable", [
 
 },
 'dojo-data-model/sync':function(){
-define("dojo-data-model/sync", [], function () {
+define([], function () {
     "use strict";
 
     return function (source, sourceProp, target, targetProp) {
@@ -710,7 +710,7 @@ define("dojo-data-model/sync", [], function () {
 });
 },
 'dojorama/model/ReleaseModel':function(){
-define("dojorama/model/ReleaseModel", [
+define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",

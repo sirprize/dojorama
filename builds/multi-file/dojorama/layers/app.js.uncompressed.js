@@ -3,7 +3,7 @@ require({cache:{
 /*jslint browser: true */
 /*global define: true */
 
-define("dojomat/_AppAware", [
+define([
     "dojo/_base/declare",
     "dojo/topic"
 ], function (
@@ -43,7 +43,7 @@ define("dojomat/_AppAware", [
 /*jslint browser: true */
 /*global define: true */
 
-define("dojomat/_StateAware", [
+define([
     "dojo/_base/declare",
     "dojo/topic"
 ], function (
@@ -71,7 +71,7 @@ define("dojomat/_StateAware", [
 /*jslint browser: true */
 /*global define: true */
 
-define("dojomat/Application", [
+define([
     "routed/Request",
     "routed/Router",
     "dojo/has!dijit?dijit/registry:mijit/registry",
@@ -343,7 +343,7 @@ define("dojomat/Application", [
 'routed/Request':function(){
 /*global define: true */
 
-define("routed/Request", [], function () {
+define([], function () {
     "use strict";
 
     var trim = function (s) {
@@ -452,7 +452,7 @@ define("routed/Request", [], function () {
 'routed/Router':function(){
 /*global define: true */
 
-define("routed/Router", ["./Route"], function (Route) {
+define(["./Route"], function (Route) {
     "use strict";
 
     return function (routeMap) {
@@ -516,7 +516,7 @@ define("routed/Router", ["./Route"], function (Route) {
 'routed/Route':function(){
 /*global define: true */
 
-define("routed/Route", [], function () {
+define([], function () {
     "use strict";
 
     return function (schema, run) {
@@ -597,7 +597,7 @@ define("routed/Route", [], function () {
 /*jslint browser: true */
 /*global define: true */
 
-define("dojomat/Notification", [
+define([
     "dojo/_base/declare",
     "dojo/_base/json",
     "dojo/has",
@@ -642,7 +642,7 @@ define("dojomat/Notification", [
 /*jslint browser: true */
 /*global define: true */
 
-define("dojomat/Session", [
+define([
     "dojo/_base/declare"
 ], function (
     declare
@@ -678,7 +678,7 @@ define("dojomat/Session", [
 /*jslint browser: true */
 /*global define: true */
 
-define("dojomat/populateRouter", [
+define([
     "routed/Route",
     "dojo/_base/lang"
 ], function (
@@ -717,7 +717,7 @@ define("dojomat/populateRouter", [
 });
 },
 'dojorama/routing-map':function(){
-define("dojorama/routing-map", ["dojo/_base/config", "require"], function (config, require) {
+define(["dojo/_base/config", "require"], function (config, require) {
     "use strict";
     
     var p = config['routing-map'].pathPrefix,
@@ -757,7 +757,7 @@ define("dojorama/routing-map", ["dojo/_base/config", "require"], function (confi
 'dojorama/App':function(){
 /*jshint strict:false */
 
-define("dojorama/App", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "routed/Request",

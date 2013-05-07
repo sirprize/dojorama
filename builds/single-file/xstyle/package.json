@@ -19,5 +19,11 @@
   },
   "main": "./main",
   "icon": "http://packages.dojofoundation.org/images/xstyle.jpg",
-  "dojoBuild": "package.js"
+  "dependencies": {
+    "put-selector": "0.3.2"
+  },
+  "dojoBuild": "package.js",
+  "volo": {
+    "type": "directory"
+  }
 }

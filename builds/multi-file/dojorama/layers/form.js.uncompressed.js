@@ -1,6 +1,6 @@
 require({cache:{
 'dojo-form-controls/Button':function(){
-define("dojo-form-controls/Button", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/event",
@@ -62,7 +62,7 @@ define("dojo-form-controls/Button", [
 });
 },
 'dojo-form-controls/_FormWidget':function(){
-define("dojo-form-controls/_FormWidget", [
+define([
     "dojo/_base/declare",
     "mijit/_WidgetBase",
     "mijit/_TemplatedMixin",
@@ -136,7 +136,7 @@ define("dojo-form-controls/_FormWidget", [
 });
 },
 'dojo-form-controls/Checkbox':function(){
-define("dojo-form-controls/Checkbox", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/dom-attr",
@@ -217,7 +217,7 @@ define("dojo-form-controls/Checkbox", [
 });
 },
 'dojo-form-controls/Option':function(){
-define("dojo-form-controls/Option", [
+define([
     "dojo/_base/declare",
     "mijit/_WidgetBase",
     "mijit/_TemplatedMixin",
@@ -269,7 +269,7 @@ define("dojo-form-controls/Option", [
 });
 },
 'dojo-form-controls/Radio':function(){
-define("dojo-form-controls/Radio", [
+define([
     "dojo/_base/declare",
     "./Checkbox"
 ], function (
@@ -285,7 +285,7 @@ define("dojo-form-controls/Radio", [
 });
 },
 'dojo-form-controls/Select':function(){
-define("dojo-form-controls/Select", [
+define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
@@ -449,7 +449,7 @@ define("dojo-form-controls/Select", [
 });
 },
 'dojo-form-controls/Textarea':function(){
-define("dojo-form-controls/Textarea", [
+define([
     "dojo/_base/declare",
     "./Textbox"
 ], function (
@@ -474,7 +474,7 @@ define("dojo-form-controls/Textarea", [
 });
 },
 'dojo-form-controls/Textbox':function(){
-define("dojo-form-controls/Textbox", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/dom-attr",

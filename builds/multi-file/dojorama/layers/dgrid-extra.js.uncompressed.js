@@ -1,11 +1,11 @@
 require({cache:{
 'dgrid/OnDemandGrid':function(){
-define("dgrid/OnDemandGrid", ["dojo/_base/declare", "./Grid", "./OnDemandList"], function(declare, Grid, OnDemandList){
+define(["dojo/_base/declare", "./Grid", "./OnDemandList"], function(declare, Grid, OnDemandList){
 	return declare([Grid, OnDemandList], {});
 });
 },
 'dgrid/Grid':function(){
-define("dgrid/Grid", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "./util/misc", "dojo/_base/sniff"],
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "put-selector/put", "./List", "./util/misc", "dojo/_base/sniff"],
 function(kernel, declare, listen, has, put, List, miscUtil){
 	var contentBoxSizing = has("ie") < 8 && !has("quirks");
 	var invalidClassChars = /[^\._a-zA-Z0-9-]/g;
@@ -525,7 +525,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 
 },
 'dgrid/Selection':function(){
-define("dgrid/Selection", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
 function(kernel, declare, Deferred, on, has, aspect, List, touchUtil, put){
 
 // Add feature test for user-select CSS property for optionally disabling
@@ -1016,7 +1016,7 @@ return declare(null, {
 
 },
 'dgrid/Keyboard':function(){
-define("dgrid/Keyboard", [
+define([
 	"dojo/_base/declare",
 	"dojo/aspect",
 	"dojo/on",
@@ -1432,7 +1432,7 @@ return Keyboard;
 });
 },
 'dgrid/editor':function(){
-define("dgrid/editor", [
+define([
 	"dojo/_base/kernel",
 	"dojo/_base/lang",
 	"dojo/_base/array",

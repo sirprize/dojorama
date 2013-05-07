@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/window':function(){
-define("dojo/window", ["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", "./dom-style", "./dom-construct"],
+define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", "./dom-style", "./dom-construct"],
 	function(lang, has, baseWindow, dom, geom, style, domConstruct){
 
 	// feature detection
@@ -232,7 +232,7 @@ define("dojo/window", ["./_base/lang", "./sniff", "./_base/window", "./dom", "./
 
 },
 'dojo/touch':function(){
-define("dojo/touch", ["./_base/kernel", "./aspect", "./dom", "./dom-class", "./_base/lang", "./on", "./has", "./mouse", "./domReady", "./_base/window"],
+define(["./_base/kernel", "./aspect", "./dom", "./dom-class", "./_base/lang", "./on", "./has", "./mouse", "./domReady", "./_base/window"],
 function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 
 	// module:
@@ -346,8 +346,9 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 						if(!e._dojo_click &&
 								(new Date()).getTime() <= clickTime + 1000 &&
 								!(e.target.tagName == "INPUT" && domClass.contains(e.target, "dijitOffScreen"))){
-							e.stopImmediatePropagation();
-							if((e.target.tagName != "INPUT" || e.target.type == "radio" || e.target.type == "checkbox")
+							e.stopPropagation();
+							e.stopImmediatePropagation && e.stopImmediatePropagation();
+							if(type == "click" && (e.target.tagName != "INPUT" || e.target.type == "radio" || e.target.type == "checkbox")
 								&& e.target.tagName != "TEXTAREA"){
 								 // preventDefault() breaks textual <input>s on android, keyboard doesn't popup,
 								 // but it is still needed for checkboxes and radio buttons, otherwise in some cases
@@ -609,7 +610,7 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 
 },
 'dojo/Stateful':function(){
-define("dojo/Stateful", ["./_base/declare", "./_base/lang", "./_base/array", "./when"], function(declare, lang, array, when){
+define(["./_base/declare", "./_base/lang", "./_base/array", "./when"], function(declare, lang, array, when){
 	// module:
 	//		dojo/Stateful
 
@@ -825,7 +826,7 @@ return declare("dojo.Stateful", null, {
 
 },
 'dojo/cache':function(){
-define("dojo/cache", ["./_base/kernel", "./text"], function(dojo){
+define(["./_base/kernel", "./text"], function(dojo){
 	// module:
 	//		dojo/cache
 
@@ -835,7 +836,7 @@ define("dojo/cache", ["./_base/kernel", "./text"], function(dojo){
 
 },
 'dojo/text':function(){
-define("dojo/text", ["./_base/kernel", "require", "./has", "./request"], function(dojo, require, has, request){
+define(["./_base/kernel", "require", "./has", "./request"], function(dojo, require, has, request){
 	// module:
 	//		dojo/text
 
@@ -1053,7 +1054,7 @@ define("dojo/text", ["./_base/kernel", "require", "./has", "./request"], functio
 
 },
 'dojo/request':function(){
-define("dojo/request", [
+define([
 	'./request/default!'/*=====,
 	'./_base/declare',
 	'./promise/Promise' =====*/
@@ -1137,7 +1138,7 @@ define("dojo/request", [
 
 },
 'dojo/request/default':function(){
-define("dojo/request/default", [
+define([
 	'exports',
 	'require',
 	'../has'
@@ -1172,7 +1173,7 @@ define("dojo/request/default", [
 
 },
 'dojo/cookie':function(){
-define("dojo/cookie", ["./_base/kernel", "./regexp"], function(dojo, regexp){
+define(["./_base/kernel", "./regexp"], function(dojo, regexp){
 
 // module:
 //		dojo/cookie
@@ -1273,7 +1274,7 @@ return dojo.cookie;
 
 },
 'dojo/regexp':function(){
-define("dojo/regexp", ["./_base/kernel", "./_base/lang"], function(dojo, lang){
+define(["./_base/kernel", "./_base/lang"], function(dojo, lang){
 
 // module:
 //		dojo/regexp
@@ -1346,7 +1347,7 @@ return regexp;
 
 },
 'dojo/i18n':function(){
-define("dojo/i18n", ["./_base/kernel", "require", "./has", "./_base/array", "./_base/config", "./_base/lang", "./_base/xhr", "./json", "module"],
+define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config", "./_base/lang", "./_base/xhr", "./json", "module"],
 	function(dojo, require, has, array, config, lang, xhr, json, module){
 
 	// module:
@@ -1902,7 +1903,7 @@ define("dojo/i18n", ["./_base/kernel", "require", "./has", "./_base/array", "./_
 
 },
 'dojo/string':function(){
-define("dojo/string", [
+define([
 	"./_base/kernel",	// kernel.global
 	"./_base/lang"
 ], function(kernel, lang){
@@ -2067,7 +2068,7 @@ string.trim = String.prototype.trim ?
 
 },
 'dojo/_base/url':function(){
-define("dojo/_base/url", ["./kernel"], function(dojo){
+define(["./kernel"], function(dojo){
 	// module:
 	//		dojo/url
 

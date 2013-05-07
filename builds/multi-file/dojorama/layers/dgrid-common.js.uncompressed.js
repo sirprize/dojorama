@@ -2,7 +2,7 @@ require({cache:{
 'put-selector/put':function(){
 (function(define){
 var forDocument, fragmentFasterHeuristic = /[-+,> ]/; // if it has any of these combinators, it is probably going to be faster with a document fragment 
-define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeuristic){
+define([], forDocument = function(doc, newFragmentFasterHeuristic){
 "use strict";
 	// module:
 	//		put-selector/put
@@ -231,7 +231,7 @@ define("put-selector/put", [], forDocument = function(doc, newFragmentFasterHeur
 
 },
 'xstyle/has-class':function(){
-define("xstyle/has-class", ["dojo/has"], function(has){
+define(["dojo/has"], function(has){
 	var tested = {};
 	return function(){
 		var test, args = arguments;
@@ -252,7 +252,7 @@ define("xstyle/has-class", ["dojo/has"], function(has){
 });
 },
 'xstyle/css':function(){
-define("xstyle/css", ["require"], function(moduleRequire){
+define(["require"], function(moduleRequire){
 "use strict";
 /*
  * AMD css! plugin
@@ -307,7 +307,7 @@ define("xstyle/css", ["require"], function(moduleRequire){
 				return checkForParser();
 			}
 			// use dynamic loader
-			moduleRequire(["./load-css"], function(load){
+			moduleRequire(["./core/load-css"], function(load){
 				load(url, checkForParser);
 			});
 		}
@@ -316,7 +316,7 @@ define("xstyle/css", ["require"], function(moduleRequire){
 
 },
 'dgrid/List':function(){
-define("dgrid/List", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"], 
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/on", "dojo/has", "./util/misc", "dojo/has!touch?./TouchScroll", "xstyle/has-class", "put-selector/put", "dojo/_base/sniff", "xstyle/css!./css/dgrid.css"], 
 function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 	// Add user agent/feature CSS classes 
 	hasClass("mozilla", "opera", "webkit", "ie", "ie-6", "ie-6-7", "quirks", "no-quirks", "touch");
@@ -1173,7 +1173,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 
 },
 'dgrid/util/misc':function(){
-define("dgrid/util/misc", ["put-selector/put"], function(put){
+define(["put-selector/put"], function(put){
 	// summary:
 	//		This module defines miscellaneous utility methods for purposes of
 	//		adding styles, and throttling/debouncing function calls.
@@ -1307,7 +1307,7 @@ define("dgrid/util/misc", ["put-selector/put"], function(put){
 });
 },
 'dgrid/OnDemandList':function(){
-define("dgrid/OnDemandList", ["./List", "./_StoreMixin", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "./util/misc", "put-selector/put"],
+define(["./List", "./_StoreMixin", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "./util/misc", "put-selector/put"],
 function(List, _StoreMixin, declare, lang, Deferred, listen, miscUtil, put){
 
 return declare([List, _StoreMixin], {
@@ -1467,7 +1467,9 @@ return declare([List, _StoreMixin], {
 		
 		// Render the result set
 		Deferred.when(self.renderArray(results, preloadNode, options), function(trs){
-			return Deferred.when(results.total || results.length, function(total){
+			var total = typeof results.total === "undefined" ?
+				results.length : results.total;
+			return Deferred.when(total, function(total){
 				// remove loading node
 				put(loadingNode, "!");
 				// now we need to adjust the height and total count based on the first result set
@@ -1860,7 +1862,7 @@ return declare([List, _StoreMixin], {
 
 },
 'dgrid/_StoreMixin':function(){
-define("dgrid/_StoreMixin", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "dojo/aspect", "put-selector/put"],
+define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/lang", "dojo/_base/Deferred", "dojo/on", "dojo/aspect", "put-selector/put"],
 function(kernel, declare, lang, Deferred, listen, aspect, put){
 	// This module isolates the base logic required by store-aware list/grid
 	// components, e.g. OnDemandList/Grid and the Pagination extension.

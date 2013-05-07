@@ -1,5 +1,3 @@
-require({cache:{
-'url:dojorama/ui/_global/widget/template/ProgressWidget.html':"<div class=\"progress-widget\">\n    <div class=\"animation\"></div>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/ProgressWidget", [
@@ -24,4 +22,5 @@ define("dojorama/ui/_global/widget/ProgressWidget", [
             this.hide();
         }
     });
-});
+});require({cache:{
+'url:dojorama/ui/_global/widget/template/ProgressWidget.html':"<div class=\"progress-widget\">\n    <div class=\"animation\"></div>\n</div>"}});

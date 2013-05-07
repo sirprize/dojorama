@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/_base/NodeList':function(){
-define("dojo/_base/NodeList", ["./kernel", "../query", "./array", "./html", "../NodeList-dom"], function(dojo, query, array){
+define(["./kernel", "../query", "./array", "./html", "../NodeList-dom"], function(dojo, query, array){
 	// module:
 	//		dojo/_base/NodeList
 
@@ -113,7 +113,7 @@ define("dojo/_base/NodeList", ["./kernel", "../query", "./array", "./html", "../
 
 },
 'dojo/query':function(){
-define("dojo/query", ["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/lang", "./selector/_loader", "./selector/_loader!default"],
+define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/lang", "./selector/_loader", "./selector/_loader!default"],
 	function(dojo, has, dom, on, array, lang, loader, defaultEngine){
 
 	"use strict";
@@ -688,8 +688,8 @@ define("dojo/query", ["./_base/kernel", "./has", "./dom", "./on", "./_base/array
 					return new NodeList([]);
 				}
 			}
-			var results = typeof query == "string" ? engine(query, root) : query ? query.orphan ? query : [query] : [];
-			if(results.orphan){
+			var results = typeof query == "string" ? engine(query, root) : query ? (query.end && query.on) ? query : [query] : [];
+			if(results.end && results.on){
 				// already wrapped
 				return results;
 			}
@@ -820,58 +820,8 @@ define("dojo/query", ["./_base/kernel", "./has", "./dom", "./on", "./_base/array
 });
 
 },
-'dojo/selector/_loader':function(){
-define("dojo/selector/_loader", ["../has", "require"],
-		function(has, require){
-
-"use strict";
-var testDiv = document.createElement("div");
-has.add("dom-qsa2.1", !!testDiv.querySelectorAll);
-has.add("dom-qsa3", function(){
-			// test to see if we have a reasonable native selector engine available
-			try{
-				testDiv.innerHTML = "<p class='TEST'></p>"; // test kind of from sizzle
-				// Safari can't handle uppercase or unicode characters when
-				// in quirks mode, IE8 can't handle pseudos like :empty
-				return testDiv.querySelectorAll(".TEST:empty").length == 1;
-			}catch(e){}
-		});
-var fullEngine;
-var acme = "./acme", lite = "./lite";
-return {
-	// summary:
-	//		This module handles loading the appropriate selector engine for the given browser
-
-	load: function(id, parentRequire, loaded, config){
-		var req = require;
-		// here we implement the default logic for choosing a selector engine
-		id = id == "default" ? has("config-selectorEngine") || "css3" : id;
-		id = id == "css2" || id == "lite" ? lite :
-				id == "css2.1" ? has("dom-qsa2.1") ? lite : acme :
-				id == "css3" ? has("dom-qsa3") ? lite : acme :
-				id == "acme" ? acme : (req = parentRequire) && id;
-		if(id.charAt(id.length-1) == '?'){
-			id = id.substring(0,id.length - 1);
-			var optionalLoad = true;
-		}
-		// the query engine is optional, only load it if a native one is not available or existing one has not been loaded
-		if(optionalLoad && (has("dom-compliant-qsa") || fullEngine)){
-			return loaded(fullEngine);
-		}
-		// load the referenced selector engine
-		req([id], function(engine){
-			if(id != "./lite"){
-				fullEngine = engine;
-			}
-			loaded(engine);
-		});
-	}
-};
-});
-
-},
 'dojo/selector/acme':function(){
-define("dojo/selector/acme", [
+define([
 	"../dom", "../sniff", "../_base/array", "../_base/lang", "../_base/window"
 ], function(dom, has, array, lang, win){
 
@@ -2138,15 +2088,12 @@ define("dojo/selector/acme", [
 	// returning a list of "uniques", hopefully in document order
 	var _zipIdxName = "_zipIdx";
 	var _zip = function(arr){
-		if(arr && arr.nozip){
-			return arr;
-		}
+		if(arr && arr.nozip){ return arr; }
+
+		if(!arr || !arr.length){ return []; }
+		if(arr.length < 2){ return [arr[0]]; }
+
 		var ret = [];
-		if(!arr || !arr.length){ return ret; }
-		if(arr[0]){
-			ret.push(arr[0]);
-		}
-		if(arr.length < 2){ return ret; }
 
 		_zipIdx++;
 
@@ -2155,28 +2102,26 @@ define("dojo/selector/acme", [
 		var x, te;
 		if(has("ie") && caseSensitive){
 			var szidx = _zipIdx+"";
-			arr[0].setAttribute(_zipIdxName, szidx);
-			for(x = 1; te = arr[x]; x++){
-				if(arr[x].getAttribute(_zipIdxName) != szidx){
+			for(x = 0; x < arr.length; x++){
+				if((te = arr[x]) && te.getAttribute(_zipIdxName) != szidx){
 					ret.push(te);
+					te.setAttribute(_zipIdxName, szidx);
 				}
-				te.setAttribute(_zipIdxName, szidx);
 			}
 		}else if(has("ie") && arr.commentStrip){
 			try{
-				for(x = 1; te = arr[x]; x++){
-					if(_isElement(te)){
+				for(x = 0; x < arr.length; x++){
+					if((te = arr[x]) && _isElement(te)){
 						ret.push(te);
 					}
 				}
 			}catch(e){ /* squelch */ }
 		}else{
-			if(arr[0]){ arr[0][_zipIdxName] = _zipIdx; }
-			for(x = 1; te = arr[x]; x++){
-				if(arr[x][_zipIdxName] != _zipIdx){
+			for(x = 0; x < arr.length; x++){
+				if((te = arr[x]) && te[_zipIdxName] != _zipIdx){
 					ret.push(te);
+					te[_zipIdxName] = _zipIdx;
 				}
-				te[_zipIdxName] = _zipIdx;
 			}
 		}
 		return ret;
@@ -2367,7 +2312,7 @@ define("dojo/selector/acme", [
 
 },
 'dojo/NodeList-dom':function(){
-define("dojo/NodeList-dom", ["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-class", "./dom-construct", "./dom-geometry", "./dom-attr", "./dom-style"], function(dojo, query, array, lang, domCls, domCtr, domGeom, domAttr, domStyle){
+define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-class", "./dom-construct", "./dom-geometry", "./dom-attr", "./dom-style"], function(dojo, query, array, lang, domCls, domCtr, domGeom, domAttr, domStyle){
 
 	// module:
 	//		dojo/NodeList-dom.js

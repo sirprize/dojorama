@@ -1,5 +1,3 @@
-require({cache:{
-'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
@@ -164,4 +162,5 @@ define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
             */
         }
     });
-});
+});require({cache:{
+'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>"}});

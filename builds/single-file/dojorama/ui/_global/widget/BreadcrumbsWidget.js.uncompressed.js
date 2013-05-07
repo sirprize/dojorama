@@ -1,5 +1,3 @@
-require({cache:{
-'url:dojorama/ui/_global/widget/template/BreadcrumbsWidget.html':"<ul class=\"breadcrumb\"></ul>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
@@ -77,4 +75,5 @@ define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
             }, this.domNode, 'last');
         }
     });
-});
+});require({cache:{
+'url:dojorama/ui/_global/widget/template/BreadcrumbsWidget.html':"<ul class=\"breadcrumb\"></ul>"}});

@@ -152,21 +152,28 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 
 	var _setOpacity =
 		has("ie") < 9 || (has("ie") < 10 && has("quirks")) ? function(/*DomNode*/ node, /*Number*/ opacity){
-			var ov = opacity * 100, opaque = opacity == 1;
-			node.style.zoom = opaque ? "" : 1;
-
-			if(!af(node)){
-				if(opaque){
-					return opacity;
-				}
-				node.style.filter += " progid:" + astr + "(Opacity=" + ov + ")";
-			}else{
-				af(node, 1).Opacity = ov;
-			}
+			if(opacity === ""){ opacity = 1; }
+			var ov = opacity * 100, fullyOpaque = opacity === 1;
 
 			// on IE7 Alpha(Filter opacity=100) makes text look fuzzy so disable it altogether (bug #2661),
-			//but still update the opacity value so we can get a correct reading if it is read later.
-			af(node, 1).Enabled = !opaque;
+			// but still update the opacity value so we can get a correct reading if it is read later:
+			// af(node, 1).Enabled = !fullyOpaque;
+
+			if(fullyOpaque){
+				node.style.zoom = "";
+				if(af(node)){
+					node.style.filter = node.style.filter.replace(
+						new RegExp("\\s*progid:" + astr + "\\([^\\)]+?\\)", "i"), "");
+				}
+			}else{
+				node.style.zoom = 1;
+				if(af(node)){
+					af(node, 1).Opacity = ov;
+				}else{
+					node.style.filter += " progid:" + astr + "(Opacity=" + ov + ")";
+				}
+				af(node, 1).Enabled = true;
+			}
 
 			if(node.tagName.toLowerCase() == "tr"){
 				for(var td = node.firstChild; td; td = td.nextSibling){
@@ -207,8 +214,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 		return _pixelNamesCache[type] ? toPixel(node, value) : value;
 	}
 
-	var _floatStyle = has("ie") ? "styleFloat" : "cssFloat",
-		_floatAliases = {"cssFloat": _floatStyle, "styleFloat": _floatStyle, "float": _floatStyle};
+	var _floatAliases = {cssFloat: 1, styleFloat: 1, "float": 1};
 
 	// public API
 
@@ -240,7 +246,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 		if(l == 2 && op){
 			return _getOpacity(n);
 		}
-		name = _floatAliases[name] || name;
+		name = _floatAliases[name] ? "cssFloat" in n.style ? "cssFloat" : "styleFloat" : name;
 		var s = style.getComputedStyle(n);
 		return (l == 1) ? s : _toStyleValue(n, name, s[name] || n.style[name]); /* CSS2Properties||String||Number */
 	};
@@ -292,7 +298,7 @@ define("dojo/dom-style", ["./sniff", "./dom"], function(has, dom){
 		//	|	});
 
 		var n = dom.byId(node), l = arguments.length, op = (name == "opacity");
-		name = _floatAliases[name] || name;
+		name = _floatAliases[name] ? "cssFloat" in n.style ? "cssFloat" : "styleFloat" : name;
 		if(l == 3){
 			return op ? _setOpacity(n, value) : n.style[name] = value; // Number
 		}

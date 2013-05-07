@@ -9,6 +9,7 @@ cd ../xstyle
 git pull
 
 cd ../../scottschiller/SoundManager2
+git checkout master
 git pull
 
 cd ../../sirprize/dobolo

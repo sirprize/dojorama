@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/_base/xhr':function(){
-define("dojo/_base/xhr", [
+define([
 	"./kernel",
 	"./sniff",
 	"require",
@@ -120,6 +120,14 @@ define("dojo/_base/xhr", [
 			// summary:
 			//		A contentHandler returning an XML Document parsed from the response data
 			var result = xhr.responseXML;
+
+			if(result && has("dom-qsa2.1") && !result.querySelectorAll && has("dom-parser")){
+				// http://bugs.dojotoolkit.org/ticket/15631
+				// IE9 supports a CSS3 querySelectorAll implementation, but the DOM implementation 
+				// returned by IE9 xhr.responseXML does not. Manually create the XML DOM to gain 
+				// the fuller-featured implementation and avoid bugs caused by the inconsistency
+				result = new DOMParser().parseFromString(xhr.responseText, "application/xml");
+			}
 
 			if(has("ie")){
 				if((!result || !result.documentElement)){
@@ -713,7 +721,7 @@ define("dojo/_base/xhr", [
 
 },
 'dojo/io-query':function(){
-define("dojo/io-query", ["./_base/lang"], function(lang){
+define(["./_base/lang"], function(lang){
 
 // module:
 //		dojo/io-query
@@ -812,7 +820,7 @@ return {
 });
 },
 'dojo/dom-form':function(){
-define("dojo/dom-form", ["./_base/lang", "./dom", "./io-query", "./json"], function(lang, dom, ioq, json){
+define(["./_base/lang", "./dom", "./io-query", "./json"], function(lang, dom, ioq, json){
 	// module:
 	//		dojo/dom-form
 
@@ -964,7 +972,7 @@ define("dojo/dom-form", ["./_base/lang", "./dom", "./io-query", "./json"], funct
 
 },
 'dojo/json':function(){
-define("dojo/json", ["./has"], function(has){
+define(["./has"], function(has){
 	"use strict";
 	var hasJSON = typeof JSON != "undefined";
 	has.add("json-parse", hasJSON); // all the parsers work fine
@@ -1129,7 +1137,7 @@ define("dojo/json", ["./has"], function(has){
 
 },
 'dojo/_base/Deferred':function(){
-define("dojo/_base/Deferred", [
+define([
 	"./kernel",
 	"../Deferred",
 	"../promise/Promise",
@@ -1515,7 +1523,7 @@ define("dojo/_base/Deferred", [
 
 },
 'dojo/_base/json':function(){
-define("dojo/_base/json", ["./kernel", "../json"], function(dojo, json){
+define(["./kernel", "../json"], function(dojo, json){
 
 // module:
 //		dojo/_base/json
@@ -1609,7 +1617,7 @@ return dojo;
 
 },
 'dojo/request/watch':function(){
-define("dojo/request/watch", [
+define([
 	'./util',
 	'../errors/RequestTimeoutError',
 	'../errors/CancelError',
@@ -1721,7 +1729,7 @@ define("dojo/request/watch", [
 
 },
 'dojo/request/util':function(){
-define("dojo/request/util", [
+define([
 	'exports',
 	'../errors/RequestError',
 	'../errors/CancelError',
@@ -1882,7 +1890,7 @@ define("dojo/request/util", [
 
 },
 'dojo/errors/RequestError':function(){
-define("dojo/errors/RequestError", ['./create'], function(create){
+define(['./create'], function(create){
 	// module:
 	//		dojo/errors/RequestError
 
@@ -1900,7 +1908,7 @@ define("dojo/errors/RequestError", ['./create'], function(create){
 
 },
 'dojo/errors/RequestTimeoutError':function(){
-define("dojo/errors/RequestTimeoutError", ['./create', './RequestError'], function(create, RequestError){
+define(['./create', './RequestError'], function(create, RequestError){
 	// module:
 	//		dojo/errors/RequestTimeoutError
 
@@ -1918,7 +1926,7 @@ define("dojo/errors/RequestTimeoutError", ['./create', './RequestError'], functi
 
 },
 'dojo/request/xhr':function(){
-define("dojo/request/xhr", [
+define([
 	'../errors/RequestError',
 	'./watch',
 	'./handlers',
@@ -2237,13 +2245,17 @@ define("dojo/request/xhr", [
 
 },
 'dojo/request/handlers':function(){
-define("dojo/request/handlers", [
+define([
 	'../json',
 	'../_base/kernel',
 	'../_base/array',
-	'../has'
+	'../has',
+	'../selector/_loader' // only included for has() qsa tests
 ], function(JSON, kernel, array, has){
 	has.add('activex', typeof ActiveXObject !== 'undefined');
+	has.add('dom-parser', function(global){
+		return 'DOMParser' in global;
+	});
 
 	var handleXML;
 	if(has('activex')){
@@ -2257,6 +2269,14 @@ define("dojo/request/handlers", [
 
 		handleXML = function(response){
 			var result = response.data;
+
+			if(result && has('dom-qsa2.1') && !result.querySelectorAll && has('dom-parser')){
+				// http://bugs.dojotoolkit.org/ticket/15631
+				// IE9 supports a CSS3 querySelectorAll implementation, but the DOM implementation 
+				// returned by IE9 xhr.responseXML does not. Manually create the XML DOM to gain 
+				// the fuller-featured implementation and avoid bugs caused by the inconsistency
+				result = new DOMParser().parseFromString(response.text, 'application/xml');
+			}
 
 			if(!result || !result.documentElement){
 				var text = response.text;
@@ -2298,6 +2318,56 @@ define("dojo/request/handlers", [
 	};
 
 	return handle;
+});
+
+},
+'dojo/selector/_loader':function(){
+define(["../has", "require"],
+		function(has, require){
+
+"use strict";
+var testDiv = document.createElement("div");
+has.add("dom-qsa2.1", !!testDiv.querySelectorAll);
+has.add("dom-qsa3", function(){
+			// test to see if we have a reasonable native selector engine available
+			try{
+				testDiv.innerHTML = "<p class='TEST'></p>"; // test kind of from sizzle
+				// Safari can't handle uppercase or unicode characters when
+				// in quirks mode, IE8 can't handle pseudos like :empty
+				return testDiv.querySelectorAll(".TEST:empty").length == 1;
+			}catch(e){}
+		});
+var fullEngine;
+var acme = "./acme", lite = "./lite";
+return {
+	// summary:
+	//		This module handles loading the appropriate selector engine for the given browser
+
+	load: function(id, parentRequire, loaded, config){
+		var req = require;
+		// here we implement the default logic for choosing a selector engine
+		id = id == "default" ? has("config-selectorEngine") || "css3" : id;
+		id = id == "css2" || id == "lite" ? lite :
+				id == "css2.1" ? has("dom-qsa2.1") ? lite : acme :
+				id == "css3" ? has("dom-qsa3") ? lite : acme :
+				id == "acme" ? acme : (req = parentRequire) && id;
+		if(id.charAt(id.length-1) == '?'){
+			id = id.substring(0,id.length - 1);
+			var optionalLoad = true;
+		}
+		// the query engine is optional, only load it if a native one is not available or existing one has not been loaded
+		if(optionalLoad && (has("dom-compliant-qsa") || fullEngine)){
+			return loaded(fullEngine);
+		}
+		// load the referenced selector engine
+		req([id], function(engine){
+			if(id != "./lite"){
+				fullEngine = engine;
+			}
+			loaded(engine);
+		});
+	}
+};
 });
 
 }}});

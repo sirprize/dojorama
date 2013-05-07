@@ -2,7 +2,7 @@ require({cache:{
 'dojorama/ui/release/mixin/_ReleaseActionsMixin':function(){
 /*jshint strict:false */
 
-define("dojorama/ui/release/mixin/_ReleaseActionsMixin", [
+define([
     "dojo/_base/declare",
     "../../_global/widget/ActionsWidget",
     "dojo/i18n!./nls/_ReleaseActionsMixin"
@@ -54,7 +54,7 @@ define("dojorama/ui/release/mixin/_ReleaseActionsMixin", [
 'dojorama/ui/release/mixin/_ReleaseBreadcrumbsMixin':function(){
 /*jshint strict:false */
 
-define("dojorama/ui/release/mixin/_ReleaseBreadcrumbsMixin", [
+define([
     "dojo/_base/declare",
     "../../_global/widget/BreadcrumbsWidget",
     "dojo/i18n!./nls/_ReleaseBreadcrumbsMixin"
@@ -137,7 +137,7 @@ define("dojorama/ui/release/mixin/_ReleaseBreadcrumbsMixin", [
 'dojorama/ui/release/mixin/_ReleaseComponentTitleMixin':function(){
 /*jshint strict:false */
 
-define("dojorama/ui/release/mixin/_ReleaseComponentTitleMixin", [
+define([
     "dojo/_base/declare",
     "dojo/i18n!./nls/_ReleaseComponentTitleMixin"
 ], function (
@@ -160,11 +160,9 @@ define("dojorama/ui/release/mixin/_ReleaseComponentTitleMixin", [
 });
 },
 'dojorama/ui/release/widget/ReleaseCreateFormWidget':function(){
-require({cache:{
-'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>"}});
 /*jshint strict:false */
 
-define("dojorama/ui/release/widget/ReleaseCreateFormWidget", [
+define([
     "dojo/_base/declare",
     "mijit/_WidgetBase",
     "mijit/_TemplatedMixin",
@@ -233,11 +231,9 @@ define("dojorama/ui/release/widget/ReleaseCreateFormWidget", [
 });
 },
 'dojorama/ui/release/widget/snippet/ReleaseFormSnippet':function(){
-require({cache:{
-'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>"}});
 /*jshint strict:false */
 
-define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
+define([
     "dojo/_base/declare",
     "mijit/_WidgetBase",
     "mijit/_TemplatedMixin",
@@ -401,14 +397,10 @@ define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
     });
 });
 },
-'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>",
-'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>",
 'dojorama/ui/release/widget/ReleaseGridWidget':function(){
-require({cache:{
-'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-search pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"input-append\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"search-query\" />\n                <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n            </div>\n        </form>\n    </div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>"}});
 /*jshint strict:false */
 
-define("dojorama/ui/release/widget/ReleaseGridWidget", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "mijit/_WidgetBase",
@@ -714,13 +706,10 @@ define("dojorama/ui/release/widget/ReleaseGridWidget", [
     });
 });
 },
-'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-search pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"input-append\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"search-query\" />\n                <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n            </div>\n        </form>\n    </div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>",
 'dojorama/ui/release/widget/ReleaseUpdateFormWidget':function(){
-require({cache:{
-'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>"}});
 /*jshint strict:false */
 
-define("dojorama/ui/release/widget/ReleaseUpdateFormWidget", [
+define([
     "dojo/_base/declare",
     "mijit/_WidgetBase",
     "mijit/_TemplatedMixin",
@@ -826,6 +815,9 @@ define("dojorama/ui/release/widget/ReleaseUpdateFormWidget", [
     });
 });
 },
+'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>",
+'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>",
+'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-search pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"input-append\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"search-query\" />\n                <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n            </div>\n        </form>\n    </div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>",
 'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*dojorama/layers/nls/release-widgets*["ar","ca","cs","da","de","el","en-gb","en-us","es-es","fi-fi","fr-fr","he-il","hu","it-it","ja-jp","ko-kr","nl-nl","nb","pl","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh-tw","zh-cn","ROOT"]']);}
 }});

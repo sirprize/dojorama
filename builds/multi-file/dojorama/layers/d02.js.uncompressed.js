@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/Deferred':function(){
-define("dojo/Deferred", [
+define([
 	"./has",
 	"./_base/lang",
 	"./errors/CancelError",
@@ -323,7 +323,7 @@ define("dojo/Deferred", [
 
 },
 'dojo/errors/CancelError':function(){
-define("dojo/errors/CancelError", ["./create"], function(create){
+define(["./create"], function(create){
 	// module:
 	//		dojo/errors/CancelError
 
@@ -339,7 +339,7 @@ define("dojo/errors/CancelError", ["./create"], function(create){
 
 },
 'dojo/errors/create':function(){
-define("dojo/errors/create", ["../_base/lang"], function(lang){
+define(["../_base/lang"], function(lang){
 	return function(name, ctor, base, props){
 		base = base || Error;
 
@@ -383,7 +383,7 @@ define("dojo/errors/create", ["../_base/lang"], function(lang){
 
 },
 'dojo/promise/Promise':function(){
-define("dojo/promise/Promise", [
+define([
 	"../_base/lang"
 ], function(lang){
 	"use strict";
@@ -519,7 +519,7 @@ define("dojo/promise/Promise", [
 
 },
 'dojo/promise/instrumentation':function(){
-define("dojo/promise/instrumentation", [
+define([
 	"./tracer",
 	"../has",
 	"../_base/lang",
@@ -627,7 +627,7 @@ define("dojo/promise/instrumentation", [
 
 },
 'dojo/promise/tracer':function(){
-define("dojo/promise/tracer", [
+define([
 	"../_base/lang",
 	"./Promise",
 	"../Evented"
@@ -715,7 +715,7 @@ define("dojo/promise/tracer", [
 
 },
 'dojo/_base/array':function(){
-define("dojo/_base/array", ["./kernel", "../has", "./lang"], function(dojo, has, lang){
+define(["./kernel", "../has", "./lang"], function(dojo, has, lang){
 	// module:
 	//		dojo/_base/array
 
@@ -1068,7 +1068,7 @@ define("dojo/_base/array", ["./kernel", "../has", "./lang"], function(dojo, has,
 
 },
 'dojo/promise/all':function(){
-define("dojo/promise/all", [
+define([
 	"../_base/array",
 	"../Deferred",
 	"../when"
@@ -1147,7 +1147,7 @@ define("dojo/promise/all", [
 
 },
 'dojo/when':function(){
-define("dojo/when", [
+define([
 	"./Deferred",
 	"./promise/Promise"
 ], function(Deferred, Promise){
@@ -1205,7 +1205,7 @@ define("dojo/when", [
 
 },
 'dojo/promise/first':function(){
-define("dojo/promise/first", [
+define([
 	"../_base/array",
 	"../Deferred",
 	"../when"

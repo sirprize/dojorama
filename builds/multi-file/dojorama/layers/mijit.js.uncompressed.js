@@ -1,6 +1,6 @@
 require({cache:{
 'mijit/_TemplatedMixin':function(){
-define("mijit/_TemplatedMixin", [
+define([
 	"dojo/_base/lang", // lang.getObject
 	"dojo/touch",
 	"./_WidgetBase",
@@ -312,7 +312,7 @@ define("mijit/_TemplatedMixin", [
 
 },
 'mijit/_WidgetBase':function(){
-define("mijit/_WidgetBase", [
+define([
 	"require",			// require.toUrl
 	"dojo/_base/array", // array.forEach array.map
 	"dojo/aspect",
@@ -1452,7 +1452,7 @@ return declare("dijit._WidgetBase", [Stateful, Destroyable], {
 
 },
 'mijit/Destroyable':function(){
-define("mijit/Destroyable", [
+define([
 	"dojo/_base/array", // array.forEach array.map
 	"dojo/aspect",
 	"dojo/_base/declare"
@@ -1514,7 +1514,7 @@ return declare("dijit.Destroyable", null, {
 
 },
 'mijit/registry':function(){
-define("mijit/registry", [
+define([
 	"dojo/_base/array", // array.forEach array.map
 	"dojo/sniff", // has("ie")
 	"dojo/_base/unload", // unload.addOnWindowUnload
@@ -1678,7 +1678,7 @@ define("mijit/registry", [
 
 },
 'mijit/main':function(){
-define("mijit/main", [
+define([
 	"dojo/_base/kernel"
 ], function(dojo){
 	// module:
@@ -1697,7 +1697,7 @@ return {
 
 },
 'mijit/_WidgetsInTemplateMixin':function(){
-define("mijit/_WidgetsInTemplateMixin", [
+define([
 	"dojo/_base/array", // array.forEach
 	"dojo/_base/declare", // declare
 	"dojo/parser" // parser.parse
@@ -1765,7 +1765,7 @@ define("mijit/_WidgetsInTemplateMixin", [
 
 },
 'dojo/parser':function(){
-define("dojo/parser", [
+define([
 	"require", "./_base/kernel", "./_base/lang", "./_base/array", "./_base/config", "./dom", "./_base/window",
 		"./_base/url", "./aspect", "./promise/all", "./date/stamp", "./Deferred", "./has", "./query", "./on", "./ready"
 ], function(require, dojo, dlang, darray, config, dom, dwindow, _Url, aspect, all, dates, Deferred, has, query, don, ready){

@@ -1,5 +1,3 @@
-require({cache:{
-'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/widget/ReleaseUpdateFormWidget", [
@@ -106,4 +104,5 @@ define("dojorama/ui/release/widget/ReleaseUpdateFormWidget", [
             );
         }
     });
-});
+});require({cache:{
+'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>"}});

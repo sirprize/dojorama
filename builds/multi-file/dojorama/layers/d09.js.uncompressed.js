@@ -1,6 +1,6 @@
 require({cache:{
 'dojo/store/Cache':function(){
-define("dojo/store/Cache", ["../_base/lang","../when" /*=====, "../_base/declare", "./api/Store" =====*/],
+define(["../_base/lang","../when" /*=====, "../_base/declare", "./api/Store" =====*/],
 function(lang, when /*=====, declare, Store =====*/){
 
 // module:
@@ -149,7 +149,7 @@ return Cache;
 
 },
 'dojo/store/JsonRest':function(){
-define("dojo/store/JsonRest", ["../_base/xhr", "../_base/lang", "../json", "../_base/declare", "./util/QueryResults" /*=====, "./api/Store" =====*/
+define(["../_base/xhr", "../_base/lang", "../json", "../_base/declare", "./util/QueryResults" /*=====, "./api/Store" =====*/
 ], function(xhr, lang, JSON, declare, QueryResults /*=====, Store =====*/){
 
 // No base class, but for purposes of documentation, the base class is dojo/store/api/Store
@@ -349,7 +349,7 @@ return declare("dojo.store.JsonRest", base, {
 });
 },
 'dojo/store/util/QueryResults':function(){
-define("dojo/store/util/QueryResults", ["../../_base/array", "../../_base/lang", "../../when"
+define(["../../_base/array", "../../_base/lang", "../../when"
 ], function(array, lang, when){
 
 // module:
@@ -415,7 +415,7 @@ return QueryResults;
 
 },
 'dojo/store/Memory':function(){
-define("dojo/store/Memory", ["../_base/declare", "./util/QueryResults", "./util/SimpleQueryEngine" /*=====, "./api/Store" =====*/],
+define(["../_base/declare", "./util/QueryResults", "./util/SimpleQueryEngine" /*=====, "./api/Store" =====*/],
 function(declare, QueryResults, SimpleQueryEngine /*=====, Store =====*/){
 
 // module:
@@ -582,7 +582,7 @@ return declare("dojo.store.Memory", base, {
 
 },
 'dojo/store/util/SimpleQueryEngine':function(){
-define("dojo/store/util/SimpleQueryEngine", ["../../_base/array" /*=====, "../api/Store" =====*/], function(arrayUtil /*=====, Store =====*/){
+define(["../../_base/array" /*=====, "../api/Store" =====*/], function(arrayUtil /*=====, Store =====*/){
 
 // module:
 //		dojo/store/util/SimpleQueryEngine
@@ -695,7 +695,7 @@ return function(query, options){
 
 },
 'dojo/store/Observable':function(){
-define("dojo/store/Observable", ["../_base/kernel", "../_base/lang", "../when", "../_base/array" /*=====, "./api/Store" =====*/
+define(["../_base/kernel", "../_base/lang", "../when", "../_base/array" /*=====, "./api/Store" =====*/
 ], function(kernel, lang, when, array /*=====, Store =====*/){
 
 // module:
@@ -885,7 +885,7 @@ return Observable;
 
 },
 'dojo-sm2-playlist/Playlist':function(){
-define("dojo-sm2-playlist/Playlist", [
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/Evented"
