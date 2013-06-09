@@ -265,7 +265,7 @@ define("dojo/i18n", ["./_base/kernel", "require", "./has", "./_base/array", "./_
 				bundleName = match[5] || match[4],
 				bundlePathAndName = bundlePath + bundleName,
 				localeSpecified = (match[5] && match[4]),
-				targetLocale =	localeSpecified || dojo.locale,
+				targetLocale =	localeSpecified || dojo.locale || "",
 				loadTarget = bundlePathAndName + "/" + targetLocale,
 				loadList = localeSpecified ? [targetLocale] : getLocalesToLoad(targetLocale),
 				remaining = loadList.length,

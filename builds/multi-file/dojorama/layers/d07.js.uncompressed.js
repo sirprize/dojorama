@@ -349,7 +349,7 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 							e.stopPropagation();
 							e.stopImmediatePropagation && e.stopImmediatePropagation();
 							if(type == "click" && (e.target.tagName != "INPUT" || e.target.type == "radio" || e.target.type == "checkbox")
-								&& e.target.tagName != "TEXTAREA"){
+								&& e.target.tagName != "TEXTAREA" && e.target.tagName != "AUDIO" && e.target.tagName != "VIDEO"){
 								 // preventDefault() breaks textual <input>s on android, keyboard doesn't popup,
 								 // but it is still needed for checkboxes and radio buttons, otherwise in some cases
 								 // the checked state becomes inconsistent with the widget's state
@@ -1614,7 +1614,7 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 				bundleName = match[5] || match[4],
 				bundlePathAndName = bundlePath + bundleName,
 				localeSpecified = (match[5] && match[4]),
-				targetLocale =	localeSpecified || dojo.locale,
+				targetLocale =	localeSpecified || dojo.locale || "",
 				loadTarget = bundlePathAndName + "/" + targetLocale,
 				loadList = localeSpecified ? [targetLocale] : getLocalesToLoad(targetLocale),
 				remaining = loadList.length,

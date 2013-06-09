@@ -1,18 +1,9 @@
-[submodule "vendor/dojo/dojo"]
-	path = vendor/dojo/dojo
-	url = git://github.com/dojo/dojo.git
-[submodule "vendor/dojo/util"]
-	path = vendor/dojo/util
-	url = git://github.com/dojo/util.git
 [submodule "vendor/kriszyp/put-selector"]
 	path = vendor/kriszyp/put-selector
 	url = git://github.com/kriszyp/put-selector.git
 [submodule "vendor/kriszyp/xstyle"]
 	path = vendor/kriszyp/xstyle
 	url = git://github.com/kriszyp/xstyle.git
-[submodule "vendor/sirprize/dobolo"]
-	path = vendor/sirprize/dobolo
-	url = git://github.com/sirprize/dobolo.git
 [submodule "vendor/sirprize/dojo-data-model"]
 	path = vendor/sirprize/dojo-data-model
 	url = git://github.com/sirprize/dojo-data-model.git
@@ -43,3 +34,12 @@
 [submodule "vendor/sirprize/dojo-sm2-playlist"]
 	path = vendor/sirprize/dojo-sm2-playlist
 	url = git://github.com/sirprize/dojo-sm2-playlist.git
+[submodule "vendor/dojo/util"]
+	path = vendor/dojo/util
+	url = git://github.com/dojo/util.git
+[submodule "vendor/dojo/dojo"]
+	path = vendor/dojo/dojo
+	url = git://github.com/dojo/dojo.git
+[submodule "vendor/sirprize/dobolo"]
+	path = vendor/sirprize/dobolo
+	url = git://github.com/sirprize/dobolo.git

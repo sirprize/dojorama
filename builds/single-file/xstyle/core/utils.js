@@ -1,0 +1,3 @@
+//>>built
+define("xstyle/core/utils",[],function(){var b={};return{when:function(a,c){return a&&a.then?a.then(c):c(a)},convertCssNameToJs:function(a){return a.replace(/-(\w)/g,function(a,b){return b.toUpperCase()})},isTagSupported:function(a){if(a in b)return b[a];var c=(element=document.createElement(a)).toString();return b[a]=!("[object HTMLUnknownElement]"==c||"[object]"==c)}}});
+//@ sourceMappingURL=utils.js.map
