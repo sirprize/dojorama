@@ -24,7 +24,7 @@ Dojorama is built on top of these fine libraries:
 + [SitePen/dgrid](http://github.com/SitePen/dgrid) - Dojo grid widget
 + [kriszyp/put-selector](http://github.com/kriszyp/put-selector) - DOM manipulation (dependency of dgrid)
 + [kriszyp/xstyle](http://github.com/kriszyp/xstyle) - CSS loader (dependency of dgrid)
-+ [twitter/bootstrap](http://github.com/twitter/bootstrap) - Frontend framework (CSS only)
++ [twbs/bootstrap](http://github.com/twbs/bootstrap) - Frontend framework (CSS only)
 + [scottschiller/SoundManager2](http://github.com/scottschiller/SoundManager2) - JavaScript sound API
 + [sirprize/mijit](http://github.com/sirprize/mijit) - Essential Dijit stuff (`_WidgetBase`, `_TemplatedMixin` and `registry`)
 + [sirprize/dojomat](http://github.com/sirprize/dojomat) - Application controller
