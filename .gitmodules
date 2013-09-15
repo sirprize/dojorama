@@ -25,9 +25,9 @@
 [submodule "vendor/SitePen/dgrid"]
 	path = vendor/SitePen/dgrid
 	url = git://github.com/SitePen/dgrid.git
-[submodule "vendor/twitter/bootstrap"]
-	path = vendor/twitter/bootstrap
-	url = git://github.com/twitter/bootstrap.git
+[submodule "vendor/twbs/bootstrap"]
+	path = vendor/twbs/bootstrap
+	url = git://github.com/twbs/bootstrap.git
 [submodule "vendor/scottschiller/SoundManager2"]
 	path = vendor/scottschiller/SoundManager2
 	url = git://github.com/scottschiller/SoundManager2.git
