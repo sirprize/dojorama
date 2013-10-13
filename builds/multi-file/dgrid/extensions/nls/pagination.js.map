@@ -2,7 +2,7 @@
 "version":3,
 "file":"pagination.js",
 "lineCount":1,
-"mappings":"A,SAAAA,MAAA;",
+"mappings":"A,SAAAA,MAAA,oSAiBC,OAjBD,IAkBC,OAlBD;",
 "sources":["pagination.js.uncompressed.js"],
 "names":["define"]
 }

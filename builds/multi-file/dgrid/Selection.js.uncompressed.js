@@ -1,6 +1,10 @@
 define("dgrid/Selection", ["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
 function(kernel, declare, Deferred, on, has, aspect, List, touchUtil, put){
 
+has.add("mspointer", function(global, doc, element){
+	return "onmspointerdown" in element;
+});
+
 // Add feature test for user-select CSS property for optionally disabling
 // text selection.
 // (Can't use dom.setSelectable prior to 1.8.2 because of bad sniffs, see #15990)
@@ -27,7 +31,9 @@ has.add("css-user-select", function(global, doc, element){
 has.add("dom-selectstart", typeof document.onselectstart !== "undefined");
 
 var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey",
-	hasUserSelect = has("css-user-select");
+	hasUserSelect = has("css-user-select"),
+	downType = has("mspointer") ? "MSPointerDown" : "mousedown",
+	upType = has("mspointer") ? "MSPointerUp" : "mouseup";
 
 function makeUnselectable(node, unselectable){
 	// Utility function used in fallback path for recursively setting unselectable
@@ -103,7 +109,7 @@ return declare(null, {
 	// selectionEvents: String
 	//		Event (or events, comma-delimited) to listen on to trigger select logic.
 	//		Note: this is ignored in the case of touch devices.
-	selectionEvents: "mousedown,mouseup,dgrid-cellfocusin",
+	selectionEvents: downType + "," + upType + ",dgrid-cellfocusin",
 	
 	// deselectOnRefresh: Boolean
 	//		If true, the selection object will be cleared when refresh is called.
@@ -148,9 +154,10 @@ return declare(null, {
 	destroy: function(){
 		this.inherited(arguments);
 		
-		// Remove any handles added for cross-browser text selection prevention.
+		// Remove any extra handles added by Selection.
 		if(this._selectstartHandle){ this._selectstartHandle.remove(); }
 		if(this._unselectableHandle){ this._unselectableHandle.remove(); }
+		if(this._removeDeselectSignals){ this._removeDeselectSignals(); }
 	},
 	
 	_setSelectionMode: function(mode){
@@ -171,7 +178,7 @@ return declare(null, {
 		this._setAllowTextSelection(this.allowTextSelection);
 	},
 	setSelectionMode: function(mode){
-		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 1.0");
+		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 0.4");
 		this.set("selectionMode", mode);
 	},
 	
@@ -188,8 +195,8 @@ return declare(null, {
 		// Don't run if selection mode doesn't have a handler (incl. "none"),
 		// or if coming from a dgrid-cellfocusin from a mousedown
 		if(!this[this._selectionHandlerName] ||
-				(event.type == "dgrid-cellfocusin" && event.parentType == "mousedown") ||
-				(event.type == "mouseup" && target != this._waitForMouseUp)){
+				(event.type === "dgrid-cellfocusin" && event.parentType === "mousedown") ||
+				(event.type === upType && target != this._waitForMouseUp)){
 			return;
 		}
 		this._waitForMouseUp = null;
@@ -199,7 +206,7 @@ return declare(null, {
 		if(!event.keyCode || !event.ctrlKey || event.keyCode == 32){
 			// If clicking a selected item, wait for mouseup so that drag n' drop
 			// is possible without losing our selection
-			if(!event.shiftKey && event.type == "mousedown" && this.isSelected(target)){
+			if(!event.shiftKey && event.type === downType && this.isSelected(target)){
 				this._waitForMouseUp = target;
 			}else{
 				this[this._selectionHandlerName](event, target);
@@ -279,7 +286,7 @@ return declare(null, {
 		var grid = this,
 			selector = this.selectionDelegate;
 		
-		if(has("touch")){
+		if(has("touch") && !has("mspointer")){
 			// listen for touch taps if available
 			on(this.contentNode, touchUtil.selector(selector, touchUtil.tap), function(evt){
 				grid._handleSelect(evt, this);
@@ -298,26 +305,93 @@ return declare(null, {
 			});
 		}
 		
-		// If allowSelectAll is true, allow ctrl/cmd+A to (de)select all rows.
+		// If allowSelectAll is true, bind ctrl/cmd+A to (de)select all rows,
+		// unless the event was received from an editor component.
 		// (Handler further checks against _allowSelectAll, which may be updated
 		// if selectionMode is changed post-init.)
 		if(this.allowSelectAll){
 			this.on("keydown", function(event) {
-				if (event[ctrlEquiv] && event.keyCode == 65) {
+				if(event[ctrlEquiv] && event.keyCode == 65 &&
+						!/\bdgrid-input\b/.test(event.target.className)){
 					event.preventDefault();
 					grid[grid.allSelected ? "clearSelection" : "selectAll"]();
 				}
 			});
 		}
 		
-		aspect.before(this, "removeRow", function(rowElement, justCleanup){
-			var row;
-			if(!justCleanup){
-				row = this.row(rowElement);
-				// if it is a real row removal for a selected item, deselect it
-				if(row && (row.id in this.selection)){ this.deselect(rowElement); }
+		// Update aspects if there is a store change
+		if(this._setStore){
+			aspect.after(this, "_setStore", function(){
+				grid._updateDeselectionAspect();
+			});
+		}
+		this._updateDeselectionAspect();
+	},
+	
+	_updateDeselectionAspect: function(){
+		// summary:
+		//		Hooks up logic to handle deselection of removed items.
+		//		Aspects to an observable store's notify method if applicable,
+		//		or to the list/grid's removeRow method otherwise.
+		
+		var self = this,
+			store = this.store,
+			beforeSignal,
+			afterSignal;
+
+		function ifSelected(object, idToUpdate, methodName){
+			// Calls a method if the row corresponding to the object is selected.
+			var id = idToUpdate || (object && object[self.idProperty || "id"]);
+			if(id != null){
+				var row = self.row(id),
+					selection = row && self.selection[row.id];
+				// Is the row currently in the selection list.
+				if(selection){
+					self[methodName](row, null, selection);
+				}
 			}
-		});
+		}
+		
+		// Remove anything previously configured
+		if(this._removeDeselectSignals){
+			this._removeDeselectSignals();
+		}
+
+		// Is there currently an observable store?
+		if(store && store.notify){
+			beforeSignal = aspect.before(store, "notify", function(object, idToUpdate){
+				if(!object){
+					// Call deselect on the row if the object is being removed.  This allows the
+					// deselect event to reference the row element while it still exists in the DOM.
+					ifSelected(object, idToUpdate, "deselect");
+				}
+			});
+			afterSignal = aspect.after(store, "notify", function(object, idToUpdate){
+				// When List updates an item, the row element is removed and a new one inserted.
+				// If at this point the object is still in grid.selection, then call select on the row so the
+				// element's CSS is updated.  If the object was removed then the aspect-before has already deselected it.
+				ifSelected(object, idToUpdate, "select");
+			}, true);
+			
+			this._removeDeselectSignals = function(){
+				beforeSignal.remove();
+				afterSignal.remove();
+			};
+		}else{
+			beforeSignal = aspect.before(this, "removeRow", function(rowElement, justCleanup){
+				var row;
+				if(!justCleanup){
+					row = this.row(rowElement);
+					// if it is a real row removal for a selected item, deselect it
+					if(row && (row.id in this.selection)){
+						this.deselect(row);
+					}
+				}
+			});
+			this._removeDeselectSignals = function(){
+				beforeSignal.remove();
+			};
+		}
 	},
 	
 	allowSelect: function(row){
@@ -333,7 +407,7 @@ return declare(null, {
 			rows = this[event], // current event queue (actually cells for CellSelection)
 			trigger = this._selectionTriggerEvent;
 		
-		if (trigger) {
+		if(trigger) {
 			// If selection was triggered by another event, we want to know its type
 			// to report later.  Grab it ahead of the timeout to avoid
 			// "member not found" errors in IE < 9.
@@ -368,7 +442,12 @@ return declare(null, {
 		if(!row.element){
 			row = this.row(row);
 		}
-		if(!value || this.allowSelect(row)){
+		
+		// Check whether we're allowed to select the given row before proceeding.
+		// If a deselect operation is being performed, this check is skipped,
+		// to avoid errors when changing column definitions, and since disabled
+		// rows shouldn't ever be selected anyway.
+		if(value === false || this.allowSelect(row)){
 			var selection = this.selection;
 			var previousValue = selection[row.id];
 			if(value === null){

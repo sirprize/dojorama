@@ -25,7 +25,7 @@ define("xstyle/core/generate", ["xstyle/core/elemental", "put-selector/put", "xs
 		}
 	}
 	var doc = document;	
-	return function(generatingSelector, rule){
+	function generate(generatingSelector, rule){
 		// this is responsible for generation of DOM elements for elements matching generative rules
 		var id = nextId++;
 		// normalize to array
@@ -34,20 +34,26 @@ define("xstyle/core/generate", ["xstyle/core/elemental", "put-selector/put", "xs
 		return function(element, item, beforeElement){
 			var lastElement = element;
 			var subId = 0;
-			if(beforeElement === undefined){
-				var childNodes = element.childNodes;
-				var childNode = childNodes[0], contentFragment;
-				// move the children out and record the contents in a fragment
-				if(childNode){
-					contentFragment = doc.createDocumentFragment();
-					do{
-						contentFragment.appendChild(childNode);
-					}while(childNode = childNodes[0]);
+			if(element._contentNode){
+				// if we are rendering on a node that has already been rendered with a content
+				// node, we need to nest inside that
+				element = element._contentNode;
+			}else{
+				if(beforeElement === undefined){
+					var childNodes = element.childNodes;
+					var childNode = childNodes[0], contentFragment;
+					// move the children out and record the contents in a fragment
+					if(childNode){
+						contentFragment = doc.createDocumentFragment();
+						do{
+							contentFragment.appendChild(childNode);
+						}while(childNode = childNodes[0]);
+					}
 				}
+				// temporarily store it on the element, so it can be accessed as an element-property
+				// TODO: remove it after completion
+				element.content = contentFragment;
 			}
-			// temporarily store it on the element, so it can be accessed as an element-property
-			// TODO: remove it after completion
-			element.content = contentFragment;
 			var indentationLevel = 0;
 			var indentationLevels = [element];
 			for(var i = 0, l = generatingSelector.length;i < l; i++){
@@ -77,37 +83,42 @@ define("xstyle/core/generate", ["xstyle/core/elemental", "put-selector/put", "xs
 										var textNode = element.appendChild(doc.createTextNode("Loading"));
 										receive(apply, function(value){
 											if(value && value.sort){
-												// if it is an array, we do iterative rendering
 												if(textNode){
 													// remove the loading node
 													textNode.parentNode.removeChild(textNode);
 													textNode = null;
 												}
-												var eachHandler = nextPart && nextPart.eachProperty && nextPart.each;
-												// if "each" is defined, we will use it render each item 
-												if(eachHandler){
-													eachHandler = generate(eachHandler, nextPart);
+												if(value.isSequence){
+													generate(value, part.parent)(element, item, beforeElement);
 												}else{
-													eachHandler = function(element, value, beforeElement){
-														// if there no each handler, we use the default tag name for the parent 
-														return put(beforeElement || element, (beforeElement ? '-' : '') + (childTagForParent[element.tagName] || 'span'), value);
+													element.innerHTML = '';
+													// if it is an array, we do iterative rendering
+													var eachHandler = nextPart && nextPart.eachProperty && nextPart.each;
+													// if "each" is defined, we will use it render each item 
+													if(eachHandler){
+														eachHandler = generate(eachHandler, nextPart);
+													}else{
+														eachHandler = function(element, value, beforeElement){
+															// if there no each handler, we use the default tag name for the parent 
+															return put(beforeElement || element, (beforeElement ? '-' : '') + (childTagForParent[element.tagName] || 'span'), value);
+														}
 													}
-												}
-												var rows = value.map(function(value){
-													// TODO: do this inside generate
-													return eachHandler(element, value, null);
-												});
-												if(value.observe){
-													value.observe(function(object, previousIndex, newIndex){
-														if(previousIndex > -1){
-															var oldElement = rows[previousIndex];
-															oldElement.parentNode.removeChild(oldElement);
-															rows.splice(previousIndex, 1);
-														}
-														if(newIndex > -1){
-															rows.splice(newIndex, 0, eachHandler(element, object, rows[newIndex] || null));
-														}
-													}, true);
+													var rows = value.map(function(value){
+														// TODO: do this inside generate
+														return eachHandler(element, value, null);
+													});
+													if(value.observe){
+														value.observe(function(object, previousIndex, newIndex){
+															if(previousIndex > -1){
+																var oldElement = rows[previousIndex];
+																oldElement.parentNode.removeChild(oldElement);
+																rows.splice(previousIndex, 1);
+															}
+															if(newIndex > -1){
+																rows.splice(newIndex, 0, eachHandler(element, object, rows[newIndex] || null));
+															}
+														}, true);
+													}
 												}
 											}else if(value && value.nodeType){
 												if(textNode){
@@ -162,55 +173,68 @@ define("xstyle/core/generate", ["xstyle/core/elemental", "put-selector/put", "xs
 						var nextElement = lastElement;
 						var nextPart = generatingSelector[i + 1];
 						// parse for the sections of the selector
-						part.replace(/([,\n]+)?([\t ]+)?(\.|#)?([-\w%$|\.\#]+)(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g, function(t, nextLine, indentation, prefix, value, attrName, attrValue){
-							if(indentation){
-								if(nextLine){
-									var newIndentationLevel = indentation.length;
-									console.log(newIndentationLevel, value);
-									if(newIndentationLevel > indentationLevel){
-										// a new child
-										indentationLevels[newIndentationLevel] = nextElement;
-									}else{
-										// returning to an existing parent
-										nextElement = indentationLevels[newIndentationLevel] || nextElement;
-									}
-									indentationLevel = newIndentationLevel;
-								}
-//								nextElement = element;
-							}
-							var selector;
-							if(prefix){// we don't want to modify the current element, we need to create a new one
-									selector = (lastPart && lastPart.args ?
-										'' : // if the last part was brackets or a call, we can continue modifying the same element
-										'span') + prefix + value;
-							}else{
-								var target = rule.getDefinition(value);
-								// see if we have a definition for the element
-								if(target && target.appendTo){
-									nextElement = target.appendTo(nextElement, beforeElement);
-								}else{
-									selector = value;
-								}
-							}
-							if(selector){
-								nextElement = put(beforeElement || nextElement, (beforeElement ? '-' : '') + selector);
-							}
-							beforeElement = null;
-							if(attrName){
-								attrValue = attrValue === '' ? attrName : attrValue;
-								nextElement.setAttribute(attrName, attrValue);
-							}
-							if(item){
-								// set the item property, so the item reference will work
-								nextElement.item = item;
-							}
-							if(nextElement != lastElement && nextElement != element &&// avoid infinite loop if it is a nop selector
-								(!nextPart || !nextPart.base) // if the next part is a rule, than it should be extending it already, so we don't want to double apply
-								){
-								elemental.update(nextElement);
-							}
-							lastElement = nextElement;
+						var parts = [];
+						part.replace(/([,\n]+)?([\t ]+)?(\.|#)?([-\w%$|\.\#]+)(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g, function(){
+							parts.push(arguments);
 						});
+						// now iterate over these
+						for(var j = 0;j < parts.length; j++){
+							(function(t, nextLine, indentation, prefix, value, attrName, attrValue){
+								if(indentation){
+									if(nextLine){
+										var newIndentationLevel = indentation.length;
+										if(newIndentationLevel > indentationLevel){
+											// a new child
+											indentationLevels[newIndentationLevel] = nextElement;
+										}else{
+											// returning to an existing parent
+											nextElement = indentationLevels[newIndentationLevel] || nextElement;
+										}
+										indentationLevel = newIndentationLevel;
+									}
+	//								nextElement = element;
+								}
+								nextElement = nextElement._contentNode || nextElement;
+								var selector;
+								if(prefix){// we don't want to modify the current element, we need to create a new one
+										selector = (lastPart && lastPart.args ?
+											'' : // if the last part was brackets or a call, we can continue modifying the same element
+											'span') + prefix + value;
+								}else{
+									var tagName = value.match(/^[-\w]+/)[0];
+									var target = rule.getDefinition(tagName);
+									// see if we have a definition for the element
+									if(target && target.appendTo){
+										nextElement = target.appendTo(nextElement, beforeElement);
+										// apply the rest of the selector
+										value = value.slice(tagName.length);
+										if(value){
+											put(nextElement, value);
+										}
+									}else{
+										selector = value;
+									}
+								}
+								if(selector){
+									nextElement = put(beforeElement || nextElement, (beforeElement ? '-' : '') + selector);
+								}
+								beforeElement = null;
+								if(attrName){
+									attrValue = attrValue === '' ? attrName : attrValue;
+									nextElement.setAttribute(attrName, attrValue);
+								}
+								if(item){
+									// set the item property, so the item reference will work
+									nextElement.item = item;
+								}
+								if(j < parts.length - 1 || (nextElement != lastElement && nextElement != element &&// avoid infinite loop if it is a nop selector
+									(!nextPart || !nextPart.base) // if the next part is a rule, than it should be extending it already, so we don't want to double apply
+									)){
+									elemental.update(nextElement);
+								}
+								lastElement = nextElement;
+							}).apply(this, parts[j]);
+						}
 					}else{
 						// a string literal
 						lastElement.appendChild(doc.createTextNode(part.value));
@@ -223,5 +247,5 @@ define("xstyle/core/generate", ["xstyle/core/elemental", "put-selector/put", "xs
 			return lastElement;
 		}
 	}
-	
+	return generate;
 });

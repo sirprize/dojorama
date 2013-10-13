@@ -414,3 +414,19 @@ In case of `invalid-input`, the error details are to be found in `todoModel.getE
             // handle error
         }
     );
+
+## Running Tests
+
+Running the tests requires Apache and Php. Apache is used to rewrite urls such as `tests/api/default/` to point to `tests/api/default/index.php`. Here's the content of a typical `.htaccess` file:
+
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^(.*)$ index.php [QSA,L]
+    </IfModule>
+
+Php is used to return specific HTTP headers such as:
+
+    header("HTTP/1.1 422 Unprocessable entity");
+
+All tests use relative paths, things should work by dropping the project anywhere into a virtual host directory. To run the tests, please point your browser to something like `http://localhost/dojo-data-model/tests/runTests.html`

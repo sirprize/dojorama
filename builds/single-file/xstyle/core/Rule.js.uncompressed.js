@@ -42,15 +42,11 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 			// Used to add a new rule
 			if(cssText &&
 				selector.charAt(0) != '@'){ // for now just ignore and don't add at-rules
-				try{
-					var styleSheet = this.styleSheet;
-					var cssRules = styleSheet.cssRules || styleSheet.rules;
-					var ruleNumber = this.ruleIndex > -1 ? this.ruleIndex : cssRules.length;
-					styleSheet.addRule(selector, cssText, ruleNumber);
-					return cssRules[ruleNumber];
-				}catch(e){
-					console.warn("Unable to add rule", e.message);
-				}
+				var styleSheet = this.styleSheet;
+				var cssRules = styleSheet.cssRules || styleSheet.rules;
+				var ruleNumber = this.ruleIndex > -1 ? this.ruleIndex : cssRules.length;
+				styleSheet.addRule(selector, cssText, ruleNumber);
+				return cssRules[ruleNumber];
 			}
 		},
 		onRule: function(){
@@ -83,6 +79,14 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 			// TODO: need to add inheritance? or can this be removed
 			return this.values[key];
 		},
+		elements: function(callback){
+			var rule = this;
+			require(["xstyle/core/elemental"], function(elemental){
+				elemental.addRenderer(rule, function(element){
+					callback(element);
+				});
+			});
+		},
 		declareProperty: function(name, value, conditional){
 			// called by the parser when a variable assignment is encountered
 			if(this.disabled){
@@ -114,6 +118,11 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 								definition[i] = evaluateExpression(this, name, parts[i]);
 							}
 						}
+						if(value[0] && value[0].operator == '{'){ // see if it is a rule
+							definition = value[0];
+						}else if(value[1] && value[1].operator == '{'){
+							definition = value[1];
+						}
 						definitions[name] = definition || evaluateExpression(this, name, value);
 						if(propertyExists){
 							console.warn('Overriding existing property "' + name + '"');
@@ -123,6 +132,12 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 			}else{
 				var definitions = (this.definitions || (this.definitions = {}));
 				definitions[name] = value;
+			}
+		},
+		onCall: function(call, name, value){
+			var handler = call.ref;
+			if(handler && typeof handler.call == 'function'){
+				return handler.call(call, this, name, value);
 			}
 		},
 		setValue: function(name, value, scopeRule){
@@ -138,10 +153,7 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 			if(calls){
 				for(var i = 0; i < calls.length; i++){
 					var call = calls[i];
-					var handler = call.ref;
-					if(handler && typeof handler.call == 'function'){
-						handler.call(call, this, name, value);
-					}
+					this.onCall(calls[i], name, value);
 				}
 			}
 			// called when each property is parsed, and this determines if there is a handler for it
@@ -154,24 +166,20 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 					var target = (scopeRule || this).getDefinition(name);
 					if(target){
 						var rule = this;
-						// call the handler to handle this rule
-						target = target.splice ? target : [target];
-						for(var i = 0; i < target.length; i++){
-							var segment = target[i];
-							var returned;
-							utils.when(segment, function(segment){
-								returned = segment.put && segment.put(value, rule, propertyName);
-							});
-							if(returned){
-								if(returned.then){
-									returned.then(function(){
-										// TODO: anything we want to do after loading?
-									});
+						return utils.when(target, function(target){
+							// call the handler to handle this rule
+							target = target.splice ? target : [target];
+							for(var i = 0; i < target.length; i++){
+								var segment = target[i];
+								var returned;
+								utils.when(segment, function(segment){
+									returned = segment.put && segment.put(value, rule, propertyName);
+								});
+								if(returned){
+									return returned;
 								}
-								break;
 							}
-						}
-						break;
+						});
 					}
 					// we progressively go through parent property names. For example if the 
 					// property name is foo-bar-baz, it first checks for foo-bar-baz, then 
@@ -200,7 +208,6 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 			}
 		},
 		extend: function(derivative, fullExtension){
-			console.log("extending ", derivative);
 			// we might consider removing this if it is only used from put
 			var base = this;
 			var newText = base.cssText;
@@ -266,7 +273,7 @@ define("xstyle/core/Rule", ["xstyle/core/expression", "put-selector/put", "xstyl
 			return target;
 		},
 		appendTo: function(target, beforeElement){
-			return put(beforeElement || target, (beforeElement ? '-' : '') + (this.tagName || 'span') + this.selector);
+			return put(beforeElement || target, (beforeElement ? '-' : '') + (this.tagName || 'span') + (this.selector || ''));
 		},
 		cssText: ""
 	};

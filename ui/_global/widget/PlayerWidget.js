@@ -42,14 +42,14 @@ define([
             this.inherited(arguments);
             
             var playlist = this.session.get('playlist'),
-                playIconNode = query('i', this.playNode)[0],
+                playIconNode = query('span', this.playNode)[0],
                 setPlayIcon = function () {
-                    domClass.remove(playIconNode, 'icon-pause');
-                    domClass.add(playIconNode, 'icon-play');
+                    domClass.remove(playIconNode, 'glyphicon-pause');
+                    domClass.add(playIconNode, 'glyphicon-play');
                 },
                 setPauseIcon = function () {
-                    domClass.remove(playIconNode, 'icon-play');
-                    domClass.add(playIconNode, 'icon-pause');
+                    domClass.remove(playIconNode, 'glyphicon-play');
+                    domClass.add(playIconNode, 'glyphicon-pause');
                 },
                 setTrackInfo = function () {
                     this.trackNrNode.innerHTML = playlist.getCurrentPosition();
@@ -78,13 +78,8 @@ define([
                     
                     if(seconds < 3600) { return m + ':' + ss; }
                     return h + ':' + mm + ':' + ss;
-                }
-            ;
-            
-            if (!playlist) {
-                playlist = new Playlist();
-                
-                playlist.onready(function () {
+                },
+                addTracksToPlaylist = function (playlist) {
                     playlist.addTrack({
                             title: 'Pachanga Voice',
                             artist: 'Pachanga Boys',
@@ -120,40 +115,20 @@ define([
                             id: 'fiestaForever',
                             url: 'http://media.kompakt.fm/dojorama/pachanga-boys-fiesta-forever.mp3'
                     });
-                    /*
-                    playlist.addTrack({
-                            title: 'The River',
-                            artist: 'Pachanga Boys',
-                            cover: ''
-                        }, {
-                            id: 'theRiver',
-                            url: 'http://sirprize.me/chrigu/dojorama/pachanga-boys-the-river.mp3'
-                    });
-                    
-                    playlist.addTrack({
-                            title: 'Is this power',
-                            artist: 'The Field',
-                            cover: ''
-                        }, {
-                            id: 'isThisPower',
-                            url: 'http://sirprize.me/chrigu/dojorama/the-field-is-this-power.mp3'
-                    });
-                    
-                    playlist.addTrack({
-                            title: 'Geffen (Philipp Gorbatchev Remix)',
-                            artist: 'Barnt',
-                            cover: ''
-                        }, {
-                            id: 'geffen',
-                            url: 'http://sirprize.me/chrigu/dojorama/barnt-geffen-philipp-gorbatchev-remix.mp3'
-                    });
-                    */
-                });
-                
-                this.session.set('playlist', playlist);
+                }
+            ;
+            
+            if (!playlist) {
+                playlist = new Playlist();
             }
+
+            this.session.set('playlist', playlist);
             
             playlist.onready(lang.hitch(this, function () {
+                if(!playlist.getTracks().length) {
+                    addTracksToPlaylist(playlist);
+                }
+
                 if (playlist.isPlaying()) {
                     lang.hitch(this, setPauseIcon)();
                     lang.hitch(this, showPlayInfo)();
@@ -162,23 +137,23 @@ define([
                 }
 
                 lang.hitch(this, setTrackInfo)();
-            }));
-            
-            array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
-                this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
-                    lang.hitch(this, showPlayInfo)();
-                    lang.hitch(this, resetPlayInfo)();
-                })));
-                
-                this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
-                    playlist.next();
-                    lang.hitch(this, setPauseIcon)();
-                    lang.hitch(this, setTrackInfo)();
-                })));
-                
-                this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
-                    lang.hitch(this, setPlayInfo)();
-                })));
+
+                array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
+                    this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
+                        lang.hitch(this, showPlayInfo)();
+                        lang.hitch(this, resetPlayInfo)();
+                    })));
+                    
+                    this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
+                        playlist.next();
+                        lang.hitch(this, setPauseIcon)();
+                        lang.hitch(this, setTrackInfo)();
+                    })));
+                    
+                    this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
+                        lang.hitch(this, setPlayInfo)();
+                    })));
+                }));
             }));
             
             this.own(on(this.playNode, 'click', lang.hitch(this, function (ev) {

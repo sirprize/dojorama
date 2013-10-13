@@ -340,12 +340,13 @@ define([
             */
             this.controlGroupWidgets.title = new ControlGroupWidget({
                 label: nls.fieldTitleLabel,
-                inputWidget: new Textbox({})
+                inputWidget: new Textbox({ 'class': 'form-control' })
             }, this.titleNode);
 
             this.controlGroupWidgets.format = new ControlGroupWidget({
                 label: nls.fieldFormatLabel,
                 inputWidget: new Select({
+                     'class': 'form-control',
                     options: [
                         { value: "", label: nls.fieldFormatOptionLabel },
                         { value: "cd", label: "Cd" },
@@ -357,12 +358,12 @@ define([
 
             this.controlGroupWidgets.releaseDate = new ControlGroupWidget({
                 label: nls.fieldReleaseDateLabel,
-                inputWidget: new DatepickerInput({})
+                inputWidget: new DatepickerInput({ 'class': 'form-control' })
             }, this.releaseDateNode);
             
             this.controlGroupWidgets.price = new ControlGroupWidget({
                 label: nls.fieldPriceLabel,
-                inputWidget: new Textbox({})
+                inputWidget: new Textbox({ 'class': 'form-control' })
             }, this.priceNode);
 
             this.controlGroupWidgets.publish = new ControlGroupWidget({
@@ -373,7 +374,7 @@ define([
 
             this.controlGroupWidgets.info = new ControlGroupWidget({
                 label: nls.fieldInfoLabel,
-                inputWidget: new Textarea({})
+                inputWidget: new Textarea({ 'class': 'form-control' })
             }, this.infoNode);
 
             this.submitButton = new Button({
@@ -545,7 +546,7 @@ define([
                         field: "releaseDate",
                         sortable: true,
                         autoSave: false,
-                        editorArgs: { required: true, 'class': 'span3', format: 'medium' }
+                        editorArgs: { required: true, 'class': 'form-control', format: 'medium' }
                     }, DatepickerInput),
 
                     publish: editor({
@@ -815,10 +816,10 @@ define([
     });
 });
 },
-'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>",
-'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>",
-'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-search pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"input-append\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"search-query\" />\n                <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n            </div>\n        </form>\n    </div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>",
-'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>",
+'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <div data-dojo-attach-point=\"titleNode\"></div>\n    <div data-dojo-attach-point=\"formatNode\"></div>\n    <div data-dojo-attach-point=\"releaseDateNode\"></div>\n    <div data-dojo-attach-point=\"priceNode\"></div>\n    <div data-dojo-attach-point=\"infoNode\"></div>\n    <div data-dojo-attach-point=\"publishNode\"></div>\n\n    <div class=\"form-group\">\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </div>\n</form>",
+'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr>\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>",
+'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-inline pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"form-group\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"form-control\">\n            </div>\n            <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n        </form>\n    </div>\n\n    <br>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>",
+'url:dojorama/ui/release/widget/template/ReleaseUpdateFormWidget.html':"<div>\n    <div data-dojo-attach-point=\"progressNode\"></div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <h2 data-dojo-attach-point=\"titleNode\"></h2><hr>\n        <div data-dojo-attach-point=\"formNode\"></div>\n    </div>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*dojorama/layers/nls/release-widgets*["ar","ca","cs","da","de","el","en-gb","en-us","es-es","fi-fi","fr-fr","he-il","hu","it-it","ja-jp","ko-kr","nl-nl","nb","pl","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh-tw","zh-cn","ROOT"]']);}
 }});
 define("dojorama/layers/release-widgets", [], 1);

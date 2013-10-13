@@ -107,12 +107,13 @@ define([
             */
             this.controlGroupWidgets.title = new ControlGroupWidget({
                 label: nls.fieldTitleLabel,
-                inputWidget: new Textbox({})
+                inputWidget: new Textbox({ 'class': 'form-control' })
             }, this.titleNode);
 
             this.controlGroupWidgets.format = new ControlGroupWidget({
                 label: nls.fieldFormatLabel,
                 inputWidget: new Select({
+                     'class': 'form-control',
                     options: [
                         { value: "", label: nls.fieldFormatOptionLabel },
                         { value: "cd", label: "Cd" },
@@ -124,12 +125,12 @@ define([
 
             this.controlGroupWidgets.releaseDate = new ControlGroupWidget({
                 label: nls.fieldReleaseDateLabel,
-                inputWidget: new DatepickerInput({})
+                inputWidget: new DatepickerInput({ 'class': 'form-control' })
             }, this.releaseDateNode);
             
             this.controlGroupWidgets.price = new ControlGroupWidget({
                 label: nls.fieldPriceLabel,
-                inputWidget: new Textbox({})
+                inputWidget: new Textbox({ 'class': 'form-control' })
             }, this.priceNode);
 
             this.controlGroupWidgets.publish = new ControlGroupWidget({
@@ -140,7 +141,7 @@ define([
 
             this.controlGroupWidgets.info = new ControlGroupWidget({
                 label: nls.fieldInfoLabel,
-                inputWidget: new Textarea({})
+                inputWidget: new Textarea({ 'class': 'form-control' })
             }, this.infoNode);
 
             this.submitButton = new Button({

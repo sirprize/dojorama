@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-lg player\">\n    <p>Play &amp; Browse</p>\n    \n    <div class=\"btn-group\">\n        <button class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><span class=\"glyphicon glyphicon-backward\"></span></button>\n        <button class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><span class=\"glyphicon glyphicon-play\"></span></button>\n        <button class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><span class=\"glyphicon glyphicon-forward\"></span></button>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\" class=\"info\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <!--<p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>-->\n    </div>\n    \n    <p><a href=\"http://www.kompakt.fm/releases/we_are_really_sorry_880319606335\">We are really sorry</a>! That's right, thanks <a href=\"http://www.facebook.com/pages/Pachanga-Boys-Hippie-Dance/315216318504660\">Pachanga Boys</a></p>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/PlayerWidget", [
@@ -42,14 +44,14 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
             this.inherited(arguments);
             
             var playlist = this.session.get('playlist'),
-                playIconNode = query('i', this.playNode)[0],
+                playIconNode = query('span', this.playNode)[0],
                 setPlayIcon = function () {
-                    domClass.remove(playIconNode, 'icon-pause');
-                    domClass.add(playIconNode, 'icon-play');
+                    domClass.remove(playIconNode, 'glyphicon-pause');
+                    domClass.add(playIconNode, 'glyphicon-play');
                 },
                 setPauseIcon = function () {
-                    domClass.remove(playIconNode, 'icon-play');
-                    domClass.add(playIconNode, 'icon-pause');
+                    domClass.remove(playIconNode, 'glyphicon-play');
+                    domClass.add(playIconNode, 'glyphicon-pause');
                 },
                 setTrackInfo = function () {
                     this.trackNrNode.innerHTML = playlist.getCurrentPosition();
@@ -78,13 +80,8 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                     
                     if(seconds < 3600) { return m + ':' + ss; }
                     return h + ':' + mm + ':' + ss;
-                }
-            ;
-            
-            if (!playlist) {
-                playlist = new Playlist();
-                
-                playlist.onready(function () {
+                },
+                addTracksToPlaylist = function (playlist) {
                     playlist.addTrack({
                             title: 'Pachanga Voice',
                             artist: 'Pachanga Boys',
@@ -120,40 +117,20 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                             id: 'fiestaForever',
                             url: 'http://media.kompakt.fm/dojorama/pachanga-boys-fiesta-forever.mp3'
                     });
-                    /*
-                    playlist.addTrack({
-                            title: 'The River',
-                            artist: 'Pachanga Boys',
-                            cover: ''
-                        }, {
-                            id: 'theRiver',
-                            url: 'http://sirprize.me/chrigu/dojorama/pachanga-boys-the-river.mp3'
-                    });
-                    
-                    playlist.addTrack({
-                            title: 'Is this power',
-                            artist: 'The Field',
-                            cover: ''
-                        }, {
-                            id: 'isThisPower',
-                            url: 'http://sirprize.me/chrigu/dojorama/the-field-is-this-power.mp3'
-                    });
-                    
-                    playlist.addTrack({
-                            title: 'Geffen (Philipp Gorbatchev Remix)',
-                            artist: 'Barnt',
-                            cover: ''
-                        }, {
-                            id: 'geffen',
-                            url: 'http://sirprize.me/chrigu/dojorama/barnt-geffen-philipp-gorbatchev-remix.mp3'
-                    });
-                    */
-                });
-                
-                this.session.set('playlist', playlist);
+                }
+            ;
+            
+            if (!playlist) {
+                playlist = new Playlist();
             }
+
+            this.session.set('playlist', playlist);
             
             playlist.onready(lang.hitch(this, function () {
+                if(!playlist.getTracks().length) {
+                    addTracksToPlaylist(playlist);
+                }
+
                 if (playlist.isPlaying()) {
                     lang.hitch(this, setPauseIcon)();
                     lang.hitch(this, showPlayInfo)();
@@ -162,23 +139,23 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
                 }
 
                 lang.hitch(this, setTrackInfo)();
-            }));
-            
-            array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
-                this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
-                    lang.hitch(this, showPlayInfo)();
-                    lang.hitch(this, resetPlayInfo)();
-                })));
-                
-                this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
-                    playlist.next();
-                    lang.hitch(this, setPauseIcon)();
-                    lang.hitch(this, setTrackInfo)();
-                })));
-                
-                this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
-                    lang.hitch(this, setPlayInfo)();
-                })));
+
+                array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
+                    this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
+                        lang.hitch(this, showPlayInfo)();
+                        lang.hitch(this, resetPlayInfo)();
+                    })));
+                    
+                    this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
+                        playlist.next();
+                        lang.hitch(this, setPauseIcon)();
+                        lang.hitch(this, setTrackInfo)();
+                    })));
+                    
+                    this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
+                        lang.hitch(this, setPlayInfo)();
+                    })));
+                }));
             }));
             
             this.own(on(this.playNode, 'click', lang.hitch(this, function (ev) {
@@ -211,5 +188,4 @@ define("dojorama/ui/_global/widget/PlayerWidget", [
             })));
         }
     });
-});require({cache:{
-'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large player\">\n    <h2>Play &amp; Browse</h2>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\" class=\"info\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <!--<p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>-->\n    </div>\n    \n    <p><a href=\"http://www.kompakt.fm/releases/we_are_really_sorry_880319606335\">We are really sorry</a>! That's right, thanks <a href=\"http://www.facebook.com/pages/Pachanga-Boys-Hippie-Dance/315216318504660\">Pachanga Boys</a></p>\n</div>"}});
+});

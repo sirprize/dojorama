@@ -9,10 +9,15 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file/dojorama/styles/global.css">
-        <title>Browse Build</title>
+        <title>Dojorama - Single page demo application based on Dojo 1.9, Twitter Bootstrap 3 and history API</title>
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
         </script>
+
+        <!--[if lt IE 9]>
+            <script src="<?php echo $base; ?>/vendor/aFarkas/html5shiv/dist/html5shiv.js"></script>
+            <script src="<?php echo $base; ?>/vendor/scottjehl/Respond/respond.min.js"></script>
+        <![endif]-->
     </head>
 
     <body>

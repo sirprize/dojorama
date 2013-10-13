@@ -562,9 +562,13 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 			var matchesTarget = typeof selector == "function" ? {matches: selector} : this,
 				bubble = eventType.bubble;
 			function select(eventTarget){
-				// see if we have a valid matchesTarget or default to dojo.query
+				// see if we have a valid matchesTarget or default to dojo/query
 				matchesTarget = matchesTarget && matchesTarget.matches ? matchesTarget : dojo.query;
 				// there is a selector, so make sure it matches
+				if(eventTarget.nodeType != 1){
+					// text node will fail in native match selector
+					eventTarget = eventTarget.parentNode;
+				}
 				while(!matchesTarget.matches(eventTarget, selector, target)){
 					if(eventTarget == target || children === false || !(eventTarget = eventTarget.parentNode) || eventTarget.nodeType != 1){ // intentional assignment
 						return;
@@ -630,17 +634,20 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 		//		to appear in a textbox.
 		// example:
 		//		To fire our own click event
-		//	|	on.emit(dojo.byId("button"), "click", {
-		//	|		cancelable: true,
-		//	|		bubbles: true,
-		//	|		screenX: 33,
-		//	|		screenY: 44
-		//	|	});
+		//	|	require(["dojo/on", "dojo/dom"
+		//	|	], function(on, dom){
+		//	|		on.emit(dom.byId("button"), "click", {
+		//	|			cancelable: true,
+		//	|			bubbles: true,
+		//	|			screenX: 33,
+		//	|			screenY: 44
+		//	|		});
 		//		We can also fire our own custom events:
-		//	|	on.emit(dojo.byId("slider"), "slide", {
-		//	|		cancelable: true,
-		//	|		bubbles: true,
-		//	|		direction: "left-to-right"
+		//	|		on.emit(dom.byId("slider"), "slide", {
+		//	|			cancelable: true,
+		//	|			bubbles: true,
+		//	|			direction: "left-to-right"
+		//	|		});
 		//	|	});
 		var args = slice.call(arguments, 2);
 		var method = "on" + type;
@@ -812,7 +819,7 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 
 		var _setKeyChar = function(evt){
 			evt.keyChar = evt.charCode ? String.fromCharCode(evt.charCode) : '';
-			evt.charOrCode = evt.keyChar || evt.keyCode;
+			evt.charOrCode = evt.keyChar || evt.keyCode;	// TODO: remove for 2.0
 		};
 		// Called in Event scope
 		var stopPropagation = function(){
@@ -963,15 +970,16 @@ define(["./aspect", "./on"], function(aspect, on){
 		//		A class that can be used as a mixin or base class,
 		//		to add on() and emit() methods to a class
 		//		for listening for events and emitting events:
-		//
-		//		|	define(["dojo/Evented"], function(Evented){
-		//		|		var EventedWidget = dojo.declare([Evented, dijit._Widget], {...});
-		//		|		widget = new EventedWidget();
-		//		|		widget.on("open", function(event){
+		// example:
+		//		|	define(["dojo/Evented", "dojo/_base/declare", "dojo/Stateful"
+		//		|	], function(Evented, declare, Stateful){
+		//		|		var EventedStateful = declare([Evented, Stateful], {...});
+		//		|		var instance = new EventedStateful();
+		//		|		instance.on("open", function(event){
 		//		|		... do something with event
 		//		|	 });
 		//		|
-		//		|	widget.emit("open", {name:"some event", ...});
+		//		|	instance.emit("open", {name:"some event", ...});
 	}
 	Evented.prototype = {
 		on: function(type, listener){
@@ -1329,8 +1337,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1358,8 +1366,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1388,8 +1396,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1423,8 +1431,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1457,8 +1465,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1506,8 +1514,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1613,8 +1621,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1647,8 +1655,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1840,8 +1848,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -1865,12 +1873,12 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		}
 		if(!has("dom-addeventlistener")){
 			// old IE version
-			// FIXME: scroll position query is duped from dojo.html to
+			// FIXME: scroll position query is duped from dojo/_base/html to
 			// avoid dependency on that entire module. Now that HTML is in
 			// Base, we should convert back to something similar there.
 			var se = event.target;
 			var doc = (se && se.ownerDocument) || document;
-			// DO NOT replace the following to use dojo.body(), in IE, document.documentElement should be used
+			// DO NOT replace the following to use dojo/_base/window.body(), in IE, document.documentElement should be used
 			// here rather than document.body
 			var docBody = has("quirks") ? doc.body : doc.documentElement;
 			var offset = geom.getIeDocumentElementOffset(doc);
@@ -2081,33 +2089,39 @@ define(["./sniff", "./_base/window"],
 	}
 	/*=====
 	 dom.byId = function(id, doc){
-		 // summary:
-		 //		Returns DOM node with matching `id` attribute or falsy value (ex: null or undefined)
-		 //		if not found.  If `id` is a DomNode, this function is a no-op.
-		 //
-		 // id: String|DOMNode
-		 //		A string to match an HTML id attribute or a reference to a DOM Node
-		 //
-		 // doc: Document?
-		 //		Document to work in. Defaults to the current value of
-		 //		dojo.doc.  Can be used to retrieve
-		 //		node references from other documents.
-		 //
-		 // example:
-		 //		Look up a node by ID:
-		 //	|	var n = dojo.byId("foo");
-		 //
-		 // example:
-		 //		Check if a node exists, and use it.
-		 //	|	var n = dojo.byId("bar");
-		 //	|	if(n){ doStuff() ... }
-		 //
-		 // example:
-		 //		Allow string or DomNode references to be passed to a custom function:
-		 //	|	var foo = function(nodeOrId){
-		 //	|		nodeOrId = dojo.byId(nodeOrId);
-		 //	|		// ... more stuff
-		 //	|	}
+		// summary:
+		//		Returns DOM node with matching `id` attribute or falsy value (ex: null or undefined)
+		//		if not found.  If `id` is a DomNode, this function is a no-op.
+		//
+		// id: String|DOMNode
+		//		A string to match an HTML id attribute or a reference to a DOM Node
+		//
+		// doc: Document?
+		//		Document to work in. Defaults to the current value of
+		//		dojo/_base/window.doc.  Can be used to retrieve
+		//		node references from other documents.
+		//
+		// example:
+		//		Look up a node by ID:
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		var n = dom.byId("foo");
+		//	|	});
+		//
+		// example:
+		//		Check if a node exists, and use it.
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		var n = dom.byId("bar");
+		//	|		if(n){ doStuff() ... }
+		//	|	});
+		//
+		// example:
+		//		Allow string or DomNode references to be passed to a custom function:
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		var foo = function(nodeOrId){
+		//	|			nodeOrId = dom.byId(nodeOrId);
+		//	|			// ... more stuff
+		//	|		}
+		//	|	});
 	 };
 	 =====*/
 
@@ -2121,7 +2135,9 @@ define(["./sniff", "./_base/window"],
 		//
 		// example:
 		//		Test is node id="bar" is a descendant of node id="foo"
-		//	|	if(dojo.isDescendant("bar", "foo")){ ... }
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		if(dom.isDescendant("bar", "foo")){ ... }
+		//	|	});
 
 		try{
 			node = dom.byId(node);
@@ -2174,10 +2190,14 @@ define(["./sniff", "./_base/window"],
 		//		allows selection.
 		// example:
 		//		Make the node id="bar" unselectable
-		//	|	dojo.setSelectable("bar");
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		dom.setSelectable("bar");
+		//	|	});
 		// example:
 		//		Make the node id="bar" selectable
-		//	|	dojo.setSelectable("bar", true);
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		dom.setSelectable("bar", true);
+		//	|	});
 	};
 	=====*/
 
@@ -2279,19 +2299,23 @@ define(["./sniff", "./dom"], function(has, dom){
 		//		Note also that this method is expensive.  Wherever possible,
 		//		reuse the returned object.
 		//
-		//		Use the dojo.style() method for more consistent (pixelized)
+		//		Use the dojo/dom-style.get() method for more consistent (pixelized)
 		//		return values.
 		//
 		// node: DOMNode
 		//		A reference to a DOM node. Does NOT support taking an
 		//		ID string for speed reasons.
 		// example:
-		//	|	dojo.getComputedStyle(dojo.byId('foo')).borderWidth;
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.getComputedStyle(dom.byId('foo')).borderWidth;
+		//	|	});
 		//
 		// example:
 		//		Reusing the returned object, avoiding multiple lookups:
-		//	|	var cs = dojo.getComputedStyle(dojo.byId("someNode"));
-		//	|	var w = cs.width, h = cs.height;
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		var cs = domStyle.getComputedStyle(dom.byId("someNode"));
+		//	|		var w = cs.width, h = cs.height;
+		//	|	});
 		return; // CSS2Properties
 	};
 	=====*/
@@ -2440,8 +2464,8 @@ define(["./sniff", "./dom"], function(has, dom){
 		//		Also when getting values, use specific style names,
 		//		like "borderBottomWidth" instead of "border" since compound values like
 		//		"border" are not necessarily reflected as expected.
-		//		If you want to get node dimensions, use `dojo.marginBox()`,
-		//		`dojo.contentBox()` or `dojo.position()`.
+		//		If you want to get node dimensions, use `dojo/dom-geometry.getMarginBox()`,
+		//		`dojo/dom-geometry.getContentBox()` or `dojo/dom-geometry.getPosition()`.
 		// node: DOMNode|String
 		//		id or reference to node to get style for
 		// name: String?
@@ -2449,11 +2473,15 @@ define(["./sniff", "./dom"], function(has, dom){
 		// example:
 		//		Passing only an ID or node returns the computed style object of
 		//		the node:
-		//	|	dojo.getStyle("thinger");
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.get("thinger");
+		//	|	});
 		// example:
 		//		Passing a node and a style property returns the current
 		//		normalized, computed value for that property:
-		//	|	dojo.getStyle("thinger", "opacity"); // 1 by default
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.get("thinger", "opacity"); // 1 by default
+		//	|	});
 
 		var n = dom.byId(node), l = arguments.length, op = (name == "opacity");
 		if(l == 2 && op){
@@ -2482,32 +2510,41 @@ define(["./sniff", "./dom"], function(has, dom){
 		// example:
 		//		Passing a node, a style property, and a value changes the
 		//		current display of the node and returns the new computed value
-		//	|	dojo.setStyle("thinger", "opacity", 0.5); // == 0.5
+		//	|	require(["dojo/dom-style"], function(domStyle){
+		//	|		domStyle.set("thinger", "opacity", 0.5); // == 0.5
+		//	|	});
 		//
 		// example:
 		//		Passing a node, an object-style style property sets each of the values in turn and returns the computed style object of the node:
-		//	|	dojo.setStyle("thinger", {
-		//	|		"opacity": 0.5,
-		//	|		"border": "3px solid black",
-		//	|		"height": "300px"
+		//	|	require(["dojo/dom-style"], function(domStyle){
+		//	|		domStyle.set("thinger", {
+		//	|			"opacity": 0.5,
+		//	|			"border": "3px solid black",
+		//	|			"height": "300px"
+		//	|		});
 		//	|	});
 		//
 		// example:
 		//		When the CSS style property is hyphenated, the JavaScript property is camelCased.
 		//		font-size becomes fontSize, and so on.
-		//	|	dojo.setStyle("thinger",{
-		//	|		fontSize:"14pt",
-		//	|		letterSpacing:"1.2em"
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.set("thinger",{
+		//	|			fontSize:"14pt",
+		//	|			letterSpacing:"1.2em"
+		//	|		});
 		//	|	});
 		//
 		// example:
 		//		dojo/NodeList implements .style() using the same syntax, omitting the "node" parameter, calling
-		//		dojo.style() on every element of the list. See: `dojo.query()` and `dojo/NodeList`
-		//	|	dojo.query(".someClassName").style("visibility","hidden");
-		//	|	// or
-		//	|	dojo.query("#baz > div").style({
-		//	|		opacity:0.75,
-		//	|		fontSize:"13pt"
+		//		dojo/dom-style.get() on every element of the list. See: `dojo/query` and `dojo/NodeList`
+		//	|	require(["dojo/dom-style", "dojo/query", "dojo/NodeList-dom"],
+		//	|	function(domStyle, query){
+		//	|		query(".someClassName").style("visibility","hidden");
+		//	|		// or
+		//	|		query("#baz > div").style({
+		//	|			opacity:0.75,
+		//	|			fontSize:"13pt"
+		//	|		});
 		//	|	});
 
 		var n = dom.byId(node), l = arguments.length, op = (name == "opacity");

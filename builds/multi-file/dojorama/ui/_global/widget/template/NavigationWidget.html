@@ -1,23 +1,19 @@
-<div class="navbar navbar-inverse navbar-fixed-top">
-    <div class="navbar-inner">
-        <div class="container">
-            <!-- Be sure to leave the brand out there if you want it shown -->
-            <a class="brand" href="#" data-dojo-attach-point="homeNode"></a>
-            
-            <ul class="nav">
+<header class="navbar navbar-inverse navbar-fixed-top" role="banner">
+    <div class="container">
+        <div class="navbar-header">
+            <button class="navbar-toggle" type="button">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#" data-dojo-attach-point="homeNode"></a>
+        </div>
+        <nav class="collapse navbar-collapse" role="navigation">
+            <ul class="nav navbar-nav">
                 <li><a href="#" data-dojo-attach-point="releaseIndexNode"></a></li>
                 <li><a href="#" data-dojo-attach-point="storageNode"></a></li>
             </ul>
-
-            <!-- Everything you want hidden at 940px or less, place within here -->
-            <div class="nav-collapse">
-            <!-- .nav, .navbar-search, .navbar-form, etc -->
-            </div>
-            <!--
-            <ul class="nav pull-right">
-                <li>asdf</li>
-            </ul>
-            -->
-        </div>
+        </nav>
     </div>
-</div>
+</header>

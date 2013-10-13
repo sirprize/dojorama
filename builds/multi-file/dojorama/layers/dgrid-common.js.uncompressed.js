@@ -39,7 +39,7 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 						// fragment doesn't exist yet, check to see if we really want to create it 
 						(fragment = fragmentFasterHeuristic.test(argument) && doc.createDocumentFragment()))
 							// any of the above fails just use the referenceElement  
-							|| referenceElement).
+							 ? fragment : referenceElement).
 								insertBefore(current, nextSibling || null); // do the actual insertion
 			}
 		}
@@ -397,15 +397,36 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 		if(this._started){ this.resize(); }
 	};
 	
-	return declare(TouchScroll ? TouchScroll : null, {
+	// Desktop versions of functions, deferred to when there is no touch support,
+	// or when the useTouchScroll instance property is set to false
+	
+	function desktopGetScrollPosition(){
+		return {
+			x: this.bodyNode.scrollLeft,
+			y: this.bodyNode.scrollTop
+		};
+	}
+	
+	function desktopScrollTo(options){
+		if(typeof options.x !== "undefined"){
+			this.bodyNode.scrollLeft = options.x;
+		}
+		if(typeof options.y !== "undefined"){
+			this.bodyNode.scrollTop = options.y;
+		}
+	}
+	
+	return declare(has("touch") ? TouchScroll : null, {
 		tabableHeader: false,
 		// showHeader: Boolean
 		//		Whether to render header (sub)rows.
 		showHeader: false,
+		
 		// showFooter: Boolean
 		//		Whether to render footer area.  Extensions which display content
 		//		in the footer area should set this to true.
 		showFooter: false,
+		
 		// maintainOddEven: Boolean
 		//		Whether to maintain the odd/even classes when new rows are inserted.
 		//		This can be disabled to improve insertion performance if odd/even styling is not employed.
@@ -416,6 +437,21 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 		//		when the list is destroyed.  Note this is effective at the time of
 		//		the call to addCssRule, not at the time of destruction.
 		cleanAddedRules: true,
+		
+		// useTouchScroll: Boolean
+		//		If touch support is available, this determines whether to
+		//		incorporate logic from the TouchScroll module (at the expense of
+		//		normal desktop/mouse or native mobile scrolling functionality).
+		useTouchScroll: true,
+
+		// cleanEmptyObservers: Boolean
+		//		Whether to clean up observers for empty result sets.
+		cleanEmptyObservers: true,
+
+		// highlightDuration: Integer
+		//		The amount of time (in milliseconds) that a row should remain
+		//		highlighted after it has been updated.
+		highlightDuration: 250,
 		
 		postscript: function(params, srcNodeRef){
 			// perform setup and invoke create in postScript to allow descendants to
@@ -452,7 +488,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				// Check for initial class or className in params or on domNode
 				cls = params["class"] || params.className || domNode.className;
 				
-				// handle sort param - TODO: revise @ 1.0 when _sort -> sort
+				// handle sort param - TODO: revise @ 0.4 when _sort -> sort
 				this._sort = params.sort || [];
 				delete this.sort; // ensure back-compat method isn't shadowed
 			}else{
@@ -461,6 +497,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			
 			// ensure arrays and hashes are initialized
 			this.observers = [];
+			this._numObservers = 0;
 			this._listeners = [];
 			this._rowIdToObject = {};
 			
@@ -474,7 +511,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			this.buildRendering();
 			if(cls){ setClass.call(this, cls); }
 			
-			this.postCreate && this.postCreate();
+			this.postCreate();
 			
 			// remove srcNodeRef instance property post-create
 			delete this.srcNodeRef;
@@ -539,6 +576,13 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			this._listeners.push(this._resizeHandle = listen(window, "resize",
 				miscUtil.throttleDelayed(winResizeHandler, this)));
 		},
+		
+		postCreate: has("touch") ? function(){
+			if(this.useTouchScroll){
+				this.inherited(arguments);
+			}
+		} : function(){},
+		
 		startup: function(){
 			// summary:
 			//		Called automatically after postCreate if the component is already
@@ -658,6 +702,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				observer && observer.cancel();
 			}
 			this.observers = [];
+			this._numObservers = 0;
 			this.preload = null;
 		},
 		destroy: function(){
@@ -675,6 +720,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			this.cleanup();
 			// destroy DOM
 			put(this.domNode, "!");
+			this.inherited(arguments);
 		},
 		refresh: function(){
 			// summary:
@@ -695,26 +741,26 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				put(row, ".ui-state-highlight");
 				setTimeout(function(){
 					put(row, "!ui-state-highlight");
-				}, 250);
+				}, this.highlightDuration);
 				return row;
 			}
 		},
 		adjustRowIndices: function(firstRow){
-			if(this.maintainOddEven){
-				// this traverses through rows to maintain odd/even classes on the rows when indexes shift;
-				var next = firstRow;
-				var rowIndex = next.rowIndex;
-				if(rowIndex > -1){ // make sure we have a real number in case this is called on a non-row
-					do{
-						if(next.rowIndex > -1){
-							// skip non-numeric, non-rows
+			// this traverses through rows to maintain odd/even classes on the rows when indexes shift;
+			var next = firstRow;
+			var rowIndex = next.rowIndex;
+			if(rowIndex > -1){ // make sure we have a real number in case this is called on a non-row
+				do{
+					// Skip non-numeric, non-rows
+					if(next.rowIndex > -1){
+						if(this.maintainOddEven){
 							if((next.className + ' ').indexOf("dgrid-row ") > -1){
 								put(next, '.' + (rowIndex % 2 == 1 ? oddClass : evenClass) + '!' + (rowIndex % 2 == 0 ? oddClass : evenClass));
 							}
-							next.rowIndex = rowIndex++;
 						}
-					}while((next = next.nextSibling) && next.rowIndex != rowIndex && !next.blockRowIndex);
-				}
+						next.rowIndex = rowIndex++;
+					}
+				}while((next = next.nextSibling) && next.rowIndex != rowIndex);
 			}
 		},
 		renderArray: function(results, beforeNode, options){
@@ -725,15 +771,22 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			options = options || {};
 			var self = this,
 				start = options.start || 0,
-				row, rows, container;
+				observers = this.observers,
+				rows, container, observerIndex;
 			
 			if(!beforeNode){
 				this._lastCollection = results;
 			}
 			if(results.observe){
 				// observe the results for changes
-				var observerIndex = this.observers.push(results.observe(function(object, from, to){
-					var firstRow, nextNode, parentNode;
+				self._numObservers++;
+				observerIndex = observers.push(results.observe(function(object, from, to){
+					var row, firstRow, nextNode, parentNode;
+					
+					function advanceNext() {
+						nextNode = (nextNode.connected || nextNode).nextSibling;
+					}
+					
 					// a change in the data took place
 					if(from > -1 && rows[from]){
 						// remove from old slot
@@ -756,14 +809,29 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 					if(to > -1){
 						// Add to new slot (either before an existing row, or at the end)
 						// First determine the DOM node that this should be placed before.
-						nextNode = rows[to];
-						if(!nextNode){
-							nextNode = rows[to - 1];
-							if(nextNode){
-								// Make sure to skip connected nodes, so we don't accidentally
-								// insert a row in between a parent and its children.
-								nextNode = (nextNode.connected || nextNode).nextSibling;
+						if(rows.length){
+							nextNode = rows[to];
+							if(!nextNode){
+								nextNode = rows[to - 1];
+								if(nextNode){
+									// Make sure to skip connected nodes, so we don't accidentally
+									// insert a row in between a parent and its children.
+									advanceNext();
+								}
 							}
+						}else{
+							// There are no rows.  Allow for subclasses to insert new rows somewhere other than
+							// at the end of the parent node.
+							nextNode = self._getFirstRowSibling && self._getFirstRowSibling(container);
+						}
+						// Make sure we don't trip over a stale reference to a
+						// node that was removed, or try to place a node before
+						// itself (due to overlapped queries)
+						if(row && nextNode && row.id === nextNode.id){
+							advanceNext();
+						}
+						if(nextNode && !nextNode.parentNode){
+							nextNode = byId(nextNode.id);
 						}
 						parentNode = (beforeNode && beforeNode.parentNode) ||
 							(nextNode && nextNode.parentNode) || self.contentNode;
@@ -786,12 +854,44 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 					self._onNotification(rows, object, from, to);
 				}, true)) - 1;
 			}
-			var rowsFragment = document.createDocumentFragment();
+			var rowsFragment = document.createDocumentFragment(),
+				lastRow;
+			
+			function mapEach(object){
+				lastRow = self.insertRow(object, rowsFragment, null, start++, options);
+				lastRow.observerIndex = observerIndex;
+				return lastRow;
+			}
+			function whenError(error){
+				if(typeof observerIndex !== "undefined"){
+					observers[observerIndex].cancel();
+					observers[observerIndex] = 0;
+					self._numObservers--;
+				}
+				if(error){
+					throw error;
+				}
+			}
+			function whenDone(resolvedRows){
+				container = beforeNode ? beforeNode.parentNode : self.contentNode;
+				if(container && container.parentNode &&
+						(container !== self.contentNode || resolvedRows.length)){
+					container.insertBefore(rowsFragment, beforeNode || null);
+					lastRow = resolvedRows[resolvedRows.length - 1];
+					lastRow && self.adjustRowIndices(lastRow);
+				}else if(observers[observerIndex] && self.cleanEmptyObservers){
+					// Remove the observer and don't bother inserting;
+					// rows are already out of view or there were none to track
+					whenError();
+				}
+				return (rows = resolvedRows);
+			}
+			
 			// now render the results
 			if(results.map){
 				rows = results.map(mapEach, console.error);
 				if(rows.then){
-					return rows.then(whenDone);
+					return rows.then(whenDone, whenError);
 				}
 			}else{
 				rows = [];
@@ -799,21 +899,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 					rows[i] = mapEach(results[i]);
 				}
 			}
-			var lastRow;
-			function mapEach(object){
-				lastRow = self.insertRow(object, rowsFragment, null, start++, options);
-				lastRow.observerIndex = observerIndex;
-				return lastRow;
-			}
-			function whenDone(resolvedRows){
-				container = beforeNode ? beforeNode.parentNode : self.contentNode;
-				if(container){
-					container.insertBefore(rowsFragment, beforeNode || null);
-					lastRow = resolvedRows[resolvedRows.length - 1];
-					lastRow && self.adjustRowIndices(lastRow);
-				}
-				return (rows = resolvedRows);
-			}
+			
 			return whenDone(rows);
 		},
 
@@ -841,7 +927,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 						this.store.getIdentity(object) : this._autoId++),
 				row = byId(id),
 				previousRow = row && row.previousSibling;
-		
+			
 			if(row){// if it existed elsewhere in the DOM, we will remove it, so we can recreate it
 				this.removeRow(row);
 			}
@@ -991,29 +1077,17 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			return this.row(this._move(row, steps || 1, "dgrid-row", visible));
 		},
 		
-		scrollTo: has("touch") ? function(){
+		scrollTo: has("touch") ? function(options){
 			// If TouchScroll is the superclass, defer to its implementation.
-			return this.inherited(arguments);
-		} : function(options){
-			// No TouchScroll; simple implementation which sets scrollLeft/Top.
-			if(typeof options.x !== "undefined"){
-				this.bodyNode.scrollLeft = options.x;
-			}
-			if(typeof options.y !== "undefined"){
-				this.bodyNode.scrollTop = options.y;
-			}
-		},
+			return this.useTouchScroll ? this.inherited(arguments) :
+				desktopScrollTo.call(this, options);
+		} : desktopScrollTo,
 		
 		getScrollPosition: has("touch") ? function(){
 			// If TouchScroll is the superclass, defer to its implementation.
-			return this.inherited(arguments);
-		} : function(){
-			// No TouchScroll; return based on scrollLeft/Top.
-			return {
-				x: this.bodyNode.scrollLeft,
-				y: this.bodyNode.scrollTop
-			};
-		},
+			return this.useTouchScroll ? this.inherited(arguments) :
+				desktopGetScrollPosition.call(this);
+		} : desktopGetScrollPosition,
 		
 		get: function(/*String*/ name /*, ... */){
 			// summary:
@@ -1126,9 +1200,9 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				this.renderArray(this._lastCollection);
 			}
 		},
-		// TODO: remove the following two (and rename _sort to sort) in 1.0
+		// TODO: remove the following two (and rename _sort to sort) in 0.4
 		sort: function(property, descending){
-			kernel.deprecated("sort(...)", 'use set("sort", ...) instead', "dgrid 1.0");
+			kernel.deprecated("sort(...)", 'use set("sort", ...) instead', "dgrid 0.4");
 			this.set("sort", property, descending);
 		},
 		_getSort: function(){
@@ -1156,7 +1230,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			}
 		},
 		setShowHeader: function(show){
-			kernel.deprecated("setShowHeader(...)", 'use set("showHeader", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setShowHeader(...)", 'use set("showHeader", ...) instead', "dgrid 0.4");
 			this.set("showHeader", show);
 		},
 		
@@ -1208,6 +1282,8 @@ define(["put-selector/put"], function(put){
 	}
 	
 	var util = {
+		// Throttle/debounce functions
+		
 		defaultDelay: 15,
 		throttle: function(cb, context, delay){
 			// summary:
@@ -1255,6 +1331,34 @@ define(["put-selector/put"], function(put){
 				}, delay);
 			};
 		},
+		
+		// Iterative functions
+		
+		each: function(arrayOrObject, callback, context){
+			// summary:
+			//		Given an array or object, iterates through its keys.
+			//		Does not use hasOwnProperty (since even Dojo does not
+			//		consistently use it), but will iterate using a for or for-in
+			//		loop as appropriate.
+			
+			var i, len;
+			
+			if(!arrayOrObject){
+				return;
+			}
+			
+			if(typeof arrayOrObject.length === "number"){
+				for(i = 0, len = arrayOrObject.length; i < len; i++){
+					callback.call(context, arrayOrObject[i], i, arrayOrObject);
+				}
+			}else{
+				for(i in arrayOrObject){
+					callback.call(context, arrayOrObject[i], i, arrayOrObject);
+				}
+			}
+		},
+		
+		// CSS-related functions
 		
 		addCssRule: function(selector, css){
 			// summary:
@@ -1454,7 +1558,8 @@ return declare([List, _StoreMixin], {
 		// Establish query options, mixing in our own.
 		// (The getter returns a delegated object, so simply using mixin is safe.)
 		options = lang.mixin(this.get("queryOptions"), options, 
-			{start: 0, count: this.minRowsPerPage, query: query});
+			{ start: 0, count: this.minRowsPerPage },
+			"level" in query ? { queryLevel: query.level } : null);
 		
 		// Protect the query within a _trackError call, but return the QueryResults
 		this._trackError(function(){ return results = query(options); });
@@ -1470,13 +1575,23 @@ return declare([List, _StoreMixin], {
 			var total = typeof results.total === "undefined" ?
 				results.length : results.total;
 			return Deferred.when(total, function(total){
-				// remove loading node
+				var trCount = trs.length,
+					parentNode = preloadNode.parentNode,
+					noDataNode = self.noDataNode;
+				
 				put(loadingNode, "!");
+				if(!("queryLevel" in options)){
+					self._total = total;
+				}
 				// now we need to adjust the height and total count based on the first result set
-				var trCount = trs.length;
 				if(total === 0){
-					self.noDataNode = put(self.contentNode, "div.dgrid-no-data");
-					self.noDataNode.innerHTML = self.noDataMessage;
+					if(noDataNode){
+						put(noDataNode, "!");
+						delete self.noDataNode;
+					}
+					self.noDataNode = noDataNode = put("div.dgrid-no-data");
+					parentNode.insertBefore(noDataNode, self._getFirstRowSibling(parentNode));
+					noDataNode.innerHTML = self.noDataMessage;
 				}
 				var height = 0;
 				for(var i = 0; i < trCount; i++){
@@ -1585,6 +1700,15 @@ return declare([List, _StoreMixin], {
 		this.inherited(arguments);
 		this._processScroll();
 	},
+
+	_getFirstRowSibling: function(container){
+		// summary:
+		//		Returns the DOM node that a new row should be inserted before
+		//		when there are no other rows in the current result set.
+		//		In the case of OnDemandList, this will always be the last child
+		//		of the container (which will be a trailing preload node).
+		return container.lastChild;
+	},
 	
 	_calcRowHeight: function(rowElement){
 		// summary:
@@ -1592,8 +1716,14 @@ return declare([List, _StoreMixin], {
 		//		plugins that add connected elements to a row, like the tree
 		
 		var sibling = rowElement.previousSibling;
-		return sibling && sibling.offsetTop != rowElement.offsetTop ?
-			rowElement.offsetHeight : 0;
+		sibling = sibling && !/\bdgrid-preload\b/.test(sibling.className) && sibling;
+		
+		// If a previous row exists, compare the top of this row with the
+		// previous one (in case "rows" are actually rendering side-by-side).
+		// If no previous row exists, this is either the first or only row,
+		// in which case we count its own height.
+		return sibling ? rowElement.offsetTop - sibling.offsetTop :
+			rowElement.offsetHeight;
 	},
 	
 	lastScrollTop: 0,
@@ -1613,7 +1743,8 @@ return declare([List, _StoreMixin], {
 			// References related to emitting dgrid-refresh-complete if applicable
 			refreshDfd,
 			lastResults,
-			lastRows;
+			lastRows,
+			preloadSearchNext = true;
 		
 		// XXX: I do not know why this happens.
 		// munging the actual location of the viewport relative to the preload node by a few pixels in either
@@ -1647,17 +1778,8 @@ return declare([List, _StoreMixin], {
 						break;
 					}
 					var nextRow = row[traversal]; // have to do this before removing it
-					var lastObserverIndex, currentObserverIndex = row.observerIndex;
-					if(currentObserverIndex != lastObserverIndex && lastObserverIndex > -1){
-						// we have gathered a whole page of observed rows, we can delete them now
-						var observers = grid.observers; 
-						var observer = observers[lastObserverIndex]; 
-						observer && observer.cancel();
-						observers[lastObserverIndex] = 0; // remove it so we don't call cancel twice
-					}
 					reclaimedHeight += rowHeight;
 					count += row.count || 1;
-					lastObserverIndex = currentObserverIndex;
 					// we just do cleanup here, as we will do a more efficient node destruction in the setTimeout below
 					grid.removeRow(row, true);
 					toDelete.push(row);
@@ -1683,6 +1805,12 @@ return declare([List, _StoreMixin], {
 		function adjustHeight(preload, noMax){
 			preload.node.style.height = Math.min(preload.count * grid.rowHeight, noMax ? Infinity : grid.maxEmptySpace) + "px";
 		}
+		function traversePreload(preload, moveNext){
+			do{
+				preload = moveNext ? preload.next : preload.previous;
+			}while(preload && !preload.node.offsetWidth);// skip past preloads that are not currently connected
+			return preload;
+		}
 		while(preload && !preload.node.offsetWidth){
 			// skip past preloads that are not currently connected
 			preload = preload.previous;
@@ -1699,14 +1827,10 @@ return declare([List, _StoreMixin], {
 			
 			if(visibleBottom + mungeAmount + searchBuffer < preloadTop){
 				// the preload is below the line of sight
-				do{
-					preload = preload.previous;
-				}while(preload && !preload.node.offsetWidth); // skip past preloads that are not currently connected
+				preload = traversePreload(preload, (preloadSearchNext = false));
 			}else if(visibleTop - mungeAmount - searchBuffer > (preloadTop + (preloadHeight = preloadNode.offsetHeight))){
 				// the preload is above the line of sight
-				do{
-					preload = preload.next;
-				}while(preload && !preload.node.offsetWidth);// skip past preloads that are not currently connected
+				preload = traversePreload(preload, (preloadSearchNext = true));
 			}else{
 				// the preload node is visible, or close to visible, better show it
 				var offset = ((preloadNode.rowIndex ? visibleTop - requestBuffer : visibleBottom) - preloadTop) / grid.rowHeight;
@@ -1726,9 +1850,12 @@ return declare([List, _StoreMixin], {
 				}
 				count = Math.min(Math.max(count, grid.minRowsPerPage),
 									grid.maxRowsPerPage, preload.count);
+				
 				if(count == 0){
-					return;
+					preload = traversePreload(preload, preloadSearchNext);
+					continue;
 				}
+				
 				count = Math.ceil(count);
 				offset = Math.min(Math.floor(offset), preload.count - count);
 				var options = lang.mixin(grid.get("queryOptions"), preload.options);
@@ -1754,7 +1881,8 @@ return declare([List, _StoreMixin], {
 						preload.count -= offset;
 					}
 					options.start = preloadNode.rowIndex - queryRowsOverlap;
-					preloadNode.rowIndex += count;
+					options.count = Math.min(count + queryRowsOverlap, grid.maxRowsPerPage);
+					preloadNode.rowIndex = options.start + options.count;
 				}else{
 					// add new rows above
 					if(preload.next){
@@ -1774,8 +1902,8 @@ return declare([List, _StoreMixin], {
 						
 					}
 					options.start = preload.count;
+					options.count = Math.min(count + queryRowsOverlap, grid.maxRowsPerPage);
 				}
-				options.count = Math.min(count + queryRowsOverlap, grid.maxRowsPerPage);
 				if(keepScrollTo && beforeNode && beforeNode.offsetWidth){
 					keepScrollTo = beforeNode.offsetTop;
 				}
@@ -1786,9 +1914,16 @@ return declare([List, _StoreMixin], {
 					innerNode = put(loadingNode, "div.dgrid-" + (below ? "below" : "above"));
 				innerNode.innerHTML = grid.loadingMessage;
 				loadingNode.count = count;
-				loadingNode.blockRowIndex = true;
 				// use the query associated with the preload node to get the next "page"
-				options.query = preload.query;
+				if("level" in preload.query){
+					options.queryLevel = preload.query.level;
+				}
+				
+				// Avoid spurious queries (ideally this should be unnecessary...)
+				if(!("queryLevel" in options) && (options.start > grid._total || options.count < 0)){
+					continue;
+				}
+				
 				// Query now to fill in these rows.
 				// Keep _trackError-wrapped results separate, since if results is a
 				// promise, it will lose QueryResults functions when chained by `when`
@@ -1824,17 +1959,23 @@ return declare([List, _StoreMixin], {
 								preserveMomentum: true
 							});
 						}
-						if(below){
-							// if it is below, we will use the total from the results to update
-							// the count of the last preload in case the total changes as later pages are retrieved
-							// (not uncommon when total counts are estimated for db perf reasons)
-							Deferred.when(results.total || results.length, function(total){
+						
+						Deferred.when(results.total || results.length, function(total){
+							if(!("queryLevel" in options)){
+								grid._total = total;
+							}
+							if(below){
+								// if it is below, we will use the total from the results to update
+								// the count of the last preload in case the total changes as later pages are retrieved
+								// (not uncommon when total counts are estimated for db perf reasons)
+								
 								// recalculate the count
 								below.count = total - below.node.rowIndex;
 								// readjust the height
 								adjustHeight(below);
-							});
-						}
+							}
+						});
+						
 						// make sure we have covered the visible area
 						grid._processScroll();
 						return rows;
@@ -1855,6 +1996,43 @@ return declare([List, _StoreMixin], {
 				refreshDfd.resolve(lastResults);
 			});
 		}
+	},
+
+	removeRow: function(rowElement, justCleanup){
+		function chooseIndex(index1, index2){
+			return index1 != null ? index1 : index2;
+		}
+
+		if(rowElement){
+			// Clean up observers that need to be cleaned up.
+			var previousNode = rowElement.previousSibling,
+				nextNode = rowElement.nextSibling,
+				prevIndex = previousNode && chooseIndex(previousNode.observerIndex, previousNode.previousObserverIndex),
+				nextIndex = nextNode && chooseIndex(nextNode.observerIndex, nextNode.nextObserverIndex),
+				thisIndex = rowElement.observerIndex;
+
+			// Clear the observerIndex on the node being removed so it will not be considered any longer.
+			rowElement.observerIndex = undefined;
+			if(justCleanup){
+				// Save the indexes from the siblings for future calls to removeRow.
+				rowElement.nextObserverIndex = nextIndex;
+				rowElement.previousObserverIndex = prevIndex;
+			}
+
+			// Is this row's observer index different than those on either side?
+			if(this.cleanEmptyObservers && thisIndex > -1 && thisIndex !== prevIndex && thisIndex !== nextIndex){
+				// This is the last row that references the observer index.  Cancel the observer.
+				var observers = this.observers;
+				var observer = observers[thisIndex];
+				if(observer){
+					observer.cancel();
+					this._numObservers--;
+					observers[thisIndex] = 0; // remove it so we don't call cancel twice
+				}
+			}
+		}
+		// Finish the row removal.
+		this.inherited(arguments);
 	}
 });
 
@@ -1876,8 +2054,12 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		if(typeof err !== "object"){
 			// Ensure we actually have an error object, so we can attach a reference.
 			err = new Error(err);
+		}else if(err.dojoType === "cancel"){
+			// Don't fire dgrid-error events for errors due to canceled requests
+			// (unfortunately, the Deferred instrumentation will still log them)
+			return;
 		}
-		// TODO: remove this @ 1.0 (prefer grid property directly on event object)
+		// TODO: remove this @ 0.4 (prefer grid property directly on event object)
 		err.grid = this;
 		
 		if(listen.emit(this.domNode, "dgrid-error", {
@@ -1934,6 +2116,20 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			}));
 		},
 		
+		postCreate: function(){
+			this.inherited(arguments);
+			if(this.store){
+				this._updateNotifyHandle(this.store);
+			}
+		},
+		
+		destroy: function(){
+			this.inherited(arguments);
+			if(this._notifyHandle){
+				this._notifyHandle.remove();
+			}
+		},
+		
 		_configColumn: function(column){
 			// summary:
 			//		Implements extension point provided by Grid to store references to
@@ -1943,10 +2139,29 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			}
 		},
 		
+		_updateNotifyHandle: function(store){
+			// summary:
+			//		Unhooks any previously-existing store.notify handle, and
+			//		hooks up a new one for the given store.
+			
+			if(this._notifyHandle){
+				// Unhook notify handler from previous store
+				this._notifyHandle.remove();
+				delete this._notifyHandle;
+			}
+			if(store && typeof store.notify === "function"){
+				this._notifyHandle = aspect.after(store, "notify",
+					lang.hitch(this, "_onNotify"), true);
+			}
+		},
+		
 		_setStore: function(store, query, queryOptions){
 			// summary:
 			//		Assigns a new store (and optionally query/queryOptions) to the list,
 			//		and tells it to refresh.
+			
+			this._updateNotifyHandle(store);
+			
 			this.store = store;
 			this.dirty = {}; // discard dirty map, as it applied to a previous store
 			this.set("query", query, queryOptions);
@@ -1967,11 +2182,11 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			sort ? this.set("sort", sort) : this.refresh();
 		},
 		setStore: function(store, query, queryOptions){
-			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 0.4");
 			this.set("store", store, query, queryOptions);
 		},
 		setQuery: function(query, queryOptions){
-			kernel.deprecated("setQuery(...)", 'use set("query", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setQuery(...)", 'use set("query", ...) instead', "dgrid 0.4");
 			this.set("query", query, queryOptions);
 		},
 		
@@ -2004,6 +2219,20 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.inherited(arguments);
 		},
 		
+		_onNotify: function(object, existingId){
+			// summary:
+			//		Method called when the store's notify method is called.
+			
+			// Call inherited in case anything was mixed in earlier
+			this.inherited(arguments);
+			
+			// For adds/puts, check whether any observers are hooked up;
+			// if not, force a refresh to properly hook one up now that there is data
+			if(object && this._numObservers < 1){
+				this.refresh({ keepScrollPosition: true });
+			}
+		},
+		
 		insertRow: function(object, parent, beforeNode, i, options){
 			var store = this.store,
 				dirty = this.dirty,
@@ -2031,7 +2260,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			dirtyObj[field] = value;
 		},
 		setDirty: function(id, field, value){
-			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 1.0");
+			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 0.4");
 			this.updateDirty(id, field, value);
 		},
 		
@@ -2057,11 +2286,16 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 					var colsWithSet = self._columnsWithSet,
 						updating = self._updating,
 						key, data;
-					// Copy dirty props to the original, applying setters if applicable
-					for(key in dirtyObj){
-						object[key] = dirtyObj[key];
+
+					if (typeof object.set === "function") {
+						object.set(dirtyObj);
+					} else {
+						// Copy dirty props to the original, applying setters if applicable
+						for(key in dirtyObj){
+							object[key] = dirtyObj[key];
+						}
 					}
-					
+
 					// Apply any set methods in column definitions.
 					// Note that while in the most common cases column.set is intended
 					// to return transformed data for the key in question, it is also
@@ -2134,11 +2368,14 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		
 		newRow: function(){
 			// Override to remove no data message when a new row appears.
+			// Run inherited logic first to prevent confusion due to noDataNode
+			// no longer being present as a sibling.
+			var row = this.inherited(arguments);
 			if(this.noDataNode){
 				put(this.noDataNode, "!");
 				delete this.noDataNode;
 			}
-			return this.inherited(arguments);
+			return row;
 		},
 		removeRow: function(rowElement, justCleanup){
 			var row = {element: rowElement};

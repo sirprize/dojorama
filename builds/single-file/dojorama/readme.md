@@ -1,6 +1,6 @@
 ## Dojorama
 
-Single page demo application based on Dojo, Twitter Bootstrap and history API
+Single page demo application based on Dojo 1.9, Twitter Bootstrap 3 and history API
 
 ## Documentation
 
@@ -24,7 +24,9 @@ Dojorama is built on top of these fine libraries:
 + [SitePen/dgrid](http://github.com/SitePen/dgrid) - Dojo grid widget
 + [kriszyp/put-selector](http://github.com/kriszyp/put-selector) - DOM manipulation (dependency of dgrid)
 + [kriszyp/xstyle](http://github.com/kriszyp/xstyle) - CSS loader (dependency of dgrid)
-+ [twitter/bootstrap](http://github.com/twitter/bootstrap) - Frontend framework (CSS only)
++ [twbs/bootstrap](http://github.com/twbs/bootstrap) - Frontend framework (CSS only)
++ [scottjehl/Respond](http://github.com/scottjehl/Respond) - Media query polyfill
++ [aFarkas/html5shiv](http://github.com/aFarkas/html5shiv) - Enable use of HTML5 sectioning elements in legacy IE
 + [scottschiller/SoundManager2](http://github.com/scottschiller/SoundManager2) - JavaScript sound API
 + [sirprize/mijit](http://github.com/sirprize/mijit) - Essential Dijit stuff (`_WidgetBase`, `_TemplatedMixin` and `registry`)
 + [sirprize/dojomat](http://github.com/sirprize/dojomat) - Application controller

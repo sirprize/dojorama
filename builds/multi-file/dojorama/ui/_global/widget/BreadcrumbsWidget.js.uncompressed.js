@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/_global/widget/template/BreadcrumbsWidget.html':"<ol class=\"breadcrumb\"></ol>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
@@ -25,12 +27,7 @@ define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _StateAware, _ToggleMixin], {
 
-        divider: '/',
         templateString: template,
-        
-        constructor: function (params) {
-            this.divider = params.divider || this.divider;
-        },
 
         postCreate: function () {
             this.inherited(arguments);
@@ -44,15 +41,8 @@ define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
                         aNode = domConstruct.create('a', {
                             href: item.url,
                             innerHTML: item.label
-                        }, liNode, 'last'),
-                        spaceNode = document.createTextNode(' '),
-                        spanNode = domConstruct.create('span', {
-                            'class': 'divider',
-                            innerHTML: this.divider
                         }, liNode, 'last')
                     ;
-
-                    domConstruct.place(spaceNode, aNode, 'after');
 
                     this.own(on(aNode, 'click', lang.hitch(this, function (ev) {
                         ev.preventDefault();
@@ -62,7 +52,7 @@ define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
             ;
             
             // create item nodes:
-            // <li><a href="/some-url">Some label</a> <span class="divider">//</span></li>
+            // <li><a href="/some-url">Some label</a></li>
             for (i = 0; i < items.length - 1; i = i + 1) {
                 lang.hitch(this, addItem)(items[i]);
             }
@@ -75,5 +65,4 @@ define("dojorama/ui/_global/widget/BreadcrumbsWidget", [
             }, this.domNode, 'last');
         }
     });
-});require({cache:{
-'url:dojorama/ui/_global/widget/template/BreadcrumbsWidget.html':"<ul class=\"breadcrumb\"></ul>"}});
+});

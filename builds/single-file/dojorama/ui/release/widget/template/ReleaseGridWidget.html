@@ -1,12 +1,14 @@
 <div>
     <div class="clearfix">
-        <form class="form-search pull-right" data-dojo-attach-point="filterFormNode">
-            <div class="input-append">
-                <input data-dojo-attach-point="filterInputNode" class="search-query" />
-                <button data-dojo-attach-point="filterSubmitNode" class="btn"></button>
+        <form class="form-inline pull-right" data-dojo-attach-point="filterFormNode">
+            <div class="form-group">
+                <input data-dojo-attach-point="filterInputNode" class="form-control">
             </div>
+            <button data-dojo-attach-point="filterSubmitNode" class="btn"></button>
         </form>
     </div>
+
+    <br>
     
     <div data-dojo-attach-point="mainNode" style="display:none">
         <div data-dojo-attach-point="gridNode"></div>

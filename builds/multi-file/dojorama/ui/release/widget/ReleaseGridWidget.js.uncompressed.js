@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-inline pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"form-group\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"form-control\">\n            </div>\n            <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n        </form>\n    </div>\n\n    <br>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/widget/ReleaseGridWidget", [
@@ -145,7 +147,7 @@ define("dojorama/ui/release/widget/ReleaseGridWidget", [
                         field: "releaseDate",
                         sortable: true,
                         autoSave: false,
-                        editorArgs: { required: true, 'class': 'span3', format: 'medium' }
+                        editorArgs: { required: true, 'class': 'form-control', format: 'medium' }
                     }, DatepickerInput),
 
                     publish: editor({
@@ -304,5 +306,4 @@ define("dojorama/ui/release/widget/ReleaseGridWidget", [
             }, this.gridDeleteButtonNode);
         }
     });
-});require({cache:{
-'url:dojorama/ui/release/widget/template/ReleaseGridWidget.html':"<div>\n    <div class=\"clearfix\">\n        <form class=\"form-search pull-right\" data-dojo-attach-point=\"filterFormNode\">\n            <div class=\"input-append\">\n                <input data-dojo-attach-point=\"filterInputNode\" class=\"search-query\" />\n                <button data-dojo-attach-point=\"filterSubmitNode\" class=\"btn\"></button>\n            </div>\n        </form>\n    </div>\n    \n    <div data-dojo-attach-point=\"mainNode\" style=\"display:none\">\n        <div data-dojo-attach-point=\"gridNode\"></div>\n    \n        <div class=\"btn-toolbar\">\n            <button data-dojo-attach-point=\"gridSaveButtonNode\" class=\"btn\"></button>\n            <button data-dojo-attach-point=\"gridDeleteButtonNode\" class=\"btn btn-danger\"></button>\n        </div>\n    </div>\n</div>"}});
+});

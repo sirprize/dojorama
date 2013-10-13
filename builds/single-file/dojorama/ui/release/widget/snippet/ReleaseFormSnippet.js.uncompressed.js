@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <div data-dojo-attach-point=\"titleNode\"></div>\n    <div data-dojo-attach-point=\"formatNode\"></div>\n    <div data-dojo-attach-point=\"releaseDateNode\"></div>\n    <div data-dojo-attach-point=\"priceNode\"></div>\n    <div data-dojo-attach-point=\"infoNode\"></div>\n    <div data-dojo-attach-point=\"publishNode\"></div>\n\n    <div class=\"form-group\">\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </div>\n</form>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
@@ -107,12 +109,13 @@ define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
             */
             this.controlGroupWidgets.title = new ControlGroupWidget({
                 label: nls.fieldTitleLabel,
-                inputWidget: new Textbox({})
+                inputWidget: new Textbox({ 'class': 'form-control' })
             }, this.titleNode);
 
             this.controlGroupWidgets.format = new ControlGroupWidget({
                 label: nls.fieldFormatLabel,
                 inputWidget: new Select({
+                     'class': 'form-control',
                     options: [
                         { value: "", label: nls.fieldFormatOptionLabel },
                         { value: "cd", label: "Cd" },
@@ -124,12 +127,12 @@ define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
 
             this.controlGroupWidgets.releaseDate = new ControlGroupWidget({
                 label: nls.fieldReleaseDateLabel,
-                inputWidget: new DatepickerInput({})
+                inputWidget: new DatepickerInput({ 'class': 'form-control' })
             }, this.releaseDateNode);
             
             this.controlGroupWidgets.price = new ControlGroupWidget({
                 label: nls.fieldPriceLabel,
-                inputWidget: new Textbox({})
+                inputWidget: new Textbox({ 'class': 'form-control' })
             }, this.priceNode);
 
             this.controlGroupWidgets.publish = new ControlGroupWidget({
@@ -140,7 +143,7 @@ define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
 
             this.controlGroupWidgets.info = new ControlGroupWidget({
                 label: nls.fieldInfoLabel,
-                inputWidget: new Textarea({})
+                inputWidget: new Textarea({ 'class': 'form-control' })
             }, this.infoNode);
 
             this.submitButton = new Button({
@@ -162,5 +165,4 @@ define("dojorama/ui/release/widget/snippet/ReleaseFormSnippet", [
             */
         }
     });
-});require({cache:{
-'url:dojorama/ui/release/widget/snippet/template/ReleaseFormSnippet.html':"<form class=\"form-horizontal\" data-dojo-attach-event=\"onsubmit:_onSubmit\">\n    <fieldset>\n        <div data-dojo-attach-point=\"titleNode\"></div>\n        <div data-dojo-attach-point=\"formatNode\"></div>\n        <div data-dojo-attach-point=\"releaseDateNode\"></div>\n        <div data-dojo-attach-point=\"priceNode\"></div>\n        <div data-dojo-attach-point=\"infoNode\"></div>\n        <div data-dojo-attach-point=\"publishNode\"></div>\n        <button data-dojo-attach-point=\"submitNode\">Save</button>\n    </fieldset>\n</form>"}});
+});

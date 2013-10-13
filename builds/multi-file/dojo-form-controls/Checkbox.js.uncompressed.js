@@ -18,7 +18,7 @@ define("dojo-form-controls/Checkbox", [
         type: "checkbox",
         value: "on",
         checked: false,
-        templateString: '<input ${!nameAttr} type="${type}" value="${value}" ${checkedAttr}/>',
+        templateString: '<input ${!nameAttr} type="${type}" value="${value}" ${checkedAttr}>',
         
         postMixInProperties: function() {
             this.inherited(arguments);

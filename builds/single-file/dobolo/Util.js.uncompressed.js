@@ -2,27 +2,22 @@ define("dobolo/Util", [], function () {
     "use strict";
     
     return {
-        // Source: https://github.com/xsokev/Dojo-Bootstrap
         transition: (function () {
-            var transitionEnd = (function () {
-                var el = document.createElement('bootstrap'),
-                    transEndEventNames = {
-                        WebkitTransition: 'webkitTransitionEnd',
-                        MozTransition: 'transitionend',
-                        OTransition: 'oTransitionEnd',
-                        transition: 'transitionend'
-                    };
+            // summary:
+            //      Get name transition-end event
+            var el = document.createElement('bootstrap'),
+                transEndEventNames = {
+                    WebkitTransition: 'webkitTransitionEnd',
+                    MozTransition: 'transitionend',
+                    OTransition: 'oTransitionEnd',
+                    transition: 'transitionend'
+                };
 
-                for (var name in transEndEventNames) {
-                    if (el.style[name] !== undefined) {
-                        return transEndEventNames[name];
-                    }
+            for (var name in transEndEventNames) {
+                if (el.style[name] !== undefined) {
+                    return { end: transEndEventNames[name] };
                 }
-            })();
-
-            return transitionEnd && {
-                end: transitionEnd
-            };
+            }
         })(),
         
         // Source: https://github.com/phiggins42/plugd

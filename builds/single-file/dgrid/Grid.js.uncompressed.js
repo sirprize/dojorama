@@ -20,7 +20,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		column: function(target){
 			// summary:
 			//		Get the column object by node, or event, or a columnId
-			if(typeof target == "string"){
+			if(typeof target != "object"){
 				return this.columns[target];
 			}else{
 				return this.cell(target).column;
@@ -55,7 +55,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 			}
 			if(!element && typeof columnId != "undefined"){
 				var row = this.row(target),
-					rowElement = row.element;
+					rowElement = row && row.element;
 				if(rowElement){
 					var elements = rowElement.getElementsByTagName("td");
 					for(var i = 0; i < elements.length; i++){
@@ -196,8 +196,9 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				// allow for custom header content manipulation
 				if(column.renderHeaderCell){
 					appendIfNode(contentNode, column.renderHeaderCell(contentNode));
-				}else if(column.label || column.field){
-					contentNode.appendChild(document.createTextNode(column.label || column.field));
+				}else if("label" in column || column.field){
+					contentNode.appendChild(document.createTextNode(
+						"label" in column ? column.label : column.field));
 				}
 				if(column.sortable !== false && field && field != "_item"){
 					th.sortable = true;
@@ -237,7 +238,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 								sort: newSort
 							};
 							
-							if (listen.emit(target, "dgrid-sort", eventObj)){
+							if (listen.emit(event.target, "dgrid-sort", eventObj)){
 								// Stash node subject to DOM manipulations,
 								// to be referenced then removed by sort()
 								grid._sortNode = target;
@@ -372,10 +373,9 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		_configColumns: function(prefix, rowColumns){
 			// configure the current column
 			var subRow = [],
-				isArray = rowColumns instanceof Array,
-				columnId, column;
-			for(columnId in rowColumns){
-				column = rowColumns[columnId];
+				isArray = rowColumns instanceof Array;
+			
+			function configColumn(column, columnId){
 				if(typeof column == "string"){
 					rowColumns[columnId] = column = {label:column};
 				}
@@ -396,6 +396,8 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				
 				subRow.push(column); // make sure it can be iterated on
 			}
+			
+			miscUtil.each(rowColumns, configColumn, this);
 			return isArray ? rowColumns : subRow;
 		},
 		
@@ -464,11 +466,11 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		},
 		
 		setColumns: function(columns){
-			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 0.4");
 			this.set("columns", columns);
 		},
 		setSubRows: function(subrows){
-			kernel.deprecated("setSubRows(...)", 'use set("subRows", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setSubRows(...)", 'use set("subRows", ...) instead', "dgrid 0.4");
 			this.set("subRows", subrows);
 		},
 		

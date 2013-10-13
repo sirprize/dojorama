@@ -25,9 +25,6 @@
 [submodule "vendor/SitePen/dgrid"]
 	path = vendor/SitePen/dgrid
 	url = git://github.com/SitePen/dgrid.git
-[submodule "vendor/twbs/bootstrap"]
-	path = vendor/twbs/bootstrap
-	url = git://github.com/twbs/bootstrap.git
 [submodule "vendor/scottschiller/SoundManager2"]
 	path = vendor/scottschiller/SoundManager2
 	url = git://github.com/scottschiller/SoundManager2.git
@@ -43,3 +40,12 @@
 [submodule "vendor/sirprize/dobolo"]
 	path = vendor/sirprize/dobolo
 	url = git://github.com/sirprize/dobolo.git
+[submodule "vendor/twbs/bootstrap"]
+	path = vendor/twbs/bootstrap
+	url = https://github.com/twbs/bootstrap.git
+[submodule "vendor/scottjehl/Respond"]
+	path = vendor/scottjehl/Respond
+	url = https://github.com/scottjehl/Respond.git
+[submodule "vendor/aFarkas/html5shiv"]
+	path = vendor/aFarkas/html5shiv
+	url = https://github.com/aFarkas/html5shiv.git

@@ -54,8 +54,8 @@ define([
 
         _setErrorAttr: function (error) {
             var method = (error) ? 'add' : 'remove';
-            domClass[method](this.domNode, 'error');
-            this.inlineHelpNode.innerHTML = error;
+            domClass[method](this.domNode, 'has-error');
+            this.blockHelpNode.innerHTML = error;
             this._set("error", error);
         }
     });

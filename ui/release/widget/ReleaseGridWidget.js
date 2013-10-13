@@ -145,7 +145,7 @@ define([
                         field: "releaseDate",
                         sortable: true,
                         autoSave: false,
-                        editorArgs: { required: true, 'class': 'span3', format: 'medium' }
+                        editorArgs: { required: true, 'class': 'form-control', format: 'medium' }
                     }, DatepickerInput),
 
                     publish: editor({

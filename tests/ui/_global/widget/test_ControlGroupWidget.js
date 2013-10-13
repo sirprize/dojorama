@@ -16,7 +16,8 @@ require([
         label: 'Some Label',
         value: 'aaaa',
         inputWidget: new Textbox({
-            id: 'some-input'
+            id: 'some-input',
+            'class': 'form-control'
         })
     }, 'w1');
 

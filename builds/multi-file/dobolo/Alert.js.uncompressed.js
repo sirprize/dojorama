@@ -1,3 +1,5 @@
+require({cache:{
+'url:dobolo/templates/Alert.html':"<div class=\"alert\" data-dojo-attach-point=\"containerNode\">\n    <button data-dojo-attach-point=\"closeNode\" class=\"close\">&times;</button>\n    <div data-dojo-attach-point=\"contentNode\"></div>\n</div>"}});
 define("dobolo/Alert", [
     './Util',
     "dojo/_base/declare",
@@ -84,5 +86,4 @@ define("dobolo/Alert", [
             domStyle.set(this.closeNode, 'display', (val) ? 'block' : 'none');
         }
     });
-});require({cache:{
-'url:dobolo/templates/Alert.html':"<div class=\"alert\" data-dojo-attach-point=\"containerNode\">\n    <button data-dojo-attach-point=\"closeNode\" class=\"close\">&times;</button>\n    <div data-dojo-attach-point=\"contentNode\"></div>\n</div>"}});
+});

@@ -1,0 +1,1 @@
+This folder contains copies of things that must be copied into the final build (by the dojo util build tool)

@@ -89,7 +89,7 @@
 
 		forEach = function(vector, callback){
 			if(vector){
-				for(var i = 0; vector[i];){
+				for(var i = 0; i < vector.length;){
 					callback(vector[i++]);
 				}
 			}
@@ -2039,19 +2039,15 @@ define(["./has"], function(has){
 				has.add("opera", tv >= 9.8 ? parseFloat(dua.split("Version/")[1]) || tv : tv);
 			}
 
-			// Mozilla and firefox
-			if(dua.indexOf("Gecko") >= 0 && !has("khtml") && !has("webkit")){
-				has.add("mozilla", tv);
-			}
-			if(has("mozilla")){
-				//We really need to get away from this. Consider a sane isGecko approach for the future.
-				has.add("ff", parseFloat(dua.split("Firefox/")[1] || dua.split("Minefield/")[1]) || undefined);
-			}
-
-			// IE
+			var isIE = 0;
 			if(document.all && !has("opera")){
-				var isIE = parseFloat(dav.split("MSIE ")[1]) || undefined;
-
+				// IE < 11
+				isIE = parseFloat(dav.split("MSIE ")[1]) || undefined;
+			}else if(dav.indexOf("Trident")){
+				// IE >= 9
+				isIE = parseFloat(dav.split("rv:")[1]) || undefined;
+			}
+			if(isIE){
 				//In cases where the page has an HTTP header or META tag with
 				//X-UA-Compatible, then it is in emulation mode.
 				//Make sure isIE reflects the desired version.
@@ -2064,6 +2060,15 @@ define(["./has"], function(has){
 				}
 
 				has.add("ie", isIE);
+			}
+			
+			// Mozilla and firefox
+			if(!has("ie") && dua.indexOf("Gecko") >= 0 && !has("khtml") && !has("webkit")){
+				has.add("mozilla", tv);
+			}
+			if(has("mozilla")){
+				//We really need to get away from this. Consider a sane isGecko approach for the future.
+				has.add("ff", parseFloat(dua.split("Firefox/")[1] || dua.split("Minefield/")[1]) || undefined);
 			}
 
 			// Wii
@@ -3621,7 +3626,7 @@ define(["../has", "./config", "require", "module"], function(has, config, requir
 	dojo.isAsync = ! 1  || require.async;
 	dojo.locale = config.locale;
 
-	var rev = "$Rev$".match(/\d+/);
+	var rev = "$Rev$".match(/[0-9a-f]{7,}/);
 	dojo.version = {
 		// summary:
 		//		Version number of the Dojo Toolkit
@@ -3632,10 +3637,10 @@ define(["../has", "./config", "require", "module"], function(has, config, requir
 		//		- minor: Integer: Minor version. If total version is "1.2.0beta1", will be 2
 		//		- patch: Integer: Patch version. If total version is "1.2.0beta1", will be 0
 		//		- flag: String: Descriptor flag. If total version is "1.2.0beta1", will be "beta1"
-		//		- revision: Number: The SVN rev from which dojo was pulled
+		//		- revision: Number: The Git rev from which dojo was pulled
 
-		major: 1, minor: 9, patch: 0, flag: "dev",
-		revision: rev ? +rev[0] : NaN,
+		major: 1, minor: 10, patch: 0, flag: "-pre",
+		revision: rev ? rev[0] : NaN,
 		toString: function(){
 			var v = dojo.version;
 			return v.major + "." + v.minor + "." + v.patch + v.flag + " (" + v.revision + ")";	// String

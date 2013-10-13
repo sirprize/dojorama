@@ -5,22 +5,29 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ui/_global/widget/ControlGroupWidget</title>
         <link rel="stylesheet" href="../../../../styles/global.css">
+
+        <!--[if lt IE 9]>
+            <script src="../../../../vendor/aFarkas/html5shiv/dist/html5shiv.js"></script>
+            <script src="../../../../vendor/scottjehl/Respond/respond.min.js"></script>
+        <![endif]-->
     </head>
 
     <body>
-        <a href="../../../index.html">Back to overview</a><hr />
-        
-        <form class="form-horizontal">
-            <div id="w1"></div>
-        </form>
-        
-        <button id="w1-ok">Ok</button>
-        <button id="w1-error">Error</button>
-        
-        <script type="text/javascript" src="../../../config-base.js"></script>
-        <script type="text/javascript" src="../../../config-services.js"></script>
-        <script type="text/javascript" src="../../../config-packages.js"></script>
-        <script type="text/javascript" src="../../../../vendor/dojo/dojo/dojo.js"></script>
-        <script type="text/javascript" src="test_ControlGroupWidget.js"></script>
+        <div class="container">
+            <a href="../../../index.html">Back to overview</a><hr>
+            
+            <form class="form-horizontal">
+                <div id="w1"></div>
+            </form>
+            
+            <button class="btn btn-success" id="w1-ok">Ok</button>
+            <button class="btn btn-danger" id="w1-error">Error</button>
+            
+            <script type="text/javascript" src="../../../config-base.js"></script>
+            <script type="text/javascript" src="../../../config-services.js"></script>
+            <script type="text/javascript" src="../../../config-packages.js"></script>
+            <script type="text/javascript" src="../../../../vendor/dojo/dojo/dojo.js"></script>
+            <script type="text/javascript" src="test_ControlGroupWidget.js"></script>
+        </div>
     </body>
 </html>

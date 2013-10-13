@@ -93,27 +93,22 @@ define([], function () {
     "use strict";
     
     return {
-        // Source: https://github.com/xsokev/Dojo-Bootstrap
         transition: (function () {
-            var transitionEnd = (function () {
-                var el = document.createElement('bootstrap'),
-                    transEndEventNames = {
-                        WebkitTransition: 'webkitTransitionEnd',
-                        MozTransition: 'transitionend',
-                        OTransition: 'oTransitionEnd',
-                        transition: 'transitionend'
-                    };
+            // summary:
+            //      Get name transition-end event
+            var el = document.createElement('bootstrap'),
+                transEndEventNames = {
+                    WebkitTransition: 'webkitTransitionEnd',
+                    MozTransition: 'transitionend',
+                    OTransition: 'oTransitionEnd',
+                    transition: 'transitionend'
+                };
 
-                for (var name in transEndEventNames) {
-                    if (el.style[name] !== undefined) {
-                        return transEndEventNames[name];
-                    }
+            for (var name in transEndEventNames) {
+                if (el.style[name] !== undefined) {
+                    return { end: transEndEventNames[name] };
                 }
-            })();
-
-            return transitionEnd && {
-                end: transitionEnd
-            };
+            }
         })(),
         
         // Source: https://github.com/phiggins42/plugd
@@ -338,7 +333,7 @@ define([
 ) {
     return declare([_WidgetBase, _TemplatedMixin], {
         
-        templateString: '<input type="text" data-dojo-attach-point="containerNode"/>',
+        templateString: '<input type="text" data-dojo-attach-point="containerNode">',
         name: '',
         valueNode: null, // <input type="hidden"> holding the serialized value
         
@@ -695,7 +690,7 @@ define(["./query", "./_base/lang", "./_base/array"], function(dquery, lang, arra
 /*=====
 return function(){
 	// summary:
-	//		Adds chainable methods to dojo.query() / NodeList instances for traversing the DOM
+	//		Adds chainable methods to dojo/query() / NodeList instances for traversing the DOM
 };
 =====*/
 
@@ -725,7 +720,7 @@ lang.extend(NodeList, {
 		var ary = [];
 		//Using for loop for better speed.
 		for(var i = 0, node; node = nodes[i]; i++){
-			//Should be a faster way to do this. dojo.query has a private
+			//Should be a faster way to do this. dojo/query has a private
 			//_zip function that may be inspirational, but there are pathways
 			//in query that force nozip?
 			if(node.nodeType == 1 && array.indexOf(ary, node) == -1){
@@ -774,7 +769,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".container").children();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".container").children();
+		//	|	});
 		//		returns the four divs that are children of the container div.
 		//		Running this code:
 		//	|	dojo.query(".container").children(".red");
@@ -808,7 +806,10 @@ lang.extend(NodeList, {
 		//	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".red").closest(".container");
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".red").closest(".container");
+		//	|	});
 		//		returns the div with class "container".
 		return this._getRelatedUniqueNodes(null, function(node, ary){
 			do{
@@ -840,10 +841,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue"><span class="text">Blue Two</span></div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".text").parent();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".text").parent();
+		//	|	});
 		//		returns the two divs with class "blue".
 		//		Running this code:
-		//	|	dojo.query(".text").parent(".first");
+		//	|		query(".text").parent(".first");
 		//		returns the one div with class "blue" and "first".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			return node.parentNode;
@@ -870,11 +874,14 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue"><span class="text">Blue Two</span></div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".text").parents();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".text").parents();
+		//	|	});
 		//		returns the two divs with class "blue", the div with class "container",
 		// 	|	the body element and the html element.
 		//		Running this code:
-		//	|	dojo.query(".text").parents(".container");
+		//	|		query(".text").parents(".container");
 		//		returns the one div with class "container".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -907,11 +914,14 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").siblings();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").siblings();
+		//	|	});
 		//		returns the two divs with class "red" and the other div
 		// 	|	with class "blue" that does not have "first".
 		//		Running this code:
-		//	|	dojo.query(".first").siblings(".red");
+		//	|		query(".first").siblings(".red");
 		//		returns the two div with class "red".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -946,7 +956,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue last">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").next();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").next();
+		//	|	});
 		//		returns the div with class "red" and has innerHTML of "Red Two".
 		//		Running this code:
 		//	|	dojo.query(".last").next(".red");
@@ -981,10 +994,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue next">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").nextAll();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").nextAll();
+		//	|	});
 		//		returns the two divs with class of "next".
 		//		Running this code:
-		//	|	dojo.query(".first").nextAll(".red");
+		//	|		query(".first").nextAll(".red");
 		//		returns the one div with class "red" and innerHTML "Red Two".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -1019,10 +1035,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").prev();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").prev();
+		//	|	});
 		//		returns the div with class "red" and has innerHTML of "Red One".
 		//		Running this code:
-		//	|	dojo.query(".first").prev(".blue");
+		//	|		query(".first").prev(".blue");
 		//		does not return any elements.
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var prev = node.previousSibling;
@@ -1056,10 +1075,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".second").prevAll();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".second").prevAll();
+		//	|	});
 		//		returns the two divs with class of "prev".
 		//		Running this code:
-		//	|	dojo.query(".first").prevAll(".red");
+		//	|		query(".first").prevAll(".red");
 		//		returns the one div with class "red prev" and innerHTML "Red One".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -1089,7 +1111,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".second").prevAll().andSelf();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".second").prevAll().andSelf();
+		//	|	});
 		//		returns the two divs with class of "prev", as well as the div with class "second".
 		return this.concat(this._parent);	// dojo/NodeList
 	},
@@ -1112,7 +1137,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue last">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".blue").first();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".blue").first();
+		//	|	});
 		//		returns the div with class "blue" and "first".
 		return this._wrap(((this[0] && [this[0]]) || []), this); // dojo/NodeList
 	},
@@ -1134,7 +1162,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue last">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".blue").last();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|	query(".blue").last();
+		//	|	});
 		//		returns the last div with class "blue",
 		return this._wrap((this.length ? [this[this.length - 1]] : []), this); // dojo/NodeList
 	},
@@ -1156,7 +1187,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="interior blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".interior").even();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".interior").even();
+		//	|	});
 		//		returns the two divs with class "blue"
 		return this.filter(function(item, i){
 			return i % 2 != 0;
@@ -1180,7 +1214,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="interior blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".interior").odd();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".interior").odd();
+		//	|	});
 		//		returns the two divs with class "red"
 		return this.filter(function(item, i){
 			return i % 2 == 0;
@@ -1193,5 +1230,5 @@ return NodeList;
 
 },
 'url:dobolo/templates/Alert.html':"<div class=\"alert\" data-dojo-attach-point=\"containerNode\">\n    <button data-dojo-attach-point=\"closeNode\" class=\"close\">&times;</button>\n    <div data-dojo-attach-point=\"contentNode\"></div>\n</div>",
-'url:dobolo/templates/Calendar.html':"<div class=\"calendar dropdown-menu\">\n    <div class=\"calendar-days\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody></tbody>\n        </table>\n    </div>\n    <div class=\"calendar-months\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n    <div class=\"calendar-years\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n</div>"}});
+'url:dobolo/templates/Calendar.html':"<div class=\"calendar dropdown-menu\">\n    <div class=\"calendar-days\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"glyphicon glyphicon-arrow-left\"></i></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"glyphicon glyphicon-arrow-right\"></i></th>\n                </tr>\n            </thead>\n            <tbody></tbody>\n        </table>\n    </div>\n    <div class=\"calendar-months\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"glyphicon glyphicon-arrow-left\"></i></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"glyphicon glyphicon-arrow-right\"></i></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n    <div class=\"calendar-years\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"glyphicon glyphicon-arrow-left\"></i></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"glyphicon glyphicon-arrow-right\"></i></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n</div>"}});
 define("dojorama/layers/dobolo", [], 1);

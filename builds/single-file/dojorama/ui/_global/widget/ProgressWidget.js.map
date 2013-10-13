@@ -2,7 +2,7 @@
 "version":3,
 "file":"ProgressWidget.js",
 "lineCount":1,
-"mappings":"A,SAEAA,MAAA,mLAMG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,QAOQJ,EAAA,EAASC,CAAT,CAAsBC,CAAtB,CAAuCC,CAAvC,kBAEaC,CAFb,YAISC,QAAAA,GACRC,cAAA,CAAeC,SAAf,CACAC,UAAA,EAFQH,CAJT,EAPR,CANH,CAsBGI,QAAA,SACH,6DADG;",
+"mappings":"A,SAAAA,OAAA,SACA,6DADA,4GAIAC,OAAA,mLAMG,QAAA,CACCC,CADD,CAECC,CAFD,CAGCC,CAHD,CAICC,CAJD,CAKCC,CALD,QAOQJ,EAAA,EAASC,CAAT,CAAsBC,CAAtB,CAAuCC,CAAvC,kBAEaC,CAFb,YAISC,QAAAA,GACRC,cAAA,CAAeC,SAAf,CACAC,UAAA,EAFQH,CAJT,EAPR,CANH;",
 "sources":["ProgressWidget.js.uncompressed.js"],
-"names":["define","declare","_WidgetBase","_TemplatedMixin","_ToggleMixin","template","postCreate","inherited","arguments","hide","require"]
+"names":["require","define","declare","_WidgetBase","_TemplatedMixin","_ToggleMixin","template","postCreate","inherited","arguments","hide"]
 }

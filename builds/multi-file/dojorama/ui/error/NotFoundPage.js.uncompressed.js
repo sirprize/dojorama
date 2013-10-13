@@ -1,3 +1,6 @@
+require({cache:{
+'url:dojorama/ui/error/template/NotFoundPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <h1 data-dojo-attach-point=\"messageNode\"></h1>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
+'url:dojorama/styles/inline/ui/error/NotFoundPage.css':"body {background: red;}"}});
 /*jshint strict:false */
 
 define("dojorama/ui/error/NotFoundPage", [
@@ -47,6 +50,4 @@ define("dojorama/ui/error/NotFoundPage", [
             this.showFooter();
         }
     });
-});require({cache:{
-'url:dojorama/ui/error/template/NotFoundPage.html':"<div>\n    <div data-dojo-attach-point=\"navigationNode\"></div>\n    \n    <div class=\"container main\">\n        <h1 data-dojo-attach-point=\"messageNode\"></h1>\n    </div>\n    \n    <div data-dojo-attach-point=\"footerNode\"></div>\n</div>",
-'url:dojorama/styles/inline/ui/error/NotFoundPage.css':"body {background: red;}"}});
+});

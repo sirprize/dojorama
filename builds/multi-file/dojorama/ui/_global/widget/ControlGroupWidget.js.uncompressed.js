@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/_global/widget/template/ControlGroupWidget.html':"<div class=\"form-group\">\n    <label class=\"control-label\" data-dojo-attach-point=\"labelNode\"></label>\n    <span data-dojo-attach-point=\"inputNode\"></span>\n    <span class=\"help-block\" data-dojo-attach-point=\"blockHelpNode\"></span>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/ControlGroupWidget", [
@@ -54,10 +56,9 @@ define("dojorama/ui/_global/widget/ControlGroupWidget", [
 
         _setErrorAttr: function (error) {
             var method = (error) ? 'add' : 'remove';
-            domClass[method](this.domNode, 'error');
-            this.inlineHelpNode.innerHTML = error;
+            domClass[method](this.domNode, 'has-error');
+            this.blockHelpNode.innerHTML = error;
             this._set("error", error);
         }
     });
-});require({cache:{
-'url:dojorama/ui/_global/widget/template/ControlGroupWidget.html':"<div class=\"control-group\">\n    <label class=\"control-label\" for=\"inputEmail\" data-dojo-attach-point=\"labelNode\"></label>\n    <div class=\"controls\">\n        <span data-dojo-attach-point=\"inputNode\"></span>\n        <span class=\"help-inline\" data-dojo-attach-point=\"inlineHelpNode\"></span>\n        <span class=\"help-block\" data-dojo-attach-point=\"blockHelpNode\"></span>\n    </div>\n</div>"}});
+});

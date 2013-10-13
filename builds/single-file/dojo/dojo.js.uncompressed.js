@@ -89,7 +89,7 @@
 
 		forEach = function(vector, callback){
 			if(vector){
-				for(var i = 0; vector[i];){
+				for(var i = 0; i < vector.length;){
 					callback(vector[i++]);
 				}
 			}
@@ -2039,19 +2039,15 @@ define(["./has"], function(has){
 				has.add("opera", tv >= 9.8 ? parseFloat(dua.split("Version/")[1]) || tv : tv);
 			}
 
-			// Mozilla and firefox
-			if(dua.indexOf("Gecko") >= 0 && !has("khtml") && !has("webkit")){
-				has.add("mozilla", tv);
-			}
-			if(has("mozilla")){
-				//We really need to get away from this. Consider a sane isGecko approach for the future.
-				has.add("ff", parseFloat(dua.split("Firefox/")[1] || dua.split("Minefield/")[1]) || undefined);
-			}
-
-			// IE
+			var isIE = 0;
 			if(document.all && !has("opera")){
-				var isIE = parseFloat(dav.split("MSIE ")[1]) || undefined;
-
+				// IE < 11
+				isIE = parseFloat(dav.split("MSIE ")[1]) || undefined;
+			}else if(dav.indexOf("Trident")){
+				// IE >= 9
+				isIE = parseFloat(dav.split("rv:")[1]) || undefined;
+			}
+			if(isIE){
 				//In cases where the page has an HTTP header or META tag with
 				//X-UA-Compatible, then it is in emulation mode.
 				//Make sure isIE reflects the desired version.
@@ -2064,6 +2060,15 @@ define(["./has"], function(has){
 				}
 
 				has.add("ie", isIE);
+			}
+			
+			// Mozilla and firefox
+			if(!has("ie") && dua.indexOf("Gecko") >= 0 && !has("khtml") && !has("webkit")){
+				has.add("mozilla", tv);
+			}
+			if(has("mozilla")){
+				//We really need to get away from this. Consider a sane isGecko approach for the future.
+				has.add("ff", parseFloat(dua.split("Firefox/")[1] || dua.split("Minefield/")[1]) || undefined);
 			}
 
 			// Wii
@@ -3621,7 +3626,7 @@ define(["../has", "./config", "require", "module"], function(has, config, requir
 	dojo.isAsync = ! 1  || require.async;
 	dojo.locale = config.locale;
 
-	var rev = "$Rev$".match(/\d+/);
+	var rev = "$Rev$".match(/[0-9a-f]{7,}/);
 	dojo.version = {
 		// summary:
 		//		Version number of the Dojo Toolkit
@@ -3632,10 +3637,10 @@ define(["../has", "./config", "require", "module"], function(has, config, requir
 		//		- minor: Integer: Minor version. If total version is "1.2.0beta1", will be 2
 		//		- patch: Integer: Patch version. If total version is "1.2.0beta1", will be 0
 		//		- flag: String: Descriptor flag. If total version is "1.2.0beta1", will be "beta1"
-		//		- revision: Number: The SVN rev from which dojo was pulled
+		//		- revision: Number: The Git rev from which dojo was pulled
 
-		major: 1, minor: 9, patch: 0, flag: "dev",
-		revision: rev ? +rev[0] : NaN,
+		major: 1, minor: 10, patch: 0, flag: "-pre",
+		revision: rev ? rev[0] : NaN,
 		toString: function(){
 			var v = dojo.version;
 			return v.major + "." + v.minor + "." + v.patch + v.flag + " (" + v.revision + ")";	// String
@@ -5012,9 +5017,13 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 			var matchesTarget = typeof selector == "function" ? {matches: selector} : this,
 				bubble = eventType.bubble;
 			function select(eventTarget){
-				// see if we have a valid matchesTarget or default to dojo.query
+				// see if we have a valid matchesTarget or default to dojo/query
 				matchesTarget = matchesTarget && matchesTarget.matches ? matchesTarget : dojo.query;
 				// there is a selector, so make sure it matches
+				if(eventTarget.nodeType != 1){
+					// text node will fail in native match selector
+					eventTarget = eventTarget.parentNode;
+				}
 				while(!matchesTarget.matches(eventTarget, selector, target)){
 					if(eventTarget == target || children === false || !(eventTarget = eventTarget.parentNode) || eventTarget.nodeType != 1){ // intentional assignment
 						return;
@@ -5080,17 +5089,20 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 		//		to appear in a textbox.
 		// example:
 		//		To fire our own click event
-		//	|	on.emit(dojo.byId("button"), "click", {
-		//	|		cancelable: true,
-		//	|		bubbles: true,
-		//	|		screenX: 33,
-		//	|		screenY: 44
-		//	|	});
+		//	|	require(["dojo/on", "dojo/dom"
+		//	|	], function(on, dom){
+		//	|		on.emit(dom.byId("button"), "click", {
+		//	|			cancelable: true,
+		//	|			bubbles: true,
+		//	|			screenX: 33,
+		//	|			screenY: 44
+		//	|		});
 		//		We can also fire our own custom events:
-		//	|	on.emit(dojo.byId("slider"), "slide", {
-		//	|		cancelable: true,
-		//	|		bubbles: true,
-		//	|		direction: "left-to-right"
+		//	|		on.emit(dom.byId("slider"), "slide", {
+		//	|			cancelable: true,
+		//	|			bubbles: true,
+		//	|			direction: "left-to-right"
+		//	|		});
 		//	|	});
 		var args = slice.call(arguments, 2);
 		var method = "on" + type;
@@ -5262,7 +5274,7 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 
 		var _setKeyChar = function(evt){
 			evt.keyChar = evt.charCode ? String.fromCharCode(evt.charCode) : '';
-			evt.charOrCode = evt.keyChar || evt.keyCode;
+			evt.charOrCode = evt.keyChar || evt.keyCode;	// TODO: remove for 2.0
 		};
 		// Called in Event scope
 		var stopPropagation = function(){
@@ -5413,15 +5425,16 @@ define(["./aspect", "./on"], function(aspect, on){
 		//		A class that can be used as a mixin or base class,
 		//		to add on() and emit() methods to a class
 		//		for listening for events and emitting events:
-		//
-		//		|	define(["dojo/Evented"], function(Evented){
-		//		|		var EventedWidget = dojo.declare([Evented, dijit._Widget], {...});
-		//		|		widget = new EventedWidget();
-		//		|		widget.on("open", function(event){
+		// example:
+		//		|	define(["dojo/Evented", "dojo/_base/declare", "dojo/Stateful"
+		//		|	], function(Evented, declare, Stateful){
+		//		|		var EventedStateful = declare([Evented, Stateful], {...});
+		//		|		var instance = new EventedStateful();
+		//		|		instance.on("open", function(event){
 		//		|		... do something with event
 		//		|	 });
 		//		|
-		//		|	widget.emit("open", {name:"some event", ...});
+		//		|	instance.emit("open", {name:"some event", ...});
 	}
 	Evented.prototype = {
 		on: function(type, listener){
@@ -5779,8 +5792,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -5808,8 +5821,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -5838,8 +5851,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -5873,8 +5886,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -5907,8 +5920,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -5956,8 +5969,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -6063,8 +6076,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -6097,8 +6110,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -6290,8 +6303,8 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		// computedStyle: Object?
 		//		This parameter accepts computed styles object.
 		//		If this parameter is omitted, the functions will call
-		//		dojo.getComputedStyle to get one. It is a better way, calling
-		//		dojo.computedStyle once, and then pass the reference to this
+		//		dojo/dom-style.getComputedStyle to get one. It is a better way, calling
+		//		dojo/dom-style.getComputedStyle once, and then pass the reference to this
 		//		computedStyle parameter. Wherever possible, reuse the returned
 		//		object of dojo/dom-style.getComputedStyle().
 
@@ -6315,12 +6328,12 @@ define(["./sniff", "./_base/window","./dom", "./dom-style"],
 		}
 		if(!has("dom-addeventlistener")){
 			// old IE version
-			// FIXME: scroll position query is duped from dojo.html to
+			// FIXME: scroll position query is duped from dojo/_base/html to
 			// avoid dependency on that entire module. Now that HTML is in
 			// Base, we should convert back to something similar there.
 			var se = event.target;
 			var doc = (se && se.ownerDocument) || document;
-			// DO NOT replace the following to use dojo.body(), in IE, document.documentElement should be used
+			// DO NOT replace the following to use dojo/_base/window.body(), in IE, document.documentElement should be used
 			// here rather than document.body
 			var docBody = has("quirks") ? doc.body : doc.documentElement;
 			var offset = geom.getIeDocumentElementOffset(doc);
@@ -6531,33 +6544,39 @@ define(["./sniff", "./_base/window"],
 	}
 	/*=====
 	 dom.byId = function(id, doc){
-		 // summary:
-		 //		Returns DOM node with matching `id` attribute or falsy value (ex: null or undefined)
-		 //		if not found.  If `id` is a DomNode, this function is a no-op.
-		 //
-		 // id: String|DOMNode
-		 //		A string to match an HTML id attribute or a reference to a DOM Node
-		 //
-		 // doc: Document?
-		 //		Document to work in. Defaults to the current value of
-		 //		dojo.doc.  Can be used to retrieve
-		 //		node references from other documents.
-		 //
-		 // example:
-		 //		Look up a node by ID:
-		 //	|	var n = dojo.byId("foo");
-		 //
-		 // example:
-		 //		Check if a node exists, and use it.
-		 //	|	var n = dojo.byId("bar");
-		 //	|	if(n){ doStuff() ... }
-		 //
-		 // example:
-		 //		Allow string or DomNode references to be passed to a custom function:
-		 //	|	var foo = function(nodeOrId){
-		 //	|		nodeOrId = dojo.byId(nodeOrId);
-		 //	|		// ... more stuff
-		 //	|	}
+		// summary:
+		//		Returns DOM node with matching `id` attribute or falsy value (ex: null or undefined)
+		//		if not found.  If `id` is a DomNode, this function is a no-op.
+		//
+		// id: String|DOMNode
+		//		A string to match an HTML id attribute or a reference to a DOM Node
+		//
+		// doc: Document?
+		//		Document to work in. Defaults to the current value of
+		//		dojo/_base/window.doc.  Can be used to retrieve
+		//		node references from other documents.
+		//
+		// example:
+		//		Look up a node by ID:
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		var n = dom.byId("foo");
+		//	|	});
+		//
+		// example:
+		//		Check if a node exists, and use it.
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		var n = dom.byId("bar");
+		//	|		if(n){ doStuff() ... }
+		//	|	});
+		//
+		// example:
+		//		Allow string or DomNode references to be passed to a custom function:
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		var foo = function(nodeOrId){
+		//	|			nodeOrId = dom.byId(nodeOrId);
+		//	|			// ... more stuff
+		//	|		}
+		//	|	});
 	 };
 	 =====*/
 
@@ -6571,7 +6590,9 @@ define(["./sniff", "./_base/window"],
 		//
 		// example:
 		//		Test is node id="bar" is a descendant of node id="foo"
-		//	|	if(dojo.isDescendant("bar", "foo")){ ... }
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		if(dom.isDescendant("bar", "foo")){ ... }
+		//	|	});
 
 		try{
 			node = dom.byId(node);
@@ -6624,10 +6645,14 @@ define(["./sniff", "./_base/window"],
 		//		allows selection.
 		// example:
 		//		Make the node id="bar" unselectable
-		//	|	dojo.setSelectable("bar");
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		dom.setSelectable("bar");
+		//	|	});
 		// example:
 		//		Make the node id="bar" selectable
-		//	|	dojo.setSelectable("bar", true);
+		//	|	require(["dojo/dom"], function(dom){
+		//	|		dom.setSelectable("bar", true);
+		//	|	});
 	};
 	=====*/
 
@@ -6729,19 +6754,23 @@ define(["./sniff", "./dom"], function(has, dom){
 		//		Note also that this method is expensive.  Wherever possible,
 		//		reuse the returned object.
 		//
-		//		Use the dojo.style() method for more consistent (pixelized)
+		//		Use the dojo/dom-style.get() method for more consistent (pixelized)
 		//		return values.
 		//
 		// node: DOMNode
 		//		A reference to a DOM node. Does NOT support taking an
 		//		ID string for speed reasons.
 		// example:
-		//	|	dojo.getComputedStyle(dojo.byId('foo')).borderWidth;
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.getComputedStyle(dom.byId('foo')).borderWidth;
+		//	|	});
 		//
 		// example:
 		//		Reusing the returned object, avoiding multiple lookups:
-		//	|	var cs = dojo.getComputedStyle(dojo.byId("someNode"));
-		//	|	var w = cs.width, h = cs.height;
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		var cs = domStyle.getComputedStyle(dom.byId("someNode"));
+		//	|		var w = cs.width, h = cs.height;
+		//	|	});
 		return; // CSS2Properties
 	};
 	=====*/
@@ -6890,8 +6919,8 @@ define(["./sniff", "./dom"], function(has, dom){
 		//		Also when getting values, use specific style names,
 		//		like "borderBottomWidth" instead of "border" since compound values like
 		//		"border" are not necessarily reflected as expected.
-		//		If you want to get node dimensions, use `dojo.marginBox()`,
-		//		`dojo.contentBox()` or `dojo.position()`.
+		//		If you want to get node dimensions, use `dojo/dom-geometry.getMarginBox()`,
+		//		`dojo/dom-geometry.getContentBox()` or `dojo/dom-geometry.getPosition()`.
 		// node: DOMNode|String
 		//		id or reference to node to get style for
 		// name: String?
@@ -6899,11 +6928,15 @@ define(["./sniff", "./dom"], function(has, dom){
 		// example:
 		//		Passing only an ID or node returns the computed style object of
 		//		the node:
-		//	|	dojo.getStyle("thinger");
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.get("thinger");
+		//	|	});
 		// example:
 		//		Passing a node and a style property returns the current
 		//		normalized, computed value for that property:
-		//	|	dojo.getStyle("thinger", "opacity"); // 1 by default
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.get("thinger", "opacity"); // 1 by default
+		//	|	});
 
 		var n = dom.byId(node), l = arguments.length, op = (name == "opacity");
 		if(l == 2 && op){
@@ -6932,32 +6965,41 @@ define(["./sniff", "./dom"], function(has, dom){
 		// example:
 		//		Passing a node, a style property, and a value changes the
 		//		current display of the node and returns the new computed value
-		//	|	dojo.setStyle("thinger", "opacity", 0.5); // == 0.5
+		//	|	require(["dojo/dom-style"], function(domStyle){
+		//	|		domStyle.set("thinger", "opacity", 0.5); // == 0.5
+		//	|	});
 		//
 		// example:
 		//		Passing a node, an object-style style property sets each of the values in turn and returns the computed style object of the node:
-		//	|	dojo.setStyle("thinger", {
-		//	|		"opacity": 0.5,
-		//	|		"border": "3px solid black",
-		//	|		"height": "300px"
+		//	|	require(["dojo/dom-style"], function(domStyle){
+		//	|		domStyle.set("thinger", {
+		//	|			"opacity": 0.5,
+		//	|			"border": "3px solid black",
+		//	|			"height": "300px"
+		//	|		});
 		//	|	});
 		//
 		// example:
 		//		When the CSS style property is hyphenated, the JavaScript property is camelCased.
 		//		font-size becomes fontSize, and so on.
-		//	|	dojo.setStyle("thinger",{
-		//	|		fontSize:"14pt",
-		//	|		letterSpacing:"1.2em"
+		//	|	require(["dojo/dom-style", "dojo/dom"], function(domStyle, dom){
+		//	|		domStyle.set("thinger",{
+		//	|			fontSize:"14pt",
+		//	|			letterSpacing:"1.2em"
+		//	|		});
 		//	|	});
 		//
 		// example:
 		//		dojo/NodeList implements .style() using the same syntax, omitting the "node" parameter, calling
-		//		dojo.style() on every element of the list. See: `dojo.query()` and `dojo/NodeList`
-		//	|	dojo.query(".someClassName").style("visibility","hidden");
-		//	|	// or
-		//	|	dojo.query("#baz > div").style({
-		//	|		opacity:0.75,
-		//	|		fontSize:"13pt"
+		//		dojo/dom-style.get() on every element of the list. See: `dojo/query` and `dojo/NodeList`
+		//	|	require(["dojo/dom-style", "dojo/query", "dojo/NodeList-dom"],
+		//	|	function(domStyle, query){
+		//	|		query(".someClassName").style("visibility","hidden");
+		//	|		// or
+		//	|		query("#baz > div").style({
+		//	|			opacity:0.75,
+		//	|			fontSize:"13pt"
+		//	|		});
 		//	|	});
 
 		var n = dom.byId(node), l = arguments.length, op = (name == "opacity");
@@ -8934,9 +8976,13 @@ var unload = {
 		//		browsers from using a "fast back" cache to make page
 		//		loading via back button instantaneous.
 		// example:
-		//	|	dojo.addOnUnload(functionPointer)
-		//	|	dojo.addOnUnload(object, "functionName")
-		//	|	dojo.addOnUnload(object, function(){ /* ... */});
+		//	|	var afunc = function() {console.log("global function");};
+		//	|	require(["dojo/_base/unload"], function(unload) {
+		//	|		var foo = {unload: function(){ console.log("unloading...");}, data: "mydata"};
+		//	|		unload.addOnUnload(afunc);
+		//	|		unload.addOnUnload(foo, "unload");
+		//	|		unload.addOnUnload(foo, function(){console.log("", this.data);});
+		//	|	});
 
 		on(win, "beforeunload", lang.hitch(obj, functionName));
 	}
@@ -11733,7 +11779,7 @@ define(["exports", "./sniff", "./_base/lang", "./dom", "./dom-style", "./dom-pro
 
 	// This module will be obsolete soon. Use dojo/prop instead.
 
-	// dojo.attr() should conform to http://www.w3.org/TR/DOM-Level-2-Core/
+	// dojo/dom-attr.get() should conform to http://www.w3.org/TR/DOM-Level-2-Core/
 
 	// attribute-related functions (to be obsolete soon)
 
@@ -11793,9 +11839,12 @@ define(["exports", "./sniff", "./_base/lang", "./dom", "./dom-style", "./dom-pro
 		//
 		// example:
 		//	|	// get the current value of the "foo" attribute on a node
-		//	|	dojo.getAttr(dojo.byId("nodeId"), "foo");
-		//	|	// or we can just pass the id:
-		//	|	dojo.getAttr("nodeId", "foo");
+		//	|	require(["dojo/dom-attr", "dojo/dom"], function(domAttr, dom){
+		//	|		domAttr.get(dom.byId("nodeId"), "foo");
+		//	|		// or we can just pass the id:
+		//	|		domAttr.get("nodeId", "foo");
+		//	|	});	
+		//	|	
 
 		node = dom.byId(node);
 		var lc = name.toLowerCase(),
@@ -11843,44 +11892,20 @@ define(["exports", "./sniff", "./_base/lang", "./dom", "./dom-style", "./dom-pro
 		//
 		// example:
 		//	|	// use attr() to set the tab index
-		//	|	dojo.setAttr("nodeId", "tabIndex", 3);
+		//	|	require(["dojo/dom-attr"], function(domAttr){
+		//	|		domAttr.set("nodeId", "tabIndex", 3);
+		//	|	});
 		//
 		// example:
 		//	Set multiple values at once, including event handlers:
-		//	|	dojo.setAttr("formId", {
-		//	|		"foo": "bar",
-		//	|		"tabIndex": -1,
-		//	|		"method": "POST",
-		//	|		"onsubmit": function(e){
-		//	|			// stop submitting the form. Note that the IE behavior
-		//	|			// of returning true or false will have no effect here
-		//	|			// since our handler is connect()ed to the built-in
-		//	|			// onsubmit behavior and so we need to use
-		//	|			// dojo.stopEvent() to ensure that the submission
-		//	|			// doesn't proceed.
-		//	|			dojo.stopEvent(e);
-		//	|
-		//	|			// submit the form with Ajax
-		//	|			dojo.xhrPost({ form: "formId" });
+		//	|	require(["dojo/dom-attr"],
+		//	|	function(domAttr){
+		//	|		domAttr.set("formId", {
+		//	|			"foo": "bar",
+		//	|			"tabIndex": -1,
+		//	|			"method": "POST"
 		//	|		}
 		//	|	});
-		//
-		// example:
-		//	Style is s special case: Only set with an object hash of styles
-		//	|	dojo.setAttr("someNode",{
-		//	|		id:"bar",
-		//	|		style:{
-		//	|			width:"200px", height:"100px", color:"#000"
-		//	|		}
-		//	|	});
-		//
-		// example:
-		//	Again, only set style as an object hash of styles:
-		//	|	var obj = { color:"#fff", backgroundColor:"#000" };
-		//	|	dojo.setAttr("someNode", "style", obj);
-		//	|
-		//	|	// though shorter to use `dojo.style()` in this case:
-		//	|	dojo.setStyle("someNode", obj);
 
 		node = dom.byId(node);
 		if(arguments.length == 2){ // inline'd type check
@@ -11985,9 +12010,11 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/lang", "./dom", "./dom-
 		//
 		// example:
 		//	|	// get the current value of the "foo" property on a node
-		//	|	dojo.getProp(dojo.byId("nodeId"), "foo");
-		//	|	// or we can just pass the id:
-		//	|	dojo.getProp("nodeId", "foo");
+		//	|	require(["dojo/dom-prop", "dojo/dom"], function(domProp, dom){
+		//	|		domProp.get(dom.byId("nodeId"), "foo");
+		//	|		// or we can just pass the id:
+		//	|		domProp.get("nodeId", "foo");
+		//	|	});
 
 		node = dom.byId(node);
 		var lc = name.toLowerCase(), propName = exports.names[lc] || name;
@@ -12021,45 +12048,19 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/lang", "./dom", "./dom-
 		//
 		// example:
 		//	|	// use prop() to set the tab index
-		//	|	dojo.setProp("nodeId", "tabIndex", 3);
-		//	|
+		//	|	require(["dojo/dom-prop"], function(domProp){
+		//	|		domProp.set("nodeId", "tabIndex", 3);
+		//	|	});
 		//
 		// example:
 		//	Set multiple values at once, including event handlers:
-		//	|	dojo.setProp("formId", {
-		//	|		"foo": "bar",
-		//	|		"tabIndex": -1,
-		//	|		"method": "POST",
-		//	|		"onsubmit": function(e){
-		//	|			// stop submitting the form. Note that the IE behavior
-		//	|			// of returning true or false will have no effect here
-		//	|			// since our handler is connect()ed to the built-in
-		//	|			// onsubmit behavior and so we need to use
-		//	|			// dojo.stopEvent() to ensure that the submission
-		//	|			// doesn't proceed.
-		//	|			dojo.stopEvent(e);
-		//	|
-		//	|			// submit the form with Ajax
-		//	|			dojo.xhrPost({ form: "formId" });
-		//	|		}
+		//	|	require(["dojo/dom-prop"], function(domProp){
+		//	|		domProp.set("formId", {
+		//	|			"foo": "bar",
+		//	|			"tabIndex": -1,
+		//	|			"method": "POST",
+		//	|		});
 		//	|	});
-		//
-		// example:
-		//	Style is s special case: Only set with an object hash of styles
-		//	|	dojo.setProp("someNode",{
-		//	|		id:"bar",
-		//	|		style:{
-		//	|			width:"200px", height:"100px", color:"#000"
-		//	|		}
-		//	|	});
-		//
-		// example:
-		//	Again, only set style as an object hash of styles:
-		//	|	var obj = { color:"#fff", backgroundColor:"#000" };
-		//	|	dojo.setProp("someNode", "style", obj);
-		//	|
-		//	|	// though shorter to use `dojo.style()` in this case:
-		//	|	dojo.style("someNode", obj);
 
 		node = dom.byId(node);
 		var l = arguments.length;
@@ -12208,12 +12209,14 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		//		the HTML fragment
 		// doc: DocumentNode?
 		//		optional document to use when creating DOM nodes, defaults to
-		//		dojo.doc if not specified.
+		//		dojo/_base/window.doc if not specified.
 		// returns:
 		//		Document fragment, unless it's a single node in which case it returns the node itself
 		// example:
 		//		Create a table row:
-		//	|	var tr = dojo.toDom("<tr><td>First!</td></tr>");
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		var tr = domConstruct.toDom("<tr><td>First!</td></tr>");
+		//	|	});
 
 		doc = doc || win.doc;
 		var masterId = doc[masterName];
@@ -12284,19 +12287,28 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		// returns: DOMNode
 		//		Returned values is the first argument resolved to a DOM node.
 		//
-		//		.place() is also a method of `dojo/NodeList`, allowing `dojo.query` node lookups.
+		//		.place() is also a method of `dojo/NodeList`, allowing `dojo/query` node lookups.
 		// example:
 		//		Place a node by string id as the last child of another node by string id:
-		//	|	dojo.place("someNode", "anotherNode");
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		domConstruct.place("someNode", "anotherNode");
+		//	|	});
 		// example:
 		//		Place a node by string id before another node by string id
-		//	|	dojo.place("someNode", "anotherNode", "before");
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		domConstruct.place("someNode", "anotherNode", "before");
+		//	|	});
 		// example:
 		//		Create a Node, and place it in the body element (last child):
-		//	|	dojo.place("<div></div>", dojo.body());
+		//	|	require(["dojo/dom-construct", "dojo/_base/window"
+		//	|	], function(domConstruct, win){
+		//	|		domConstruct.place("<div></div>", win.body());
+		//	|	});
 		// example:
 		//		Put a new LI as the first child of a list by id:
-		//	|	dojo.place("<li></li>", "someUl", "first");
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		domConstruct.place("<li></li>", "someUl", "first");
+		//	|	});
 
 		refNode = dom.byId(refNode);
 		if(typeof node == "string"){ // inline'd type check
@@ -12369,35 +12381,39 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		//		'refNode' is required if a 'pos' is specified.
 		// example:
 		//		Create a DIV:
-		//	|	var n = dojo.create("div");
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		var n = domConstruct.create("div");
+		//	|	});
 		//
 		// example:
 		//		Create a DIV with content:
-		//	|	var n = dojo.create("div", { innerHTML:"<p>hi</p>" });
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		var n = domConstruct.create("div", { innerHTML:"<p>hi</p>" });
+		//	|	});
 		//
 		// example:
 		//		Place a new DIV in the BODY, with no attributes set
-		//	|	var n = dojo.create("div", null, dojo.body());
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		var n = domConstruct.create("div", null, dojo.body());
+		//	|	});
 		//
 		// example:
 		//		Create an UL, and populate it with LI's. Place the list as the first-child of a
 		//		node with id="someId":
-		//	|	var ul = dojo.create("ul", null, "someId", "first");
-		//	|	var items = ["one", "two", "three", "four"];
-		//	|	dojo.forEach(items, function(data){
-		//	|		dojo.create("li", { innerHTML: data }, ul);
+		//	|	require(["dojo/dom-construct", "dojo/_base/array"],
+		//	|	function(domConstruct, arrayUtil){
+		//	|		var ul = domConstruct.create("ul", null, "someId", "first");
+		//	|		var items = ["one", "two", "three", "four"];
+		//	|		arrayUtil.forEach(items, function(data){
+		//	|			domConstruct.create("li", { innerHTML: data }, ul);
+		//	|		});
 		//	|	});
 		//
 		// example:
 		//		Create an anchor, with an href. Place in BODY:
-		//	|	dojo.create("a", { href:"foo.html", title:"Goto FOO!" }, dojo.body());
-		//
-		// example:
-		//		Create a `dojo/NodeList()` from a new element (for syntactic sugar):
-		//	|	dojo.query(dojo.create('div'))
-		//	|		.addClass("newDiv")
-		//	|		.onclick(function(e){ console.log('clicked', e.target) })
-		//	|		.place("#someNode"); // redundant, but cleaner.
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		domConstruct.create("a", { href:"foo.html", title:"Goto FOO!" }, dojo.body());
+		//	|	});
 
 		var doc = win.doc;
 		if(refNode){
@@ -12430,17 +12446,15 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 	}
 
 	exports.empty = function empty(/*DOMNode|String*/ node){
-		 // summary:
-		 //		safely removes all children of the node.
-		 // node: DOMNode|String
-		 //		a reference to a DOM node or an id.
-		 // example:
-		 //		Destroy node's children byId:
-		 //	|	dojo.empty("someId");
-		 //
-		 // example:
-		 //		Destroy all nodes' children in a list by reference:
-		 //	|	dojo.query(".someNode").forEach(dojo.empty);
+		// summary:
+		//		safely removes all children of the node.
+		// node: DOMNode|String
+		//		a reference to a DOM node or an id.
+		// example:
+		//		Destroy node's children byId:
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		domConstruct.empty("someId");
+		//	|	});
 
 		_empty(dom.byId(node));
 	};
@@ -12473,11 +12487,9 @@ define(["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./do
 		//
 		// example:
 		//		Destroy a node byId:
-		//	|	dojo.destroy("someId");
-		//
-		// example:
-		//		Destroy all nodes in a list by reference:
-		//	|	dojo.query(".someNode").forEach(dojo.destroy);
+		//	|	require(["dojo/dom-construct"], function(domConstruct){
+		//	|		domConstruct.destroy("someId");
+		//	|	});
 
 		node = dom.byId(node);
 		if(!node){ return; }
@@ -12987,7 +12999,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 	var adaptAsMap = function(f, o){
 		// summary:
 		//		adapts a single node function to be used in the map-type
-		//		actions. The return is a new array of values, as via `dojo.map`
+		//		actions. The return is a new array of values, as via `dojo/_base/array.map`
 		// f: Function
 		//		a function to adapt
 		// o: Object?
@@ -13034,78 +13046,62 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 		//		Array-like object which adds syntactic
 		//		sugar for chaining, common iteration operations, animation, and
 		//		node manipulation. NodeLists are most often returned as the
-		//		result of dojo.query() calls.
+		//		result of dojo/query() calls.
 		// description:
 		//		NodeList instances provide many utilities that reflect
 		//		core Dojo APIs for Array iteration and manipulation, DOM
 		//		manipulation, and event handling. Instead of needing to dig up
-		//		functions in the dojo.* namespace, NodeLists generally make the
+		//		functions in the dojo package, NodeLists generally make the
 		//		full power of Dojo available for DOM manipulation tasks in a
 		//		simple, chainable way.
 		// example:
 		//		create a node list from a node
-		//		|	new query.NodeList(dojo.byId("foo"));
+		//		|	require(["dojo/query", "dojo/dom"
+		//		|	], function(query, dom){
+		//		|		query.NodeList(dom.byId("foo"));
+		//		|	});
 		// example:
 		//		get a NodeList from a CSS query and iterate on it
-		//		|	var l = dojo.query(".thinger");
-		//		|	l.forEach(function(node, index, nodeList){
-		//		|		console.log(index, node.innerHTML);
+		//		|	require(["dojo/on", "dojo/dom"
+		//		|	], function(on, dom){
+		//		|		var l = query(".thinger");
+		//		|		l.forEach(function(node, index, nodeList){
+		//		|			console.log(index, node.innerHTML);
+		//		|		});
 		//		|	});
 		// example:
 		//		use native and Dojo-provided array methods to manipulate a
 		//		NodeList without needing to use dojo.* functions explicitly:
-		//		|	var l = dojo.query(".thinger");
-		//		|	// since NodeLists are real arrays, they have a length
-		//		|	// property that is both readable and writable and
-		//		|	// push/pop/shift/unshift methods
-		//		|	console.log(l.length);
-		//		|	l.push(dojo.create("span"));
+		//		|	require(["dojo/query", "dojo/dom-construct", "dojo/dom"
+		//		|	], function(query, domConstruct, dom){
+		//		|		var l = query(".thinger");
+		//		|		// since NodeLists are real arrays, they have a length
+		//		|		// property that is both readable and writable and
+		//		|		// push/pop/shift/unshift methods
+		//		|		console.log(l.length);
+		//		|		l.push(domConstruct.create("span"));
 		//		|
-		//		|	// dojo's normalized array methods work too:
-		//		|	console.log( l.indexOf(dojo.byId("foo")) );
-		//		|	// ...including the special "function as string" shorthand
-		//		|	console.log( l.every("item.nodeType == 1") );
+		//		|		// dojo's normalized array methods work too:
+		//		|		console.log( l.indexOf(dom.byId("foo")) );
+		//		|		// ...including the special "function as string" shorthand
+		//		|		console.log( l.every("item.nodeType == 1") );
 		//		|
-		//		|	// NodeLists can be [..] indexed, or you can use the at()
-		//		|	// function to get specific items wrapped in a new NodeList:
-		//		|	var node = l[3]; // the 4th element
-		//		|	var newList = l.at(1, 3); // the 2nd and 4th elements
-		// example:
-		//		the style functions you expect are all there too:
-		//		|	// style() as a getter...
-		//		|	var borders = dojo.query(".thinger").style("border");
-		//		|	// ...and as a setter:
-		//		|	dojo.query(".thinger").style("border", "1px solid black");
-		//		|	// class manipulation
-		//		|	dojo.query("li:nth-child(even)").addClass("even");
-		//		|	// even getting the coordinates of all the items
-		//		|	var coords = dojo.query(".thinger").coords();
-		// example:
-		//		DOM manipulation functions from the dojo.* namespace area also available:
-		//		|	// remove all of the elements in the list from their
-		//		|	// parents (akin to "deleting" them from the document)
-		//		|	dojo.query(".thinger").orphan();
-		//		|	// place all elements in the list at the front of #foo
-		//		|	dojo.query(".thinger").place("foo", "first");
-		// example:
-		//		Event handling couldn't be easier. `dojo.connect` is mapped in,
-		//		and shortcut handlers are provided for most DOM events:
-		//		|	// like dojo.connect(), but with implicit scope
-		//		|	dojo.query("li").connect("onclick", console, "log");
-		//		|
-		//		|	// many common event handlers are already available directly:
-		//		|	dojo.query("li").onclick(console, "log");
-		//		|	var toggleHovered = dojo.hitch(dojo, "toggleClass", "hovered");
-		//		|	dojo.query("p")
-		//		|		.onmouseenter(toggleHovered)
-		//		|		.onmouseleave(toggleHovered);
+		//		|		// NodeLists can be [..] indexed, or you can use the at()
+		//		|		// function to get specific items wrapped in a new NodeList:
+		//		|		var node = l[3]; // the 4th element
+		//		|		var newList = l.at(1, 3); // the 2nd and 4th elements
+		//		|	});
 		// example:
 		//		chainability is a key advantage of NodeLists:
-		//		|	dojo.query(".thinger")
-		//		|		.onclick(function(e){ /* ... */ })
-		//		|		.at(1, 3, 8) // get a subset
-		//		|			.style("padding", "5px")
-		//		|			.forEach(console.log);
+		//		|	require(["dojo/query", "dojo/NodeList-dom"
+		//		|	], function(query){
+		//		|		query(".thinger")
+		//		|			.onclick(function(e){ /* ... */ })
+		//		|			.at(1, 3, 8) // get a subset
+		//		|				.style("padding", "5px")
+		//		|				.forEach(console.log);
+		//		|	});
+
 		var isNew = this instanceof nl && has("array-extensible");
 		if(typeof array == "number"){
 			array = Array(array);
@@ -13181,20 +13177,22 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 			// example:
 			//		How to make a `dojo/NodeList` method that only returns the third node in
 			//		the dojo/NodeList but allows access to the original NodeList by using this._stash:
-			//	|	dojo.extend(NodeList, {
-			//	|		third: function(){
-			//	|			var newNodeList = NodeList(this[2]);
-			//	|			return newNodeList._stash(this);
-			//	|		}
+			//	|	require(["dojo/query", "dojo/_base/lang", "dojo/NodeList", "dojo/NodeList-dom"
+			//	|	], function(query, lang){
+			//	|		lang.extend(NodeList, {
+			//	|			third: function(){
+			//	|				var newNodeList = NodeList(this[2]);
+			//	|				return newNodeList._stash(this);
+			//	|			}
+			//	|		});
+			//	|		// then see how _stash applies a sub-list, to be .end()'ed out of
+			//	|		query(".foo")
+			//	|			.third()
+			//	|				.addClass("thirdFoo")
+			//	|			.end()
+			//	|			// access to the orig .foo list
+			//	|			.removeClass("foo")
 			//	|	});
-			//	|	// then see how _stash applies a sub-list, to be .end()'ed out of
-			//	|	dojo.query(".foo")
-			//	|		.third()
-			//	|			.addClass("thirdFoo")
-			//	|		.end()
-			//	|		// access to the orig .foo list
-			//	|		.removeClass("foo")
-			//	|
 			//
 			this._parent = parent;
 			return this; // dojo/NodeList
@@ -13203,13 +13201,18 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 		on: function(eventName, listener){
 			// summary:
 			//		Listen for events on the nodes in the NodeList. Basic usage is:
-			//		| query(".my-class").on("click", listener);
-			//		This supports event delegation by using selectors as the first argument with the event names as
-			//		pseudo selectors. For example:
-			//		| dojo.query("#my-list").on("li:click", listener);
-			//		This will listen for click events within `<li>` elements that are inside the `#my-list` element.
-			//		Because on supports CSS selector syntax, we can use comma-delimited events as well:
-			//		| dojo.query("#my-list").on("li button:mouseover, li:click", listener);
+			//
+			// example:
+			//		|	require(["dojo/query"
+			//		|	], function(query){
+			//		|		query(".my-class").on("click", listener);
+			//			This supports event delegation by using selectors as the first argument with the event names as
+			//			pseudo selectors. For example:
+			//		| 		query("#my-list").on("li:click", listener);
+			//			This will listen for click events within `<li>` elements that are inside the `#my-list` element.
+			//			Because on supports CSS selector syntax, we can use comma-delimited events as well:
+			//		| 		query("#my-list").on("li button:mouseover, li:click", listener);
+			//		|	});
 			var handles = this.map(function(node){
 				return on(node, eventName, listener); // TODO: apply to the NodeList so the same selector engine is used for matches
 			});
@@ -13229,13 +13232,16 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 			//		Returns the `NodeList` that generated the current `NodeList`. If there
 			//		is no parent NodeList, an empty NodeList is returned.
 			// example:
-			//	|	dojo.query("a")
-			//	|		.filter(".disabled")
-			//	|			// operate on the anchors that only have a disabled class
-			//	|			.style("color", "grey")
-			//	|		.end()
-			//	|		// jump back to the list of anchors
-			//	|		.style(...)
+			//	|	require(["dojo/query", "dojo/NodeList-dom"
+			//	|	], function(query){
+			//	|		query("a")
+			//	|			.filter(".disabled")
+			//	|				// operate on the anchors that only have a disabled class
+			//	|				.style("color", "grey")
+			//	|			.end()
+			//	|			// jump back to the list of anchors
+			//	|			.style(...)
+			//	|	});
 			//
 			if(this._parent){
 				return this._parent;
@@ -13262,7 +13268,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 			//		Returns a new NodeList, maintaining this one in place
 			// description:
 			//		This method behaves exactly like the Array.slice method
-			//		with the caveat that it returns a dojo/NodeList and not a
+			//		with the caveat that it returns a `dojo/NodeList` and not a
 			//		raw Array. For more details, see Mozilla's [slice
 			//		documentation](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/slice)
 			// begin: Integer
@@ -13284,7 +13290,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 			//		at an offset, optionally deleting elements
 			// description:
 			//		This method behaves exactly like the Array.splice method
-			//		with the caveat that it returns a dojo/NodeList and not a
+			//		with the caveat that it returns a `dojo/NodeList` and not a
 			//		raw Array. For more details, see Mozilla's [splice
 			//		documentation](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/splice)
 			//		For backwards compatibility, calling .end() on the spliced NodeList
@@ -13306,7 +13312,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 
 		indexOf: function(value, fromIndex){
 			// summary:
-			//		see dojo.indexOf(). The primary difference is that the acted-on
+			//		see `dojo/_base/array.indexOf()`. The primary difference is that the acted-on
 			//		array is implicitly this NodeList
 			// value: Object
 			//		The value to search for.
@@ -13323,7 +13329,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 
 		lastIndexOf: function(value, fromIndex){
 			// summary:
-			//		see dojo.lastIndexOf(). The primary difference is that the
+			//		see `dojo/_base/array.lastIndexOf()`. The primary difference is that the
 			//		acted-on array is implicitly this NodeList
 			// description:
 			//		For more details on the behavior of lastIndexOf, see
@@ -13340,10 +13346,10 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 
 		every: function(callback, thisObject){
 			// summary:
-			//		see `dojo.every()` and the [Array.every
+			//		see `dojo/_base/array.every()` and the [Array.every
 			//		docs](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/every).
 			//		Takes the same structure of arguments and returns as
-			//		dojo.every() with the caveat that the passed array is
+			//		dojo/_base/array.every() with the caveat that the passed array is
 			//		implicitly this NodeList
 			// callback: Function
 			//		the callback
@@ -13355,8 +13361,8 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 		some: function(callback, thisObject){
 			// summary:
 			//		Takes the same structure of arguments and returns as
-			//		`dojo.some()` with the caveat that the passed array is
-			//		implicitly this NodeList.  See `dojo.some()` and Mozilla's
+			//		`dojo/_base/array.some()` with the caveat that the passed array is
+			//		implicitly this NodeList.  See `dojo/_base/array.some()` and Mozilla's
 			//		[Array.some
 			//		documentation](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/some).
 			// callback: Function
@@ -13399,7 +13405,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 
 		map: function(/*Function*/ func, /*Function?*/ obj){
 			// summary:
-			//		see dojo.map(). The primary difference is that the acted-on
+			//		see `dojo/_base/array.map()`. The primary difference is that the acted-on
 			//		array is implicitly this NodeList and the return is a
 			//		NodeList (a subclass of Array)
 			return this._wrap(array.map(this, func, obj), this); // dojo/NodeList
@@ -13407,7 +13413,7 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 
 		forEach: function(callback, thisObj){
 			// summary:
-			//		see `dojo.forEach()`. The primary difference is that the acted-on
+			//		see `dojo/_base/array.forEach()`. The primary difference is that the acted-on
 			//		array is implicitly this NodeList. If you want the option to break out
 			//		of the forEach loop, use every() or some() instead.
 			forEach(this, callback, thisObj);
@@ -13417,20 +13423,26 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 		filter: function(/*String|Function*/ filter){
 			// summary:
 			//		"masks" the built-in javascript filter() method (supported
-			//		in Dojo via `dojo.filter`) to support passing a simple
+			//		in Dojo via `dojo/_base/array.filter`) to support passing a simple
 			//		string filter in addition to supporting filtering function
 			//		objects.
 			// filter:
 			//		If a string, a CSS rule like ".thinger" or "div > span".
 			// example:
-			//		"regular" JS filter syntax as exposed in dojo.filter:
-			//		|	dojo.query("*").filter(function(item){
-			//		|		// highlight every paragraph
-			//		|		return (item.nodeName == "p");
-			//		|	}).style("backgroundColor", "yellow");
+			//		"regular" JS filter syntax as exposed in `dojo/_base/array.filter`:
+			//		|	require(["dojo/query", "dojo/NodeList-dom"
+			//		|	], function(query){
+			//		|		query("*").filter(function(item){
+			//		|			// highlight every paragraph
+			//		|			return (item.nodeName == "p");
+			//		|		}).style("backgroundColor", "yellow");
+			//		|	});
 			// example:
 			//		the same filtering using a CSS selector
-			//		|	dojo.query("*").filter("p").styles("backgroundColor", "yellow");
+			//		|	require(["dojo/query", "dojo/NodeList-dom"
+			//		|	], function(query){
+			//		|		query("*").filter("p").styles("backgroundColor", "yellow");
+			//		|	});
 
 			var a = arguments, items = this, start = 0;
 			if(typeof filter == "string"){ // inline'd type check
@@ -13470,18 +13482,27 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 			//
 			// example:
 			//	Shorten the list to the first, second, and third elements
-			//	|	query("a").at(0, 1, 2).forEach(fn);
+			//	|	require(["dojo/query"
+			//	|	], function(query){
+			//	|		query("a").at(0, 1, 2).forEach(fn);
+			//	|	});
 			//
 			// example:
 			//	Retrieve the first and last elements of a unordered list:
-			//	|	query("ul > li").at(0, -1).forEach(cb);
+			//	|	require(["dojo/query"
+			//	|	], function(query){
+			//	|		query("ul > li").at(0, -1).forEach(cb);
+			//	|	});
 			//
 			// example:
 			//	Do something for the first element only, but end() out back to
 			//	the original list and continue chaining:
-			//	|	query("a").at(0).onclick(fn).end().forEach(function(n){
-			//	|		console.log(n); // all anchors on the page.
+			//	|	require(["dojo/query"
+			//	|	], function(query){
+			//	|		query("a").at(0).onclick(fn).end().forEach(function(n){
+			//	|			console.log(n); // all anchors on the page.
 			//	|	})
+			//	|	});
 
 			var t = new this._NodeListCtor(0);
 			forEach(arguments, function(i){
@@ -13548,22 +13569,20 @@ define(["./_base/kernel", "./has", "./dom", "./on", "./_base/array", "./_base/la
 		// example:
 		//		add an onclick handler to every submit button in the document
 		//		which causes the form to be sent via Ajax instead:
-		//	|	require(["dojo/query"], function(query){
+		//	|	require(["dojo/query", "dojo/request", "dojo/dom-form", "dojo/dom-construct", "dojo/dom-style"
+		//	|	], function(query, request, domForm, domConstruct, domStyle){
 		//	|		query("input[type='submit']").on("click", function(e){
-		//	|			dojo.stopEvent(e); // prevent sending the form
+		//	|			e.preventDefault(); // prevent sending the form
 		//	|			var btn = e.target;
-		//	|			dojo.xhrPost({
-		//	|				form: btn.form,
-		//	|				load: function(data){
-		//	|					// replace the form with the response
-		//	|					var div = dojo.doc.createElement("div");
-		//	|					dojo.place(div, btn.form, "after");
-		//	|					div.innerHTML = data;
-		//	|					dojo.style(btn.form, "display", "none");
-		//	|				}
+		//	|			request.post("http://example.com/", {
+		//	|				data: domForm.toObject(btn.form)
+		//	|			}).then(function(response){
+		//	|				// replace the form with the response
+		//	|				domConstruct.create(div, {innerHTML: response}, btn.form, "after");
+		//	|				domStyle.set(btn.form, "display", "none");
 		//	|			});
 		//	|		});
-		// |	});
+		//	|	});
 		//
 		// description:
 		//		dojo/query is responsible for loading the appropriate query engine and wrapping
@@ -15142,7 +15161,7 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 
 	var magicGuard = function(a){
 		// summary:
-		//		the guard function for dojo.attr() and dojo.style()
+		//		the guard function for dojo/dom-attr() and dojo/dom-style()
 		return a.length == 1 && (typeof a[0] == "string"); // inline'd type check
 	};
 
@@ -15154,7 +15173,7 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 			p.removeChild(node);
 		}
 	};
-	// FIXME: should we move orphan() to dojo.html?
+	// FIXME: should we move orphan() to dojo/_base/html?
 
 	var NodeList = query.NodeList,
 		awc = NodeList._adaptWithCondition,
@@ -15178,12 +15197,12 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 			// description:
 			//		If content is an object, it can have special properties "template" and
 			//		"parse". If "template" is defined, then the template value is run through
-			//		dojo.string.substitute (if dojo/string.substitute() has been dojo.required elsewhere),
+			//		dojo/string.substitute (if dojo/string.substitute() has been required elsewhere),
 			//		or if templateFunc is a function on the content, that function will be used to
 			//		transform the template into a final string to be used for for passing to dojo/dom-construct.toDom().
 			//		If content.parse is true, then it is remembered for later, for when the content
 			//		nodes are inserted into the DOM. At that point, the nodes will be parsed for widgets
-			//		(if dojo.parser has been dojo.required elsewhere).
+			//		(if dojo/parser has been required elsewhere).
 
 			//Wanted to just use a DocumentFragment, but for the array/NodeList
 			//case that meant using cloneNode, but we may not want that.
@@ -15280,7 +15299,7 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 		position: function(){
 			// summary:
 			//		Returns border-box objects (x/y/w/h) of all elements in a node list
-			//		as an Array (*not* a NodeList). Acts like `dojo.position`, though
+			//		as an Array (*not* a NodeList). Acts like `dojo/dom-geometry-position`, though
 			//		assumes the node passed is each node in this list.
 
 			return dojo.map(this, dojo.position); // Array
@@ -15292,7 +15311,7 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 		attr: function(property, value){
 			// summary:
 			//		gets or sets the DOM attribute for every element in the
-			//		NodeList. See also `dojo.attr`
+			//		NodeList. See also `dojo/dom-attr`
 			// property: String
 			//		the attribute to get/set
 			// value: String?
@@ -15302,14 +15321,20 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 			//		If a value is passed, the return is this NodeList
 			// example:
 			//		Make all nodes with a particular class focusable:
-			//	|	dojo.query(".focusable").attr("tabIndex", -1);
+			//	|	require(["dojo/query", "dojo/NodeList-dom"], function(query){
+			//	|		query(".focusable").attr("tabIndex", -1);
+			//	|	});
 			// example:
 			//		Disable a group of buttons:
-			//	|	dojo.query("button.group").attr("disabled", true);
+			//	|	require(["dojo/query", "dojo/NodeList-dom"], function(query){
+			//	|		query("button.group").attr("disabled", true);
+			//	|	});
 			// example:
 			//		innerHTML can be assigned or retrieved as well:
 			//	|	// get the innerHTML (as an array) for each list item
-			//	|	var ih = dojo.query("li.replaceable").attr("innerHTML");
+			//	|	require(["dojo/query", "dojo/NodeList-dom"], function(query){
+			//	|		var ih = query("li.replaceable").attr("innerHTML");
+			//	|	});
 			return; // dojo/NodeList|Array
 		},
 		=====*/
@@ -15435,7 +15460,7 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 		place: function(/*String||Node*/ queryOrNode, /*String*/ position){
 			// summary:
 			//		places elements of this node list relative to the first element matched
-			//		by queryOrNode. Returns the original NodeList. See: `dojo.place`
+			//		by queryOrNode. Returns the original NodeList. See: `dojo/dom-construct.place`
 			// queryOrNode:
 			//		may be a string representing any valid CSS3 selector or a DOM node.
 			//		In the selector case, only the first matching element will be used
@@ -15506,10 +15531,13 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 			//	|		<p>great comedians may not be funny <span>in person</span></p>
 			//	|	</div>
 			//		If we are presented with the following definition for a NodeList:
-			//	|	var l = new NodeList(dojo.byId("foo"), dojo.byId("bar"));
+			//	|	require(["dojo/dom", "dojo/query", "dojo/NodeList-dom"
+			//	|	], function(dom, query){
+			//	|		var l = new NodeList(dom.byId("foo"), dom.byId("bar"));
 			//		it's possible to find all span elements under paragraphs
 			//		contained by these elements with this sub-query:
-			//	|	var spans = l.query("p span");
+			//	|		var spans = l.query("p span");
+			//	|	});
 
 			// FIXME: probably slow
 			if(!queryStr){ return this; }
@@ -15535,14 +15563,19 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 			//		If a string, a CSS rule like ".thinger" or "div > span".
 			// example:
 			//		"regular" JS filter syntax as exposed in dojo.filter:
-			//		|	dojo.query("*").filter(function(item){
-			//		|		// highlight every paragraph
-			//		|		return (item.nodeName == "p");
-			//		|	}).style("backgroundColor", "yellow");
+			//	|	require(["dojo/query", "dojo/NodeList-dom"
+			//	|	], function(query){
+			//	|		query("*").filter(function(item){
+			//	|			// highlight every paragraph
+			//	|			return (item.nodeName == "p");
+			//	|		}).style("backgroundColor", "yellow");
+			//	|	});
 			// example:
-			//		the same filtering using a CSS selector
-			//		|	dojo.query("*").filter("p").styles("backgroundColor", "yellow");
-
+			//	the same filtering using a CSS selector
+			//	|	require(["dojo/query", "dojo/NodeList-dom"
+			//	|	], function(query){
+			//	|		query("*").filter("p").styles("backgroundColor", "yellow");
+			//	|	});
 			var a = arguments, items = this, start = 0;
 			if(typeof filter == "string"){ // inline'd type check
 				items = query._filterResult(this, a[0]);
@@ -15598,35 +15631,50 @@ define(["./_base/kernel", "./query", "./_base/array", "./_base/lang", "./dom-cla
 			//		or an offset in the childNodes property
 			// example:
 			//		appends content to the end if the position is omitted
-			//	|	dojo.query("h3 > p").addContent("hey there!");
+			//	|	require(["dojo/query", "dojo/NodeList-dom"
+			//	|	], function(query){
+			//	|		query("h3 > p").addContent("hey there!");
+			//	|	});
 			// example:
 			//		add something to the front of each element that has a
 			//		"thinger" property:
-			//	|	dojo.query("[thinger]").addContent("...", "first");
+			//	|	require(["dojo/query", "dojo/NodeList-dom"
+			//	|	], function(query){
+			//	|		query("[thinger]").addContent("...", "first");
+			//	|	});
 			// example:
 			//		adds a header before each element of the list
-			//	|	dojo.query(".note").addContent("<h4>NOTE:</h4>", "before");
+			//	|	require(["dojo/query", "dojo/NodeList-dom"
+			//	|	], function(query){
+			//	|		query(".note").addContent("<h4>NOTE:</h4>", "before");
+			//	|	});
 			// example:
 			//		add a clone of a DOM node to the end of every element in
 			//		the list, removing it from its existing parent.
-			//	|	dojo.query(".note").addContent(dojo.byId("foo"));
+			//	|	require(["dojo/dom", "dojo/query", "dojo/NodeList-dom"
+			//	|	], function(dom, query){
+			//	|		query(".note").addContent(dom.byId("foo"));
+			//	|	});
 			// example:
 			//		Append nodes from a templatized string.
-			// |	dojo.require("dojo.string");
-			// |	dojo.query(".note").addContent({
-			// |		template: '<b>${id}: </b><span>${name}</span>',
-			// |		id: "user332",
-			// |		name: "Mr. Anderson"
-			// |	});
+			//	|	require(["dojo/string", "dojo/query", "dojo/NodeList-dom"
+			//	|	], function(string, query){
+			//	|		query(".note").addContent({
+			//	|			template: '<b>${id}: </b><span>${name}</span>',
+			//	|			id: "user332",
+			//	|			name: "Mr. Anderson"
+			//	|		});
+			//	|	});
 			// example:
 			//		Append nodes from a templatized string that also has widgets parsed.
-			// |	dojo.require("dojo.string");
-			// |	dojo.require("dojo.parser");
-			// |	var notes = dojo.query(".note").addContent({
-			// |		template: '<button dojoType="dijit/form/Button">${text}</button>',
-			// |		parse: true,
-			// |		text: "Send"
-			// |	});
+			//	|	require(["dojo/string", "dojo/parser", "dojo/query", "dojo/NodeList-dom"
+			//	|	], function(string, parser, query){
+			//	|		var notes = query(".note").addContent({
+			//	|			template: '<button dojoType="dijit/form/Button">${text}</button>',
+			//	|			parse: true,
+			//	|			text: "Send"
+			//	|		});
+			//	|	});
 			content = this._normalize(content, this[0]);
 			for(var i = 0, node; (node = this[i]); i++){
 				if(content.length){
@@ -15747,7 +15795,7 @@ define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", 
 			// reference to the real window object (maybe a copy), so we must fix it as well
 			// We use IE specific execScript to attach the real window reference to
 			// document._parentWindow for later use
-			if(has("ie") && window !== document.parentWindow){
+			if(has("ie") < 9 && window !== document.parentWindow){
 				/*
 				In IE 6, only the variable "window" can be used to connect events (others
 				may be only copies).
@@ -15928,9 +15976,10 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 	}
 
 	function marked(/*DOMNode*/ node){
-		// Test if a node or its ancestor has been marked with the dojoClick property to indicate special processing,
+		// Search for node ancestor has been marked with the dojoClick property to indicate special processing.
+		// Returns marked ancestor.
 		do{
-			if(node.dojoClick){ return node.dojoClick; }
+			if(node.dojoClick){ return node; }
 		}while(node = node.parentNode);
 	}
 	
@@ -15941,9 +15990,16 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 		//		was called in an event listener. Synthetic clicks are generated only if a node or one of its ancestors has
 		//		its dojoClick property set to truthy.
 		
-		clickTracker  = !e.target.disabled && marked(e.target); // click threshold = true, number or x/y object
+		var markedNode = marked(e.target);
+		clickTracker  = !e.target.disabled && markedNode && markedNode.dojoClick; // click threshold = true, number, x/y object, or "useTarget"
 		if(clickTracker){
-			clickTarget = e.target;
+			var useTarget = (clickTracker == "useTarget");
+			clickTarget = (useTarget?markedNode:e.target);
+			if(useTarget){
+				// We expect a click, so prevent any other 
+				// defaut action on "touchpress"
+				e.preventDefault();
+			}
 			clickX = e.touches ? e.touches[0].pageX : e.clientX;
 			clickY = e.touches ? e.touches[0].pageY : e.clientY;
 			clickDx = (typeof clickTracker == "object" ? clickTracker.x : (typeof clickTracker == "number" ? clickTracker : 0)) || 4;
@@ -15954,17 +16010,31 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 			if(!clicksInited){
 				clicksInited = true;
 
+				function updateClickTracker(e){
+					if(useTarget){
+						clickTracker = dom.isDescendant(win.doc.elementFromPoint((e.changedTouches ? e.changedTouches[0].pageX : e.clientX),(e.changedTouches ? e.changedTouches[0].pageY : e.clientY)),clickTarget);
+					}else{
+						clickTracker = clickTracker &&
+							e.target == clickTarget &&
+							Math.abs((e.changedTouches ? e.changedTouches[0].pageX : e.clientX) - clickX) <= clickDx &&
+							Math.abs((e.changedTouches ? e.changedTouches[0].pageY : e.clientY) - clickY) <= clickDy;
+					}
+				}
+
 				win.doc.addEventListener(moveType, function(e){
-					clickTracker = clickTracker &&
-						e.target == clickTarget &&
-						Math.abs((e.touches ? e.touches[0].pageX : e.clientX) - clickX) <= clickDx &&
-						Math.abs((e.touches ? e.touches[0].pageY : e.clientY) - clickY) <= clickDy;
+					updateClickTracker(e);
+					if(useTarget){
+						// prevent native scroll event and ensure touchend is
+						// fire after touch moves between press and release.
+						e.preventDefault();
+					}
 				}, true);
 
 				win.doc.addEventListener(endType, function(e){
+					updateClickTracker(e);
 					if(clickTracker){
 						clickTime = (new Date()).getTime();
-						var target = e.target;
+						var target = (useTarget?clickTarget:e.target);
 						if(target.tagName === "LABEL"){
 							// when clicking on a label, forward click to its associated input if any
 							target = dom.byId(target.getAttribute("for")) || target;
@@ -15975,7 +16045,7 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 								cancelable : true,
 								_dojo_click : true
 							});
-						});
+						}, 0);
 					}
 				}, true);
 
@@ -16098,7 +16168,11 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 
 						// Unlike a listener on "touchmove", on(node, "dojotouchmove", listener) fires when the finger
 						// drags over the specified node, regardless of which node the touch started on.
-						on.emit(newNode, "dojotouchmove", copyEventProps(evt));
+						if(!on.emit(newNode, "dojotouchmove", copyEventProps(evt))){
+							// emit returns false when synthetic event "dojotouchmove" is cancelled, so we prevent the
+							// default behavior of the underlying native event "touchmove".
+							evt.preventDefault();
+						}
 					}
 				});
 
@@ -16141,7 +16215,7 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 		//		was called in a touch.press event listener.
 		//
 		// example:
-		//		Used with dojo.on
+		//		Used with dojo/on
 		//		|	define(["dojo/on", "dojo/touch"], function(on, touch){
 		//		|		on(node, touch.press, function(e){});
 		//		|		on(node, touch.move, function(e){});
@@ -16272,11 +16346,13 @@ return declare("dojo.Stateful", null, {
 	//		would have a custom getter of _fooGetter and a custom setter of _fooSetter.
 	//
 	// example:
-	//	|	var obj = new dojo.Stateful();
-	//	|	obj.watch("foo", function(){
-	//	|		console.log("foo changed to " + this.get("foo"));
+	//	|	require(["dojo/Stateful", function(Stateful) {
+	//	|		var obj = new Stateful();
+	//	|		obj.watch("foo", function(){
+	//	|			console.log("foo changed to " + this.get("foo"));
+	//	|		});
+	//	|		obj.set("foo","bar");
 	//	|	});
-	//	|	obj.set("foo","bar");
 
 	// _attrPairNames: Hash
 	//		Used across all instances a hash to cache attribute names and their getter 
@@ -16321,10 +16397,12 @@ return declare("dojo.Stateful", null, {
 		//		Get a named property on a Stateful object. The property may
 		//		potentially be retrieved via a getter method in subclasses. In the base class
 		//		this just retrieves the object's property.
-		//		For example:
-		//	|	stateful = new dojo.Stateful({foo: 3});
-		//	|	stateful.get("foo") // returns 3
-		//	|	stateful.foo // returns 3
+		// example:
+		//	|	require(["dojo/Stateful", function(Stateful) {
+		//	|		var stateful = new Stateful({foo: 3});
+		//	|		stateful.get("foo") // returns 3
+		//	|		stateful.foo // returns 3
+		//	|	});
 
 		return this._get(name, this._getAttrNames(name)); //Any
 	},
@@ -16340,18 +16418,19 @@ return declare("dojo.Stateful", null, {
 		// description:
 		//		Sets named properties on a stateful object and notifies any watchers of
 		//		the property. A programmatic setter may be defined in subclasses.
-		//		For example:
-		//	|	stateful = new dojo.Stateful();
-		//	|	stateful.watch(function(name, oldValue, value){
-		//	|		// this will be called on the set below
-		//	|	}
-		//	|	stateful.set(foo, 5);
-		//
+		// example:
+		//	|	require(["dojo/Stateful", function(Stateful) {
+		//	|		var stateful = new Stateful();
+		//	|		stateful.watch(function(name, oldValue, value){
+		//	|			// this will be called on the set below
+		//	|		}
+		//	|		stateful.set(foo, 5);
 		//	set() may also be called with a hash of name/value pairs, ex:
-		//	|	myObj.set({
-		//	|		foo: "Howdy",
-		//	|		bar: 3
-		//	|	})
+		//	|		stateful.set({
+		//	|			foo: "Howdy",
+		//	|			bar: 3
+		//	|		});
+		//	|	});
 		//	This is equivalent to calling set(foo, "Howdy") and set(bar, 3)
 
 		// If an object is used, iterate through object
@@ -16562,6 +16641,7 @@ define(["./_base/kernel", "require", "./has", "./request"], function(dojo, requi
 		//		"dojo.cache" style of call):
 		//		| //If template.html contains "<h1>Hello</h1>" that will be
 		//		| //the value for the text variable.
+		//		| //Note: This is pre-AMD, deprecated syntax
 		//		| var text = dojo["cache"]("my.module", "template.html");
 		// example:
 		//		To ask dojo.cache to fetch content and store it in the cache, and sanitize the input
@@ -16570,12 +16650,14 @@ define(["./_base/kernel", "require", "./has", "./request"], function(dojo, requi
 		//		dojo.cache calls, use the "dojo.cache" style of call):
 		//		| //If template.html contains "<html><body><h1>Hello</h1></body></html>", the
 		//		| //text variable will contain just "<h1>Hello</h1>".
+		//		| //Note: This is pre-AMD, deprecated syntax
 		//		| var text = dojo["cache"]("my.module", "template.html", {sanitize: true});
 		// example:
 		//		Same example as previous, but demonstrates how an object can be passed in as
 		//		the first argument, then the value argument can then be the second argument.
 		//		| //If template.html contains "<html><body><h1>Hello</h1></body></html>", the
 		//		| //text variable will contain just "<h1>Hello</h1>".
+		//		| //Note: This is pre-AMD, deprecated syntax
 		//		| var text = dojo["cache"](new dojo._Url("my/module/template.html"), {sanitize: true});
 
 		//	 * (string string [value]) => (module, url, value)
@@ -17081,7 +17163,7 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 			// summary:
 			//		get the root bundle which instructs which other bundles are required to construct the localized bundle
 			require([bundlePathAndName], function(root){
-				var current = lang.clone(root.root),
+				var current = lang.clone(root.root || root.ROOT),// 1.6 built bundle defined ROOT
 					availableLocales = getAvailableLocales(!root._v1x && root, locale, bundlePath, bundleName);
 				require(availableLocales, function(){
 					for (var i = 1; i<availableLocales.length; i++){
@@ -17702,7 +17784,7 @@ string.trim = String.prototype.trim ?
 	 //		Returns the trimmed string
 	 // description:
 	 //		This version of trim() was taken from [Steven Levithan's blog](http://blog.stevenlevithan.com/archives/faster-trim-javascript).
-	 //		The short yet performant version of this function is dojo.trim(),
+	 //		The short yet performant version of this function is dojo/_base/lang.trim(),
 	 //		which is part of Dojo base.  Uses String.prototype.trim instead, if available.
 	 return "";	// String
  };
@@ -19939,7 +20021,7 @@ var Observable = function(/*Store*/ store){
 										resultsArray.length;
 									resultsArray.splice(firstInsertedInto, 0, changed); // add the new item
 									insertedInto = array.indexOf(queryExecutor(resultsArray), changed); // sort it
-									// we now need to push the chagne back into the original results array
+									// we now need to push the change back into the original results array
 									resultsArray.splice(firstInsertedInto, 1); // remove the inserted item from the previous index
 									
 									if((options.start && insertedInto == 0) ||
@@ -20034,22 +20116,20 @@ return Observable;
 },
 'mijit/_TemplatedMixin':function(){
 define([
-	"dojo/_base/lang", // lang.getObject
-	"dojo/touch",
-	"./_WidgetBase",
-	"dojo/string", // string.substitute string.trim
 	"dojo/cache",	// dojo.cache
-	"dojo/_base/array", // array.forEach
 	"dojo/_base/declare", // declare
 	"dojo/dom-construct", // domConstruct.destroy, domConstruct.toDom
+	"dojo/_base/lang", // lang.getObject
+	"dojo/on",
 	"dojo/sniff", // has("ie")
-	"dojo/_base/unload" // unload.addOnWindowUnload
-], function(lang, touch, _WidgetBase, string, cache, array, declare, domConstruct, has, unload) {
+	"dojo/string", // string.substitute string.trim
+	"./_AttachMixin"
+], function(cache, declare, domConstruct, lang, on, has, string, _AttachMixin){
 
 	// module:
 	//		dijit/_TemplatedMixin
 
-	var _TemplatedMixin = declare("dijit._TemplatedMixin", null, {
+	var _TemplatedMixin = declare("dijit._TemplatedMixin", _AttachMixin, {
 		// summary:
 		//		Mixin for widgets that are instantiated from a template
 
@@ -20069,40 +20149,17 @@ define([
 		//		that its template is always re-built from a string
 		_skipNodeCache: false,
 
-		// _earlyTemplatedStartup: Boolean
-		//		A fallback to preserve the 1.0 - 1.3 behavior of children in
-		//		templates having their startup called before the parent widget
-		//		fires postCreate. Defaults to 'false', causing child widgets to
-		//		have their .startup() called immediately before a parent widget
-		//		.startup(), but always after the parent .postCreate(). Set to
-		//		'true' to re-enable to previous, arguably broken, behavior.
-		_earlyTemplatedStartup: false,
-
 /*=====
-		// _attachPoints: [private] String[]
-		//		List of widget attribute names associated with data-dojo-attach-point=... in the
-		//		template, ex: ["containerNode", "labelNode"]
-		_attachPoints: [],
+		// _rendered: Boolean
+		//		Not normally use, but this flag can be set by the app if the server has already rendered the template,
+		//		i.e. already inlining the template for the widget into the main page.   Reduces _TemplatedMixin to
+		//		just function like _AttachMixin.
+		_rendered: false,
+=====*/
 
-		// _attachEvents: [private] Handle[]
-		//		List of connections associated with data-dojo-attach-event=... in the
-		//		template
-		_attachEvents: [],
- =====*/
-
-		constructor: function(/*===== params, srcNodeRef =====*/){
-			// summary:
-			//		Create the widget.
-			// params: Object|null
-			//		Hash of initialization parameters for widget, including scalar values (like title, duration etc.)
-			//		and functions, typically callbacks like onClick.
-			//		The hash can contain any of the widget's properties, excluding read-only properties.
-			// srcNodeRef: DOMNode|String?
-			//		If a srcNodeRef (DOM node) is specified, replace srcNodeRef with my generated DOM tree.
-
-			this._attachPoints = [];
-			this._attachEvents = [];
-		},
+		// Set _AttachMixin.searchContainerNode to true for back-compat for widgets that have data-dojo-attach-point's
+		// and events inside this.containerNode.   Remove for 2.0.
+		searchContainerNode: true,
 
 		_stringRepl: function(tmpl){
 			// summary:
@@ -20119,11 +20176,27 @@ define([
 
 				// Substitution keys beginning with ! will skip the transform step,
 				// in case a user wishes to insert unescaped markup, e.g. ${!foo}
-				return key.charAt(0) == "!" ? value :
-					// Safer substitution, see heading "Attribute values" in
-					// http://www.w3.org/TR/REC-html40/appendix/notes.html#h-B.3.2
-					value.toString().replace(/"/g,"&quot;"); //TODO: add &amp? use encodeXML method?
+				return key.charAt(0) == "!" ? value : this._escapeValue("" + value);
 			}, this);
+		},
+
+		_escapeValue: function(/*String*/ val){
+			// summary:
+			//		Escape a value to be inserted into the template, either into an attribute value
+			//		(ex: foo="${bar}") or as inner text of an element (ex: <span>${foo}</span>)
+
+			// Safer substitution, see heading "Attribute values" in
+			// http://www.w3.org/TR/REC-html40/appendix/notes.html#h-B.3.2
+			// and also https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet#RULE_.231_-_HTML_Escape_Before_Inserting_Untrusted_Data_into_HTML_Element_Content
+			return val.replace(/["'<>&]/g, function(val){
+				return {
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					"\"": "&quot;",
+					"'": "&#x27;"
+				}[val];
+			});
 		},
 
 		buildRendering: function(){
@@ -20132,43 +20205,40 @@ define([
 			// tags:
 			//		protected
 
-			if(!this.templateString){
-				this.templateString = cache(this.templatePath, {sanitize: true});
-			}
-
-			// Lookup cached version of template, and download to cache if it
-			// isn't there already.  Returns either a DomNode or a string, depending on
-			// whether or not the template contains ${foo} replacement parameters.
-			var cached = _TemplatedMixin.getCachedTemplate(this.templateString, this._skipNodeCache, this.ownerDocument);
-
-			var node;
-			if(lang.isString(cached)){
-				node = domConstruct.toDom(this._stringRepl(cached), this.ownerDocument);
-				if(node.nodeType != 1){
-					// Flag common problems such as templates with multiple top level nodes (nodeType == 11)
-					throw new Error("Invalid template: " + cached);
+			if(!this._rendered){
+				if(!this.templateString){
+					this.templateString = cache(this.templatePath, {sanitize: true});
 				}
-			}else{
-				// if it's a node, all we have to do is clone it
-				node = cached.cloneNode(true);
+
+				// Lookup cached version of template, and download to cache if it
+				// isn't there already.  Returns either a DomNode or a string, depending on
+				// whether or not the template contains ${foo} replacement parameters.
+				var cached = _TemplatedMixin.getCachedTemplate(this.templateString, this._skipNodeCache, this.ownerDocument);
+
+				var node;
+				if(lang.isString(cached)){
+					node = domConstruct.toDom(this._stringRepl(cached), this.ownerDocument);
+					if(node.nodeType != 1){
+						// Flag common problems such as templates with multiple top level nodes (nodeType == 11)
+						throw new Error("Invalid template: " + cached);
+					}
+				}else{
+					// if it's a node, all we have to do is clone it
+					node = cached.cloneNode(true);
+				}
+
+				this.domNode = node;
 			}
 
-			this.domNode = node;
-
-			// Call down to _Widget.buildRendering() to get base classes assigned
+			// Call down to _WidgetBase.buildRendering() to get base classes assigned
 			// TODO: change the baseClass assignment to _setBaseClassAttr
 			this.inherited(arguments);
 
-			// recurse through the node, looking for, and attaching to, our
-			// attachment points and events, which should be defined on the template node.
-			this._attachTemplateNodes(node, function(n,p){ return n.getAttribute(p); });
+			if(!this._rendered){
+				this._fillContent(this.srcNodeRef);
+			}
 
-			this._beforeFillContent();		// hook for _WidgetsInTemplateMixin
-
-			this._fillContent(this.srcNodeRef);
-		},
-
-		_beforeFillContent: function(){
+			this._rendered = true;
 		},
 
 		_fillContent: function(/*DomNode*/ source){
@@ -20183,91 +20253,8 @@ define([
 					dest.appendChild(source.firstChild);
 				}
 			}
-		},
-
-		_attachTemplateNodes: function(rootNode, getAttrFunc){
-			// summary:
-			//		Iterate through the template and attach functions and nodes accordingly.
-			//		Alternately, if rootNode is an array of widgets, then will process data-dojo-attach-point
-			//		etc. for those widgets.
-			// description:
-			//		Map widget properties and functions to the handlers specified in
-			//		the dom node and it's descendants. This function iterates over all
-			//		nodes and looks for these properties:
-			//
-			//		- dojoAttachPoint/data-dojo-attach-point
-			//		- dojoAttachEvent/data-dojo-attach-event
-			// rootNode: DomNode|Widget[]
-			//		the node to search for properties. All children will be searched.
-			// getAttrFunc: Function
-			//		a function which will be used to obtain property for a given
-			//		DomNode/Widget
-			// tags:
-			//		private
-
-			var nodes = lang.isArray(rootNode) ? rootNode : (rootNode.all || rootNode.getElementsByTagName("*"));
-			var x = lang.isArray(rootNode) ? 0 : -1;
-			for(; x < 0 || nodes[x]; x++){	// don't access nodes.length on IE, see #14346
-				var baseNode = (x == -1) ? rootNode : nodes[x];
-				if(this.widgetsInTemplate && (getAttrFunc(baseNode, "dojoType") || getAttrFunc(baseNode, "data-dojo-type"))){
-					continue;
-				}
-				// Process data-dojo-attach-point
-				var attachPoint = getAttrFunc(baseNode, "dojoAttachPoint") || getAttrFunc(baseNode, "data-dojo-attach-point");
-				if(attachPoint){
-					var point, points = attachPoint.split(/\s*,\s*/);
-					while((point = points.shift())){
-						if(lang.isArray(this[point])){
-							this[point].push(baseNode);
-						}else{
-							this[point]=baseNode;
-						}
-						this._attachPoints.push(point);
-					}
-				}
-
-				// Process data-dojo-attach-event
-				var attachEvent = getAttrFunc(baseNode, "dojoAttachEvent") || getAttrFunc(baseNode, "data-dojo-attach-event");
-				if(attachEvent){
-					// NOTE: we want to support attributes that have the form
-					// "domEvent: nativeEvent; ..."
-					var event, events = attachEvent.split(/\s*,\s*/);
-					var trim = lang.trim;
-					while((event = events.shift())){
-						if(event){
-							var thisFunc = null;
-							if(event.indexOf(":") != -1){
-								// oh, if only JS had tuple assignment
-								var funcNameArr = event.split(":");
-								event = trim(funcNameArr[0]);
-								thisFunc = trim(funcNameArr[1]);
-							}else{
-								event = trim(event);
-							}
-							if(!thisFunc){
-								thisFunc = event;
-							}
-							// Map "press", "move" and "release" to keys.touch, keys.move, keys.release
-							this._attachEvents.push(this.connect(baseNode, touch[event] || event, thisFunc));
-						}
-					}
-				}
-			}
-		},
-
-		destroyRendering: function(){
-			// Delete all attach points to prevent IE6 memory leaks.
-			array.forEach(this._attachPoints, function(point){
-				delete this[point];
-			}, this);
-			this._attachPoints = [];
-
-			// And same for event handlers
-			array.forEach(this._attachEvents, this.disconnect, this);
-			this._attachEvents = [];
-
-			this.inherited(arguments);
 		}
+
 	});
 
 	// key is templateString; object is either string or DOM tree
@@ -20319,7 +20306,7 @@ define([
 	};
 
 	if(has("ie")){
-		unload.addOnWindowUnload(function(){
+		on(window, "unload", function(){
 			var cache = _TemplatedMixin._templateCache;
 			for(var key in cache){
 				var value = cache[key];
@@ -20331,6 +20318,238 @@ define([
 		});
 	}
 
+	return _TemplatedMixin;
+});
+
+},
+'mijit/_AttachMixin':function(){
+define([
+	"require",
+	"dojo/_base/array", // array.forEach
+	"dojo/_base/connect",	// remove for 2.0
+	"dojo/_base/declare", // declare
+	"dojo/_base/lang", // lang.getObject
+	"dojo/mouse",
+	"dojo/on",
+	"dojo/touch",
+	"./_WidgetBase"
+], function(require, array, connect, declare, lang, mouse, on, touch, _WidgetBase){
+
+	// module:
+	//		dijit/_AttachMixin
+
+	// Map from string name like "mouseenter" to synthetic event like mouse.enter
+	var synthEvents = lang.delegate(touch, {
+		"mouseenter": mouse.enter,
+		"mouseleave": mouse.leave,
+		"keypress": connect._keypress	// remove for 2.0
+	});
+
+	// To be lightweight, _AttachMixin doesn't require() dijit/a11yclick.
+	// If the subclass has a template using "ondijitclick", it must load dijit/a11yclick itself.
+	// In that case, the a11yclick variable below will get set to point to that synthetic event.
+	var a11yclick;
+
+	var _AttachMixin = declare("dijit._AttachMixin", null, {
+		// summary:
+		//		Mixin for widgets to attach to dom nodes and setup events via
+		//		convenient data-dojo-attach-point and data-dojo-attach-event DOM attributes.
+		//
+		//		Superclass of _TemplatedMixin, and can also be used standalone when templates are pre-rendered on the
+		//		server.
+		//
+		//		Does not [yet] handle widgets like ContentPane with this.containerNode set.   It should skip
+		//		scanning for data-dojo-attach-point and data-dojo-attach-event inside this.containerNode, but it
+		//		doesn't.
+
+/*=====
+		// _attachPoints: [private] String[]
+		//		List of widget attribute names associated with data-dojo-attach-point=... in the
+		//		template, ex: ["containerNode", "labelNode"]
+		_attachPoints: [],
+
+		// _attachEvents: [private] Handle[]
+		//		List of connections associated with data-dojo-attach-event=... in the
+		//		template
+		_attachEvents: [],
+
+		// attachScope: [public] Object
+		//		Object to which attach points and events will be scoped.  Defaults
+		//		to 'this'.
+		attachScope: undefined,
+
+		// searchContainerNode: [protected] Boolean
+		//		Search descendants of this.containerNode for data-dojo-attach-point and data-dojo-attach-event.
+		//		Should generally be left false (the default value) both for performance and to avoid failures when
+		//		this.containerNode holds other _AttachMixin instances with their own attach points and events.
+ 		searchContainerNode: false,
+ =====*/
+
+		constructor: function(/*===== params, srcNodeRef =====*/){
+			// summary:
+			//		Create the widget.
+			// params: Object|null
+			//		Hash of initialization parameters for widget, including scalar values (like title, duration etc.)
+			//		and functions, typically callbacks like onClick.
+			//		The hash can contain any of the widget's properties, excluding read-only properties.
+			// srcNodeRef: DOMNode|String?
+			//		If a srcNodeRef (DOM node) is specified, replace srcNodeRef with my generated DOM tree.
+
+			this._attachPoints = [];
+			this._attachEvents = [];
+		},
+
+
+		buildRendering: function(){
+			// summary:
+			//		Attach to DOM nodes marked with special attributes.
+			// tags:
+			//		protected
+
+			this.inherited(arguments);
+
+			// recurse through the node, looking for, and attaching to, our
+			// attachment points and events, which should be defined on the template node.
+			this._attachTemplateNodes(this.domNode);
+
+			this._beforeFillContent();		// hook for _WidgetsInTemplateMixin
+		},
+
+		_beforeFillContent: function(){
+		},
+
+		_attachTemplateNodes: function(rootNode){
+			// summary:
+			//		Iterate through the dom nodes and attach functions and nodes accordingly.
+			// description:
+			//		Map widget properties and functions to the handlers specified in
+			//		the dom node and it's descendants. This function iterates over all
+			//		nodes and looks for these properties:
+			//
+			//		- dojoAttachPoint/data-dojo-attach-point
+			//		- dojoAttachEvent/data-dojo-attach-event
+			// rootNode: DomNode
+			//		The node to search for properties. All descendants will be searched.
+			// tags:
+			//		private
+
+			// DFS to process all nodes except those inside of this.containerNode
+			var node = rootNode;
+			while(true){
+				if(node.nodeType == 1 && (this._processTemplateNode(node, function(n,p){ return n.getAttribute(p); },
+						this._attach) || this.searchContainerNode) && node.firstChild){
+					node = node.firstChild;
+				}else{
+					if(node == rootNode){ return; }
+					while(!node.nextSibling){
+						node = node.parentNode;
+						if(node == rootNode){ return; }
+					}
+					node = node.nextSibling;
+				}
+			}
+		},
+
+		_processTemplateNode: function(/*DOMNode|Widget*/ baseNode, getAttrFunc, attachFunc){
+			// summary:
+			//		Process data-dojo-attach-point and data-dojo-attach-event for given node or widget.
+			//		Returns true if caller should process baseNode's children too.
+
+			var ret = true;
+
+			// Process data-dojo-attach-point
+			var _attachScope = this.attachScope || this,
+				attachPoint = getAttrFunc(baseNode, "dojoAttachPoint") || getAttrFunc(baseNode, "data-dojo-attach-point");
+			if(attachPoint){
+				var point, points = attachPoint.split(/\s*,\s*/);
+				while((point = points.shift())){
+					if(lang.isArray(_attachScope[point])){
+						_attachScope[point].push(baseNode);
+					}else{
+						_attachScope[point] = baseNode;
+					}
+					ret = (point != "containerNode");
+					this._attachPoints.push(point);
+				}
+			}
+
+			// Process data-dojo-attach-event
+			var attachEvent = getAttrFunc(baseNode, "dojoAttachEvent") || getAttrFunc(baseNode, "data-dojo-attach-event");
+			if(attachEvent){
+				// NOTE: we want to support attributes that have the form
+				// "domEvent: nativeEvent; ..."
+				var event, events = attachEvent.split(/\s*,\s*/);
+				var trim = lang.trim;
+				while((event = events.shift())){
+					if(event){
+						var thisFunc = null;
+						if(event.indexOf(":") != -1){
+							// oh, if only JS had tuple assignment
+							var funcNameArr = event.split(":");
+							event = trim(funcNameArr[0]);
+							thisFunc = trim(funcNameArr[1]);
+						}else{
+							event = trim(event);
+						}
+						if(!thisFunc){
+							thisFunc = event;
+						}
+
+						this._attachEvents.push(attachFunc(baseNode, event, lang.hitch(_attachScope, thisFunc)));
+					}
+				}
+			}
+
+			return ret;
+		},
+
+		_attach: function(node, type, func){
+			// summary:
+			//		Roughly corresponding to dojo/on, this is the default function for processing a
+			//		data-dojo-attach-event.  Meant to attach to DOMNodes, not to widgets.
+			// node: DOMNode
+			//		The node to setup a listener on.
+			// type: String
+			//		Event name like "click".
+			// getAttrFunc: Function
+			//		Function to get the specified property for a given DomNode/Widget.
+			// attachFunc: Function?
+			//		Attaches an event handler from the specified node/widget to specified function.
+
+			// Map special type names like "mouseenter" to synthetic events.
+			// Subclasses are responsible to require() dijit/a11yclick if they want to use it.
+			type = type.replace(/^on/, "").toLowerCase();
+			if(type == "dijitclick"){
+				type = a11yclick || (a11yclick = require("./a11yclick"));
+			}else{
+				type = synthEvents[type] || type;
+			}
+
+			return on(node, type, func);
+		},
+
+		_detachTemplateNodes: function() {
+			// summary:
+			//		Detach and clean up the attachments made in _attachtempalteNodes.
+
+			// Delete all attach points to prevent IE6 memory leaks.
+			var _attachScope = this.attachScope || this;
+			array.forEach(this._attachPoints, function(point){
+				delete _attachScope[point];
+			});
+			this._attachPoints = [];
+
+			// And same for event handlers
+			array.forEach(this._attachEvents, function(handle){ handle.remove(); });
+			this._attachEvents = [];
+		},
+
+		destroyRendering: function(){
+			this._detachTemplateNodes();
+			this.inherited(arguments);
+		}
+	});
+
 	// These arguments can be specified for widgets which are used in templates.
 	// Since any widget can be specified as sub widgets in template, mix it
 	// into the base widget class.  (This is a hack, but it's effective.).
@@ -20339,14 +20558,14 @@ define([
 		dojoAttachEvent: "",
 		dojoAttachPoint: ""
 	});
-
-	return _TemplatedMixin;
+	
+	return _AttachMixin;
 });
 
 },
 'mijit/_WidgetBase':function(){
 define([
-	"require",			// require.toUrl
+	"require", // require.toUrl
 	"dojo/_base/array", // array.forEach array.map
 	"dojo/aspect",
 	"dojo/_base/config", // config.blankGif
@@ -20356,7 +20575,7 @@ define([
 	"dojo/dom-attr", // domAttr.set domAttr.remove
 	"dojo/dom-class", // domClass.add domClass.replace
 	"dojo/dom-construct", // domConstruct.destroy domConstruct.place
-	"dojo/dom-geometry",	// isBodyLtr
+	"dojo/dom-geometry", // isBodyLtr
 	"dojo/dom-style", // domStyle.set, domStyle.get
 	"dojo/has",
 	"dojo/_base/kernel",
@@ -20365,1122 +20584,1176 @@ define([
 	"dojo/ready",
 	"dojo/Stateful", // Stateful
 	"dojo/topic",
-	"dojo/_base/window", // win.doc, win.body()
+	"dojo/_base/window", // win.body()
 	"./Destroyable",
-	"./registry"	// registry.getUniqueId(), registry.findWidgets()
+	"dojo/has!dojo-bidi?./_BidiMixin",
+	"./registry"    // registry.getUniqueId(), registry.findWidgets()
 ], function(require, array, aspect, config, connect, declare,
 			dom, domAttr, domClass, domConstruct, domGeometry, domStyle, has, kernel,
-			lang, on, ready, Stateful, topic, win, Destroyable, registry){
+			lang, on, ready, Stateful, topic, win, Destroyable, _BidiMixin, registry){
 
-// module:
-//		dijit/_WidgetBase
+	// module:
+	//		dijit/_WidgetBase
 
-// Flag to make dijit load modules the app didn't explicitly request, for backwards compatibility
-has.add("dijit-legacy-requires", !kernel.isAsync);
+	// Flag to make dijit load modules the app didn't explicitly request, for backwards compatibility
+	has.add("dijit-legacy-requires", !kernel.isAsync);
 
-// For back-compat, remove in 2.0.
-if(has("dijit-legacy-requires")){
-	ready(0, function(){
-		var requires = ["dijit/_base/manager"];
-		require(requires);	// use indirection so modules not rolled into a build
-	});
-}
+	// Flag to enable support for textdir attribute
+	has.add("dojo-bidi", false);
 
-// Nested hash listing attributes for each tag, all strings in lowercase.
-// ex: {"div": {"style": true, "tabindex" true}, "form": { ...
-var tagAttrs = {};
-function getAttrs(obj){
-	var ret = {};
-	for(var attr in obj){
-		ret[attr.toLowerCase()] = true;
+
+	// For back-compat, remove in 2.0.
+	if(has("dijit-legacy-requires")){
+		ready(0, function(){
+			var requires = ["dijit/_base/manager"];
+			require(requires);	// use indirection so modules not rolled into a build
+		});
 	}
-	return ret;
-}
 
-function nonEmptyAttrToDom(attr){
-	// summary:
-	//		Returns a setter function that copies the attribute to this.domNode,
-	//		or removes the attribute from this.domNode, depending on whether the
-	//		value is defined or not.
-	return function(val){
-		domAttr[val ? "set" : "remove"](this.domNode, attr, val);
-		this._set(attr, val);
-	};
-}
+	// Nested hash listing attributes for each tag, all strings in lowercase.
+	// ex: {"div": {"style": true, "tabindex" true}, "form": { ...
+	var tagAttrs = {};
 
-return declare("dijit._WidgetBase", [Stateful, Destroyable], {
-	// summary:
-	//		Future base class for all Dijit widgets.
-	// description:
-	//		Future base class for all Dijit widgets.
-	//		_Widget extends this class adding support for various features needed by desktop.
-	//
-	//		Provides stubs for widget lifecycle methods for subclasses to extend, like postMixInProperties(), buildRendering(),
-	//		postCreate(), startup(), and destroy(), and also public API methods like set(), get(), and watch().
-	//
-	//		Widgets can provide custom setters/getters for widget attributes, which are called automatically by set(name, value).
-	//		For an attribute XXX, define methods _setXXXAttr() and/or _getXXXAttr().
-	//
-	//		_setXXXAttr can also be a string/hash/array mapping from a widget attribute XXX to the widget's DOMNodes:
-	//
-	//		- DOM node attribute
-	// |		_setFocusAttr: {node: "focusNode", type: "attribute"}
-	// |		_setFocusAttr: "focusNode"	(shorthand)
-	// |		_setFocusAttr: ""		(shorthand, maps to this.domNode)
-	//		Maps this.focus to this.focusNode.focus, or (last example) this.domNode.focus
-	//
-	//		- DOM node innerHTML
-	//	|		_setTitleAttr: { node: "titleNode", type: "innerHTML" }
-	//		Maps this.title to this.titleNode.innerHTML
-	//
-	//		- DOM node innerText
-	//	|		_setTitleAttr: { node: "titleNode", type: "innerText" }
-	//		Maps this.title to this.titleNode.innerText
-	//
-	//		- DOM node CSS class
-	// |		_setMyClassAttr: { node: "domNode", type: "class" }
-	//		Maps this.myClass to this.domNode.className
-	//
-	//		If the value of _setXXXAttr is an array, then each element in the array matches one of the
-	//		formats of the above list.
-	//
-	//		If the custom setter is null, no action is performed other than saving the new value
-	//		in the widget (in this).
-	//
-	//		If no custom setter is defined for an attribute, then it will be copied
-	//		to this.focusNode (if the widget defines a focusNode), or this.domNode otherwise.
-	//		That's only done though for attributes that match DOMNode attributes (title,
-	//		alt, aria-labelledby, etc.)
+	function getAttrs(obj){
+		var ret = {};
+		for(var attr in obj){
+			ret[attr.toLowerCase()] = true;
+		}
+		return ret;
+	}
 
-	// id: [const] String
-	//		A unique, opaque ID string that can be assigned by users or by the
-	//		system. If the developer passes an ID which is known not to be
-	//		unique, the specified ID is ignored and the system-generated ID is
-	//		used instead.
-	id: "",
-	_setIdAttr: "domNode",	// to copy to this.domNode even for auto-generated id's
-
-	// lang: [const] String
-	//		Rarely used.  Overrides the default Dojo locale used to render this widget,
-	//		as defined by the [HTML LANG](http://www.w3.org/TR/html401/struct/dirlang.html#adef-lang) attribute.
-	//		Value must be among the list of locales specified during by the Dojo bootstrap,
-	//		formatted according to [RFC 3066](http://www.ietf.org/rfc/rfc3066.txt) (like en-us).
-	lang: "",
-	// set on domNode even when there's a focus node.	but don't set lang="", since that's invalid.
-	_setLangAttr: nonEmptyAttrToDom("lang"),
-
-	// dir: [const] String
-	//		Bi-directional support, as defined by the [HTML DIR](http://www.w3.org/TR/html401/struct/dirlang.html#adef-dir)
-	//		attribute. Either left-to-right "ltr" or right-to-left "rtl".  If undefined, widgets renders in page's
-	//		default direction.
-	dir: "",
-	// set on domNode even when there's a focus node.	but don't set dir="", since that's invalid.
-	_setDirAttr: nonEmptyAttrToDom("dir"),	// to set on domNode even when there's a focus node
-
-	// textDir: String
-	//		Bi-directional support,	the main variable which is responsible for the direction of the text.
-	//		The text direction can be different than the GUI direction by using this parameter in creation
-	//		of a widget.
-	//
-	//		Allowed values:
-	//
-	//		1. "ltr"
-	//		2. "rtl"
-	//		3. "auto" - contextual the direction of a text defined by first strong letter.
-	//
-	//		By default is as the page direction.
-	textDir: "",
-
-	// class: String
-	//		HTML class attribute
-	"class": "",
-	_setClassAttr: { node: "domNode", type: "class" },
-
-	// style: String||Object
-	//		HTML style attributes as cssText string or name/value hash
-	style: "",
-
-	// title: String
-	//		HTML title attribute.
-	//
-	//		For form widgets this specifies a tooltip to display when hovering over
-	//		the widget (just like the native HTML title attribute).
-	//
-	//		For TitlePane or for when this widget is a child of a TabContainer, AccordionContainer,
-	//		etc., it's used to specify the tab label, accordion pane title, etc.
-	title: "",
-
-	// tooltip: String
-	//		When this widget's title attribute is used to for a tab label, accordion pane title, etc.,
-	//		this specifies the tooltip to appear when the mouse is hovered over that text.
-	tooltip: "",
-
-	// baseClass: [protected] String
-	//		Root CSS class of the widget (ex: dijitTextBox), used to construct CSS classes to indicate
-	//		widget state.
-	baseClass: "",
-
-	// srcNodeRef: [readonly] DomNode
-	//		pointer to original DOM node
-	srcNodeRef: null,
-
-	// domNode: [readonly] DomNode
-	//		This is our visible representation of the widget! Other DOM
-	//		Nodes may by assigned to other properties, usually through the
-	//		template system's data-dojo-attach-point syntax, but the domNode
-	//		property is the canonical "top level" node in widget UI.
-	domNode: null,
-
-	// containerNode: [readonly] DomNode
-	//		Designates where children of the source DOM node will be placed.
-	//		"Children" in this case refers to both DOM nodes and widgets.
-	//		For example, for myWidget:
-	//
-	//		|	<div data-dojo-type=myWidget>
-	//		|		<b> here's a plain DOM node
-	//		|		<span data-dojo-type=subWidget>and a widget</span>
-	//		|		<i> and another plain DOM node </i>
-	//		|	</div>
-	//
-	//		containerNode would point to:
-	//
-	//		|		<b> here's a plain DOM node
-	//		|		<span data-dojo-type=subWidget>and a widget</span>
-	//		|		<i> and another plain DOM node </i>
-	//
-	//		In templated widgets, "containerNode" is set via a
-	//		data-dojo-attach-point assignment.
-	//
-	//		containerNode must be defined for any widget that accepts innerHTML
-	//		(like ContentPane or BorderContainer or even Button), and conversely
-	//		is null for widgets that don't, like TextBox.
-	containerNode: null,
-
-	// ownerDocument: [const] Document?
-	//		The document this widget belongs to.  If not specified to constructor, will default to
-	//		srcNodeRef.ownerDocument, or if no sourceRef specified, then to dojo/_base/window::doc
-	ownerDocument: null,
-	_setOwnerDocumentAttr: function(val){
-		// this setter is merely to avoid automatically trying to set this.domNode.ownerDocument
-		this._set("ownerDocument", val);
-	},
-
-/*=====
-	// _started: [readonly] Boolean
-	//		startup() has completed.
-	_started: false,
-=====*/
-
-	// attributeMap: [protected] Object
-	//		Deprecated.	Instead of attributeMap, widget should have a _setXXXAttr attribute
-	//		for each XXX attribute to be mapped to the DOM.
-	//
-	//		attributeMap sets up a "binding" between attributes (aka properties)
-	//		of the widget and the widget's DOM.
-	//		Changes to widget attributes listed in attributeMap will be
-	//		reflected into the DOM.
-	//
-	//		For example, calling set('title', 'hello')
-	//		on a TitlePane will automatically cause the TitlePane's DOM to update
-	//		with the new title.
-	//
-	//		attributeMap is a hash where the key is an attribute of the widget,
-	//		and the value reflects a binding to a:
-	//
-	//		- DOM node attribute
-	// |		focus: {node: "focusNode", type: "attribute"}
-	//		Maps this.focus to this.focusNode.focus
-	//
-	//		- DOM node innerHTML
-	//	|		title: { node: "titleNode", type: "innerHTML" }
-	//		Maps this.title to this.titleNode.innerHTML
-	//
-	//		- DOM node innerText
-	//	|		title: { node: "titleNode", type: "innerText" }
-	//		Maps this.title to this.titleNode.innerText
-	//
-	//		- DOM node CSS class
-	// |		myClass: { node: "domNode", type: "class" }
-	//		Maps this.myClass to this.domNode.className
-	//
-	//		If the value is an array, then each element in the array matches one of the
-	//		formats of the above list.
-	//
-	//		There are also some shorthands for backwards compatibility:
-	//
-	//		- string --> { node: string, type: "attribute" }, for example:
-	//
-	//	|	"focusNode" ---> { node: "focusNode", type: "attribute" }
-	//
-	//		- "" --> { node: "domNode", type: "attribute" }
-	attributeMap: {},
-
-	// _blankGif: [protected] String
-	//		Path to a blank 1x1 image.
-	//		Used by `<img>` nodes in templates that really get their image via CSS background-image.
-	_blankGif: config.blankGif || require.toUrl("dojo/resources/blank.gif"),
-
-	//////////// INITIALIZATION METHODS ///////////////////////////////////////
-
-	/*=====
-	constructor: function(params, srcNodeRef){
+	function nonEmptyAttrToDom(attr){
 		// summary:
-		//		Create the widget.
-		// params: Object|null
-		//		Hash of initialization parameters for widget, including scalar values (like title, duration etc.)
-		//		and functions, typically callbacks like onClick.
-	 	//		The hash can contain any of the widget's properties, excluding read-only properties.
-	 	// srcNodeRef: DOMNode|String?
-		//		If a srcNodeRef (DOM node) is specified:
-		//
-		//		- use srcNodeRef.innerHTML as my contents
-		//		- if this is a behavioral widget then apply behavior to that srcNodeRef
-		//		- otherwise, replace srcNodeRef with my generated DOM tree
-	 },
-	=====*/
+		//		Returns a setter function that copies the attribute to this.domNode,
+		//		or removes the attribute from this.domNode, depending on whether the
+		//		value is defined or not.
+		return function(val){
+			domAttr[val ? "set" : "remove"](this.domNode, attr, val);
+			this._set(attr, val);
+		};
+	}
 
-	postscript: function(/*Object?*/params, /*DomNode|String*/srcNodeRef){
+	var _WidgetBase = declare("dijit._WidgetBase", [Stateful, Destroyable], {
 		// summary:
-		//		Kicks off widget instantiation.  See create() for details.
-		// tags:
-		//		private
-		this.create(params, srcNodeRef);
-	},
-
-	create: function(params, srcNodeRef){
-		// summary:
-		//		Kick off the life-cycle of a widget
+		//		Future base class for all Dijit widgets.
 		// description:
-		//		Create calls a number of widget methods (postMixInProperties, buildRendering, postCreate,
-		//		etc.), some of which of you'll want to override. See http://dojotoolkit.org/reference-guide/dijit/_WidgetBase.html
-		//		for a discussion of the widget creation lifecycle.
+		//		Future base class for all Dijit widgets.
+		//		_Widget extends this class adding support for various features needed by desktop.
 		//
-		//		Of course, adventurous developers could override create entirely, but this should
-		//		only be done as a last resort.
-		// params: Object|null
-		//		Hash of initialization parameters for widget, including scalar values (like title, duration etc.)
-		//		and functions, typically callbacks like onClick.
-		//		The hash can contain any of the widget's properties, excluding read-only properties.
-		// srcNodeRef: DOMNode|String?
-		//		If a srcNodeRef (DOM node) is specified:
+		//		Provides stubs for widget lifecycle methods for subclasses to extend, like postMixInProperties(), buildRendering(),
+		//		postCreate(), startup(), and destroy(), and also public API methods like set(), get(), and watch().
 		//
-		//		- use srcNodeRef.innerHTML as my contents
-		//		- if this is a behavioral widget then apply behavior to that srcNodeRef
-		//		- otherwise, replace srcNodeRef with my generated DOM tree
-		// tags:
-		//		private
+		//		Widgets can provide custom setters/getters for widget attributes, which are called automatically by set(name, value).
+		//		For an attribute XXX, define methods _setXXXAttr() and/or _getXXXAttr().
+		//
+		//		_setXXXAttr can also be a string/hash/array mapping from a widget attribute XXX to the widget's DOMNodes:
+		//
+		//		- DOM node attribute
+		// |		_setFocusAttr: {node: "focusNode", type: "attribute"}
+		// |		_setFocusAttr: "focusNode"	(shorthand)
+		// |		_setFocusAttr: ""		(shorthand, maps to this.domNode)
+		//		Maps this.focus to this.focusNode.focus, or (last example) this.domNode.focus
+		//
+		//		- DOM node innerHTML
+		//	|		_setTitleAttr: { node: "titleNode", type: "innerHTML" }
+		//		Maps this.title to this.titleNode.innerHTML
+		//
+		//		- DOM node innerText
+		//	|		_setTitleAttr: { node: "titleNode", type: "innerText" }
+		//		Maps this.title to this.titleNode.innerText
+		//
+		//		- DOM node CSS class
+		// |		_setMyClassAttr: { node: "domNode", type: "class" }
+		//		Maps this.myClass to this.domNode.className
+		//
+		//		If the value of _setXXXAttr is an array, then each element in the array matches one of the
+		//		formats of the above list.
+		//
+		//		If the custom setter is null, no action is performed other than saving the new value
+		//		in the widget (in this).
+		//
+		//		If no custom setter is defined for an attribute, then it will be copied
+		//		to this.focusNode (if the widget defines a focusNode), or this.domNode otherwise.
+		//		That's only done though for attributes that match DOMNode attributes (title,
+		//		alt, aria-labelledby, etc.)
 
-		// store pointer to original DOM tree
-		this.srcNodeRef = dom.byId(srcNodeRef);
+		// id: [const] String
+		//		A unique, opaque ID string that can be assigned by users or by the
+		//		system. If the developer passes an ID which is known not to be
+		//		unique, the specified ID is ignored and the system-generated ID is
+		//		used instead.
+		id: "",
+		_setIdAttr: "domNode", // to copy to this.domNode even for auto-generated id's
 
-		// No longer used, remove for 2.0.
-		this._connects = [];
-		this._supportingWidgets = [];
+		// lang: [const] String
+		//		Rarely used.  Overrides the default Dojo locale used to render this widget,
+		//		as defined by the [HTML LANG](http://www.w3.org/TR/html401/struct/dirlang.html#adef-lang) attribute.
+		//		Value must be among the list of locales specified during by the Dojo bootstrap,
+		//		formatted according to [RFC 3066](http://www.ietf.org/rfc/rfc3066.txt) (like en-us).
+		lang: "",
+		// set on domNode even when there's a focus node.	but don't set lang="", since that's invalid.
+		_setLangAttr: nonEmptyAttrToDom("lang"),
 
-		// this is here for back-compat, remove in 2.0 (but check NodeList-instantiate.html test)
-		if(this.srcNodeRef && (typeof this.srcNodeRef.id == "string")){ this.id = this.srcNodeRef.id; }
+		// dir: [const] String
+		//		Bi-directional support, as defined by the [HTML DIR](http://www.w3.org/TR/html401/struct/dirlang.html#adef-dir)
+		//		attribute. Either left-to-right "ltr" or right-to-left "rtl".  If undefined, widgets renders in page's
+		//		default direction.
+		dir: "",
+		// set on domNode even when there's a focus node.	but don't set dir="", since that's invalid.
+		_setDirAttr: nonEmptyAttrToDom("dir"), // to set on domNode even when there's a focus node
 
-		// mix in our passed parameters
-		if(params){
-			this.params = params;
-			lang.mixin(this, params);
-		}
-		this.postMixInProperties();
+		// class: String
+		//		HTML class attribute
+		"class": "",
+		_setClassAttr: { node: "domNode", type: "class" },
 
-		// Generate an id for the widget if one wasn't specified, or it was specified as id: undefined.
-		// Do this before buildRendering() because it might expect the id to be there.
-		if(!this.id){
-			this.id = registry.getUniqueId(this.declaredClass.replace(/\./g,"_"));
-			if(this.params){
-				// if params contains {id: undefined}, prevent _applyAttributes() from processing it
-				delete this.params.id;
+		// Override automatic assigning type --> focusNode, it causes exception on IE6-8.
+		// Instead, type must be specified as ${type} in the template, as part of the original DOM.
+		_setTypeAttr: null,
+
+		// style: String||Object
+		//		HTML style attributes as cssText string or name/value hash
+		style: "",
+
+		// title: String
+		//		HTML title attribute.
+		//
+		//		For form widgets this specifies a tooltip to display when hovering over
+		//		the widget (just like the native HTML title attribute).
+		//
+		//		For TitlePane or for when this widget is a child of a TabContainer, AccordionContainer,
+		//		etc., it's used to specify the tab label, accordion pane title, etc.  In this case it's
+		//		interpreted as HTML.
+		title: "",
+
+		// tooltip: String
+		//		When this widget's title attribute is used to for a tab label, accordion pane title, etc.,
+		//		this specifies the tooltip to appear when the mouse is hovered over that text.
+		tooltip: "",
+
+		// baseClass: [protected] String
+		//		Root CSS class of the widget (ex: dijitTextBox), used to construct CSS classes to indicate
+		//		widget state.
+		baseClass: "",
+
+		// srcNodeRef: [readonly] DomNode
+		//		pointer to original DOM node
+		srcNodeRef: null,
+
+		// domNode: [readonly] DomNode
+		//		This is our visible representation of the widget! Other DOM
+		//		Nodes may by assigned to other properties, usually through the
+		//		template system's data-dojo-attach-point syntax, but the domNode
+		//		property is the canonical "top level" node in widget UI.
+		domNode: null,
+
+		// containerNode: [readonly] DomNode
+		//		Designates where children of the source DOM node will be placed.
+		//		"Children" in this case refers to both DOM nodes and widgets.
+		//		For example, for myWidget:
+		//
+		//		|	<div data-dojo-type=myWidget>
+		//		|		<b> here's a plain DOM node
+		//		|		<span data-dojo-type=subWidget>and a widget</span>
+		//		|		<i> and another plain DOM node </i>
+		//		|	</div>
+		//
+		//		containerNode would point to:
+		//
+		//		|		<b> here's a plain DOM node
+		//		|		<span data-dojo-type=subWidget>and a widget</span>
+		//		|		<i> and another plain DOM node </i>
+		//
+		//		In templated widgets, "containerNode" is set via a
+		//		data-dojo-attach-point assignment.
+		//
+		//		containerNode must be defined for any widget that accepts innerHTML
+		//		(like ContentPane or BorderContainer or even Button), and conversely
+		//		is null for widgets that don't, like TextBox.
+		containerNode: null,
+
+		// ownerDocument: [const] Document?
+		//		The document this widget belongs to.  If not specified to constructor, will default to
+		//		srcNodeRef.ownerDocument, or if no sourceRef specified, then to the document global
+		ownerDocument: null,
+		_setOwnerDocumentAttr: function(val){
+			// this setter is merely to avoid automatically trying to set this.domNode.ownerDocument
+			this._set("ownerDocument", val);
+		},
+
+		/*=====
+		// _started: [readonly] Boolean
+		//		startup() has completed.
+		_started: false,
+		=====*/
+
+		// attributeMap: [protected] Object
+		//		Deprecated.	Instead of attributeMap, widget should have a _setXXXAttr attribute
+		//		for each XXX attribute to be mapped to the DOM.
+		//
+		//		attributeMap sets up a "binding" between attributes (aka properties)
+		//		of the widget and the widget's DOM.
+		//		Changes to widget attributes listed in attributeMap will be
+		//		reflected into the DOM.
+		//
+		//		For example, calling set('title', 'hello')
+		//		on a TitlePane will automatically cause the TitlePane's DOM to update
+		//		with the new title.
+		//
+		//		attributeMap is a hash where the key is an attribute of the widget,
+		//		and the value reflects a binding to a:
+		//
+		//		- DOM node attribute
+		// |		focus: {node: "focusNode", type: "attribute"}
+		//		Maps this.focus to this.focusNode.focus
+		//
+		//		- DOM node innerHTML
+		//	|		title: { node: "titleNode", type: "innerHTML" }
+		//		Maps this.title to this.titleNode.innerHTML
+		//
+		//		- DOM node innerText
+		//	|		title: { node: "titleNode", type: "innerText" }
+		//		Maps this.title to this.titleNode.innerText
+		//
+		//		- DOM node CSS class
+		// |		myClass: { node: "domNode", type: "class" }
+		//		Maps this.myClass to this.domNode.className
+		//
+		//		If the value is an array, then each element in the array matches one of the
+		//		formats of the above list.
+		//
+		//		There are also some shorthands for backwards compatibility:
+		//
+		//		- string --> { node: string, type: "attribute" }, for example:
+		//
+		//	|	"focusNode" ---> { node: "focusNode", type: "attribute" }
+		//
+		//		- "" --> { node: "domNode", type: "attribute" }
+		attributeMap: {},
+
+		// _blankGif: [protected] String
+		//		Path to a blank 1x1 image.
+		//		Used by `<img>` nodes in templates that really get their image via CSS background-image.
+		_blankGif: config.blankGif || require.toUrl("dojo/resources/blank.gif"),
+
+		//////////// INITIALIZATION METHODS ///////////////////////////////////////
+
+		/*=====
+		constructor: function(params, srcNodeRef){
+			// summary:
+			//		Create the widget.
+			// params: Object|null
+			//		Hash of initialization parameters for widget, including scalar values (like title, duration etc.)
+			//		and functions, typically callbacks like onClick.
+			//		The hash can contain any of the widget's properties, excluding read-only properties.
+			// srcNodeRef: DOMNode|String?
+			//		If a srcNodeRef (DOM node) is specified:
+			//
+			//		- use srcNodeRef.innerHTML as my contents
+			//		- if this is a behavioral widget then apply behavior to that srcNodeRef
+			//		- otherwise, replace srcNodeRef with my generated DOM tree
+		},
+		=====*/
+
+		_introspect: function(){
+			// summary:
+			//		Collect metadata about this widget (only once per class, not once per instance):
+			//
+			//			- list of attributes with custom setters, storing in this.constructor._setterAttrs
+			//			- generate this.constructor._onMap, mapping names like "mousedown" to functions like onMouseDown
+
+			var ctor = this.constructor;
+			if(!ctor._setterAttrs){
+				var proto = ctor.prototype,
+					attrs = ctor._setterAttrs = [], // attributes with custom setters
+					onMap = (ctor._onMap = {});
+
+				// Items in this.attributeMap are like custom setters.  For back-compat, remove for 2.0.
+				for(var name in proto.attributeMap){
+					attrs.push(name);
+				}
+
+				// Loop over widget properties, collecting properties with custom setters and filling in ctor._onMap.
+				for(name in proto){
+					if(/^on/.test(name)){
+						onMap[name.substring(2).toLowerCase()] = name;
+					}
+
+					if(/^_set[A-Z](.*)Attr$/.test(name)){
+						name = name.charAt(4).toLowerCase() + name.substr(5, name.length - 9);
+						if(!proto.attributeMap || !(name in proto.attributeMap)){
+							attrs.push(name);
+						}
+					}
+				}
+
+				// Note: this isn't picking up info on properties like aria-label and role, that don't have custom setters
+				// but that set() maps to attributes on this.domNode or this.focusNode
 			}
-		}
+		},
 
-		// The document and <body> node this widget is associated with
-		this.ownerDocument = this.ownerDocument || (this.srcNodeRef ? this.srcNodeRef.ownerDocument : win.doc);
-		this.ownerDocumentBody = win.body(this.ownerDocument);
+		postscript: function(/*Object?*/params, /*DomNode|String*/srcNodeRef){
+			// summary:
+			//		Kicks off widget instantiation.  See create() for details.
+			// tags:
+			//		private
 
-		registry.add(this);
+			// Note that we skip calling this.inherited(), i.e. dojo/Stateful::postscript(), because 1.x widgets don't
+			// expect their custom setters to get called until after buildRendering().  Consider changing for 2.0.
 
-		this.buildRendering();
+			this.create(params, srcNodeRef);
+		},
 
-		var deleteSrcNodeRef;
+		create: function(params, srcNodeRef){
+			// summary:
+			//		Kick off the life-cycle of a widget
+			// description:
+			//		Create calls a number of widget methods (postMixInProperties, buildRendering, postCreate,
+			//		etc.), some of which of you'll want to override. See http://dojotoolkit.org/reference-guide/dijit/_WidgetBase.html
+			//		for a discussion of the widget creation lifecycle.
+			//
+			//		Of course, adventurous developers could override create entirely, but this should
+			//		only be done as a last resort.
+			// params: Object|null
+			//		Hash of initialization parameters for widget, including scalar values (like title, duration etc.)
+			//		and functions, typically callbacks like onClick.
+			//		The hash can contain any of the widget's properties, excluding read-only properties.
+			// srcNodeRef: DOMNode|String?
+			//		If a srcNodeRef (DOM node) is specified:
+			//
+			//		- use srcNodeRef.innerHTML as my contents
+			//		- if this is a behavioral widget then apply behavior to that srcNodeRef
+			//		- otherwise, replace srcNodeRef with my generated DOM tree
+			// tags:
+			//		private
 
-		if(this.domNode){
-			// Copy attributes listed in attributeMap into the [newly created] DOM for the widget.
-			// Also calls custom setters for all attributes with custom setters.
-			this._applyAttributes();
+			// First time widget is instantiated, scan prototype to figure out info about custom setters etc.
+			this._introspect();
 
-			// If srcNodeRef was specified, then swap out original srcNode for this widget's DOM tree.
-			// For 2.0, move this after postCreate().  postCreate() shouldn't depend on the
-			// widget being attached to the DOM since it isn't when a widget is created programmatically like
-			// new MyWidget({}).	See #11635.
-			var source = this.srcNodeRef;
-			if(source && source.parentNode && this.domNode !== source){
-				source.parentNode.replaceChild(this.domNode, source);
-				deleteSrcNodeRef = true;
+			// store pointer to original DOM tree
+			this.srcNodeRef = dom.byId(srcNodeRef);
+
+			// No longer used, remove for 2.0.
+			this._connects = [];
+			this._supportingWidgets = [];
+
+			// this is here for back-compat, remove in 2.0 (but check NodeList-instantiate.html test)
+			if(this.srcNodeRef && (typeof this.srcNodeRef.id == "string")){
+				this.id = this.srcNodeRef.id;
 			}
 
-			// Note: for 2.0 may want to rename widgetId to dojo._scopeName + "_widgetId",
-			// assuming that dojo._scopeName even exists in 2.0
-			this.domNode.setAttribute("widgetId", this.id);
-		}
-		this.postCreate();
-
-		// If srcNodeRef has been processed and removed from the DOM (e.g. TemplatedWidget) then delete it to allow GC.
-		// I think for back-compatibility it isn't deleting srcNodeRef until after postCreate() has run.
-		if(deleteSrcNodeRef){
-			delete this.srcNodeRef;
-		}
-
-		this._created = true;
-	},
-
-	_applyAttributes: function(){
-		// summary:
-		//		Step during widget creation to copy  widget attributes to the
-		//		DOM according to attributeMap and _setXXXAttr objects, and also to call
-		//		custom _setXXXAttr() methods.
-		//
-		//		Skips over blank/false attribute values, unless they were explicitly specified
-		//		as parameters to the widget, since those are the default anyway,
-		//		and setting tabIndex="" is different than not setting tabIndex at all.
-		//
-		//		For backwards-compatibility reasons attributeMap overrides _setXXXAttr when
-		//		_setXXXAttr is a hash/string/array, but _setXXXAttr as a functions override attributeMap.
-		// tags:
-		//		private
-
-		// Get list of attributes where this.set(name, value) will do something beyond
-		// setting this[name] = value.  Specifically, attributes that have:
-		//		- associated _setXXXAttr() method/hash/string/array
-		//		- entries in attributeMap (remove this for 2.0);
-		var ctor = this.constructor,
-			list = ctor._setterAttrs;
-		if(!list){
-			list = (ctor._setterAttrs = []);
-			for(var attr in this.attributeMap){
-				list.push(attr);
+			// mix in our passed parameters
+			if(params){
+				this.params = params;
+				lang.mixin(this, params);
 			}
+			this.postMixInProperties();
 
-			var proto = ctor.prototype;
-			for(var fxName in proto){
-				if(fxName in this.attributeMap){ continue; }
-				var setterName = "_set" + fxName.replace(/^[a-z]|-[a-zA-Z]/g, function(c){ return c.charAt(c.length-1).toUpperCase(); }) + "Attr";
-				if(setterName in proto){
-					list.push(fxName);
+			// Generate an id for the widget if one wasn't specified, or it was specified as id: undefined.
+			// Do this before buildRendering() because it might expect the id to be there.
+			if(!this.id){
+				this.id = registry.getUniqueId(this.declaredClass.replace(/\./g, "_"));
+				if(this.params){
+					// if params contains {id: undefined}, prevent _applyAttributes() from processing it
+					delete this.params.id;
 				}
 			}
-		}
 
-		// Call this.set() for each property that was either specified as parameter to constructor,
-		// or is in the list found above.	For correlated properties like value and displayedValue, the one
-		// specified as a parameter should take precedence.
-		// Particularly important for new DateTextBox({displayedValue: ...}) since DateTextBox's default value is
-		// NaN and thus is not ignored like a default value of "".
+			// The document and <body> node this widget is associated with
+			this.ownerDocument = this.ownerDocument || (this.srcNodeRef ? this.srcNodeRef.ownerDocument : document);
+			this.ownerDocumentBody = win.body(this.ownerDocument);
 
-		// Step 1: Save the current values of the widget properties that were specified as parameters to the constructor.
-		// Generally this.foo == this.params.foo, except if postMixInProperties() changed the value of this.foo.
-		var params = {};
-		for(var key in this.params || {}){
-			params[key] = this[key];
-		}
+			registry.add(this);
 
-		// Step 2: Call set() for each property that wasn't passed as a parameter to the constructor
-		array.forEach(list, function(attr){
-			if(attr in params){
-				// skip this one, do it below
-			}else if(this[attr]){
-				this.set(attr, this[attr]);
+			this.buildRendering();
+
+			var deleteSrcNodeRef;
+
+			if(this.domNode){
+				// Copy attributes listed in attributeMap into the [newly created] DOM for the widget.
+				// Also calls custom setters for all attributes with custom setters.
+				this._applyAttributes();
+
+				// If srcNodeRef was specified, then swap out original srcNode for this widget's DOM tree.
+				// For 2.0, move this after postCreate().  postCreate() shouldn't depend on the
+				// widget being attached to the DOM since it isn't when a widget is created programmatically like
+				// new MyWidget({}).	See #11635.
+				var source = this.srcNodeRef;
+				if(source && source.parentNode && this.domNode !== source){
+					source.parentNode.replaceChild(this.domNode, source);
+					deleteSrcNodeRef = true;
+				}
+
+				// Note: for 2.0 may want to rename widgetId to dojo._scopeName + "_widgetId",
+				// assuming that dojo._scopeName even exists in 2.0
+				this.domNode.setAttribute("widgetId", this.id);
 			}
-		}, this);
+			this.postCreate();
 
-		// Step 3: Call set() for each property that was specified as parameter to constructor.
-		// Use params hash created above to ignore side effects from step #2 above.
-		for(key in params){
-			this.set(key, params[key]);
-		}
-	},
-
-	postMixInProperties: function(){
-		// summary:
-		//		Called after the parameters to the widget have been read-in,
-		//		but before the widget template is instantiated. Especially
-		//		useful to set properties that are referenced in the widget
-		//		template.
-		// tags:
-		//		protected
-	},
-
-	buildRendering: function(){
-		// summary:
-		//		Construct the UI for this widget, setting this.domNode.
-		//		Most widgets will mixin `dijit._TemplatedMixin`, which implements this method.
-		// tags:
-		//		protected
-
-		if(!this.domNode){
-			// Create root node if it wasn't created by _Templated
-			this.domNode = this.srcNodeRef || this.ownerDocument.createElement("div");
-		}
-
-		// baseClass is a single class name or occasionally a space-separated list of names.
-		// Add those classes to the DOMNode.  If RTL mode then also add with Rtl suffix.
-		// TODO: make baseClass custom setter
-		if(this.baseClass){
-			var classes = this.baseClass.split(" ");
-			if(!this.isLeftToRight()){
-				classes = classes.concat( array.map(classes, function(name){ return name+"Rtl"; }));
+			// If srcNodeRef has been processed and removed from the DOM (e.g. TemplatedWidget) then delete it to allow GC.
+			// I think for back-compatibility it isn't deleting srcNodeRef until after postCreate() has run.
+			if(deleteSrcNodeRef){
+				delete this.srcNodeRef;
 			}
-			domClass.add(this.domNode, classes);
-		}
-	},
 
-	postCreate: function(){
-		// summary:
-		//		Processing after the DOM fragment is created
-		// description:
-		//		Called after the DOM fragment has been created, but not necessarily
-		//		added to the document.  Do not include any operations which rely on
-		//		node dimensions or placement.
-		// tags:
-		//		protected
-	},
+			this._created = true;
+		},
 
-	startup: function(){
-		// summary:
-		//		Processing after the DOM fragment is added to the document
-		// description:
-		//		Called after a widget and its children have been created and added to the page,
-		//		and all related widgets have finished their create() cycle, up through postCreate().
-		//		This is useful for composite widgets that need to control or layout sub-widgets.
-		//		Many layout widgets can use this as a wiring phase.
-		if(this._started){ return; }
-		this._started = true;
-		array.forEach(this.getChildren(), function(obj){
-			if(!obj._started && !obj._destroyed && lang.isFunction(obj.startup)){
-				obj.startup();
-				obj._started = true;
+		_applyAttributes: function(){
+			// summary:
+			//		Step during widget creation to copy  widget attributes to the
+			//		DOM according to attributeMap and _setXXXAttr objects, and also to call
+			//		custom _setXXXAttr() methods.
+			//
+			//		Skips over blank/false attribute values, unless they were explicitly specified
+			//		as parameters to the widget, since those are the default anyway,
+			//		and setting tabIndex="" is different than not setting tabIndex at all.
+			//
+			//		For backwards-compatibility reasons attributeMap overrides _setXXXAttr when
+			//		_setXXXAttr is a hash/string/array, but _setXXXAttr as a functions override attributeMap.
+			// tags:
+			//		private
+
+			// Call this.set() for each property that was either specified as parameter to constructor,
+			// or is in the list found above.	For correlated properties like value and displayedValue, the one
+			// specified as a parameter should take precedence.
+			// Particularly important for new DateTextBox({displayedValue: ...}) since DateTextBox's default value is
+			// NaN and thus is not ignored like a default value of "".
+
+			// Step 1: Save the current values of the widget properties that were specified as parameters to the constructor.
+			// Generally this.foo == this.params.foo, except if postMixInProperties() changed the value of this.foo.
+			var params = {};
+			for(var key in this.params || {}){
+				params[key] = this._get(key);
 			}
-		});
-	},
 
-	//////////// DESTROY FUNCTIONS ////////////////////////////////
-
-	destroyRecursive: function(/*Boolean?*/ preserveDom){
-		// summary:
-		//		Destroy this widget and its descendants
-		// description:
-		//		This is the generic "destructor" function that all widget users
-		//		should call to cleanly discard with a widget. Once a widget is
-		//		destroyed, it is removed from the manager object.
-		// preserveDom:
-		//		If true, this method will leave the original DOM structure
-		//		alone of descendant Widgets. Note: This will NOT work with
-		//		dijit._Templated widgets.
-
-		this._beingDestroyed = true;
-		this.destroyDescendants(preserveDom);
-		this.destroy(preserveDom);
-	},
-
-	destroy: function(/*Boolean*/ preserveDom){
-		// summary:
-		//		Destroy this widget, but not its descendants.
-		//		This method will, however, destroy internal widgets such as those used within a template.
-		// preserveDom: Boolean
-		//		If true, this method will leave the original DOM structure alone.
-		//		Note: This will not yet work with _Templated widgets
-
-		this._beingDestroyed = true;
-		this.uninitialize();
-
-		function destroy(w){
-			if(w.destroyRecursive){
-				w.destroyRecursive(preserveDom);
-			}else if(w.destroy){
-				w.destroy(preserveDom);
-			}
-		}
-
-		// Back-compat, remove for 2.0
-		array.forEach(this._connects, lang.hitch(this, "disconnect"));
-		array.forEach(this._supportingWidgets, destroy);
-
-		// Destroy supporting widgets, but not child widgets under this.containerNode (for 2.0, destroy child widgets
-		// here too).   if() statement is to guard against exception if destroy() called multiple times (see #15815).
-		if(this.domNode){
-			array.forEach(registry.findWidgets(this.domNode, this.containerNode), destroy);
-		}
-
-		this.destroyRendering(preserveDom);
-		registry.remove(this.id);
-		this._destroyed = true;
-	},
-
-	destroyRendering: function(/*Boolean?*/ preserveDom){
-		// summary:
-		//		Destroys the DOM nodes associated with this widget
-		// preserveDom:
-		//		If true, this method will leave the original DOM structure alone
-		//		during tear-down. Note: this will not work with _Templated
-		//		widgets yet.
-		// tags:
-		//		protected
-
-		if(this.bgIframe){
-			this.bgIframe.destroy(preserveDom);
-			delete this.bgIframe;
-		}
-
-		if(this.domNode){
-			if(preserveDom){
-				domAttr.remove(this.domNode, "widgetId");
-			}else{
-				domConstruct.destroy(this.domNode);
-			}
-			delete this.domNode;
-		}
-
-		if(this.srcNodeRef){
-			if(!preserveDom){
-				domConstruct.destroy(this.srcNodeRef);
-			}
-			delete this.srcNodeRef;
-		}
-	},
-
-	destroyDescendants: function(/*Boolean?*/ preserveDom){
-		// summary:
-		//		Recursively destroy the children of this widget and their
-		//		descendants.
-		// preserveDom:
-		//		If true, the preserveDom attribute is passed to all descendant
-		//		widget's .destroy() method. Not for use with _Templated
-		//		widgets.
-
-		// get all direct descendants and destroy them recursively
-		array.forEach(this.getChildren(), function(widget){
-			if(widget.destroyRecursive){
-				widget.destroyRecursive(preserveDom);
-			}
-		});
-	},
-
-	uninitialize: function(){
-		// summary:
-		//		Deprecated. Override destroy() instead to implement custom widget tear-down
-		//		behavior.
-		// tags:
-		//		protected
-		return false;
-	},
-
-	////////////////// GET/SET, CUSTOM SETTERS, ETC. ///////////////////
-
-	_setStyleAttr: function(/*String||Object*/ value){
-		// summary:
-		//		Sets the style attribute of the widget according to value,
-		//		which is either a hash like {height: "5px", width: "3px"}
-		//		or a plain string
-		// description:
-		//		Determines which node to set the style on based on style setting
-		//		in attributeMap.
-		// tags:
-		//		protected
-
-		var mapNode = this.domNode;
-
-		// Note: technically we should revert any style setting made in a previous call
-		// to his method, but that's difficult to keep track of.
-
-		if(lang.isObject(value)){
-			domStyle.set(mapNode, value);
-		}else{
-			if(mapNode.style.cssText){
-				mapNode.style.cssText += "; " + value;
-			}else{
-				mapNode.style.cssText = value;
-			}
-		}
-
-		this._set("style", value);
-	},
-
-	_attrToDom: function(/*String*/ attr, /*String*/ value, /*Object?*/ commands){
-		// summary:
-		//		Reflect a widget attribute (title, tabIndex, duration etc.) to
-		//		the widget DOM, as specified by commands parameter.
-		//		If commands isn't specified then it's looked up from attributeMap.
-		//		Note some attributes like "type"
-		//		cannot be processed this way as they are not mutable.
-		// attr:
-		//		Name of member variable (ex: "focusNode" maps to this.focusNode) pointing
-		//		to DOMNode inside the widget, or alternately pointing to a subwidget
-		// tags:
-		//		private
-
-		commands = arguments.length >= 3 ? commands : this.attributeMap[attr];
-
-		array.forEach(lang.isArray(commands) ? commands : [commands], function(command){
-
-			// Get target node and what we are doing to that node
-			var mapNode = this[command.node || command || "domNode"];	// DOM node
-			var type = command.type || "attribute";	// class, innerHTML, innerText, or attribute
-
-			switch(type){
-				case "attribute":
-					if(lang.isFunction(value)){ // functions execute in the context of the widget
-						value = lang.hitch(this, value);
+			// Step 2: Call set() for each property with a non-falsy value that wasn't passed as a parameter to the constructor
+			array.forEach(this.constructor._setterAttrs, function(key){
+				if(!(key in params)){
+					var val = this._get(key);
+					if(val){
+						this.set(key, val);
 					}
+				}
+			}, this);
 
-					// Get the name of the DOM node attribute; usually it's the same
-					// as the name of the attribute in the widget (attr), but can be overridden.
-					// Also maps handler names to lowercase, like onSubmit --> onsubmit
-					var attrName = command.attribute ? command.attribute :
-						(/^on[A-Z][a-zA-Z]*$/.test(attr) ? attr.toLowerCase() : attr);
-
-					if(mapNode.tagName){
-						// Normal case, mapping to a DOMNode.  Note that modern browsers will have a mapNode.set()
-						// method, but for consistency we still call domAttr
-						domAttr.set(mapNode, attrName, value);
-					}else{
-						// mapping to a sub-widget
-						mapNode.set(attrName, value);
-					}
-					break;
-				case "innerText":
-					mapNode.innerHTML = "";
-					mapNode.appendChild(this.ownerDocument.createTextNode(value));
-					break;
-				case "innerHTML":
-					mapNode.innerHTML = value;
-					break;
-				case "class":
-					domClass.replace(mapNode, value, this[attr]);
-					break;
+			// Step 3: Call set() for each property that was specified as parameter to constructor.
+			// Use params hash created above to ignore side effects from step #2 above.
+			for(key in params){
+				this.set(key, params[key]);
 			}
-		}, this);
-	},
+		},
 
-	get: function(name){
-		// summary:
-		//		Get a property from a widget.
-		// name:
-		//		The property to get.
-		// description:
-		//		Get a named property from a widget. The property may
-		//		potentially be retrieved via a getter method. If no getter is defined, this
-		//		just retrieves the object's property.
-		//
-		//		For example, if the widget has properties `foo` and `bar`
-		//		and a method named `_getFooAttr()`, calling:
-		//		`myWidget.get("foo")` would be equivalent to calling
-		//		`widget._getFooAttr()` and `myWidget.get("bar")`
-		//		would be equivalent to the expression
-		//		`widget.bar2`
-		var names = this._getAttrNames(name);
-		return this[names.g] ? this[names.g]() : this[name];
-	},
+		postMixInProperties: function(){
+			// summary:
+			//		Called after the parameters to the widget have been read-in,
+			//		but before the widget template is instantiated. Especially
+			//		useful to set properties that are referenced in the widget
+			//		template.
+			// tags:
+			//		protected
+		},
 
-	set: function(name, value){
-		// summary:
-		//		Set a property on a widget
-		// name:
-		//		The property to set.
-		// value:
-		//		The value to set in the property.
-		// description:
-		//		Sets named properties on a widget which may potentially be handled by a
-		//		setter in the widget.
-		//
-		//		For example, if the widget has properties `foo` and `bar`
-		//		and a method named `_setFooAttr()`, calling
-		//		`myWidget.set("foo", "Howdy!")` would be equivalent to calling
-		//		`widget._setFooAttr("Howdy!")` and `myWidget.set("bar", 3)`
-		//		would be equivalent to the statement `widget.bar = 3;`
-		//
-		//		set() may also be called with a hash of name/value pairs, ex:
-		//
-		//	|	myWidget.set({
-		//	|		foo: "Howdy",
-		//	|		bar: 3
-		//	|	});
-		//
-		//	This is equivalent to calling `set(foo, "Howdy")` and `set(bar, 3)`
+		buildRendering: function(){
+			// summary:
+			//		Construct the UI for this widget, setting this.domNode.
+			//		Most widgets will mixin `dijit._TemplatedMixin`, which implements this method.
+			// tags:
+			//		protected
 
-		if(typeof name === "object"){
-			for(var x in name){
-				this.set(x, name[x]);
+			if(!this.domNode){
+				// Create root node if it wasn't created by _TemplatedMixin
+				this.domNode = this.srcNodeRef || this.ownerDocument.createElement("div");
 			}
-			return this;
-		}
-		var names = this._getAttrNames(name),
-			setter = this[names.s];
-		if(lang.isFunction(setter)){
-			// use the explicit setter
-			var result = setter.apply(this, Array.prototype.slice.call(arguments, 1));
-		}else{
-			// Mapping from widget attribute to DOMNode/subwidget attribute/value/etc.
-			// Map according to:
-			//		1. attributeMap setting, if one exists (TODO: attributeMap deprecated, remove in 2.0)
-			//		2. _setFooAttr: {...} type attribute in the widget (if one exists)
-			//		3. apply to focusNode or domNode if standard attribute name, excluding funcs like onClick.
-			// Checks if an attribute is a "standard attribute" by whether the DOMNode JS object has a similar
-			// attribute name (ex: accept-charset attribute matches jsObject.acceptCharset).
-			// Note also that Tree.focusNode() is a function not a DOMNode, so test for that.
-			var defaultNode = this.focusNode && !lang.isFunction(this.focusNode) ? "focusNode" : "domNode",
-				tag = this[defaultNode] && this[defaultNode].tagName,
-				attrsForTag = tag && (tagAttrs[tag] || (tagAttrs[tag] = getAttrs(this[defaultNode]))),
-				map =	name in this.attributeMap ? this.attributeMap[name] :
-						names.s in this ? this[names.s] :
-						((attrsForTag && names.l in attrsForTag && typeof value != "function") ||
-							/^aria-|^data-|^role$/.test(name)) ? defaultNode : null;
-			if(map != null){
-				this._attrToDom(name, value, map);
+
+			// baseClass is a single class name or occasionally a space-separated list of names.
+			// Add those classes to the DOMNode.  If RTL mode then also add with Rtl suffix.
+			// TODO: make baseClass custom setter
+			if(this.baseClass){
+				var classes = this.baseClass.split(" ");
+				if(!this.isLeftToRight()){
+					classes = classes.concat(array.map(classes, function(name){
+						return name + "Rtl";
+					}));
+				}
+				domClass.add(this.domNode, classes);
 			}
-			this._set(name, value);
-		}
-		return result || this;
-	},
+		},
 
-	_attrPairNames: {},		// shared between all widgets
-	_getAttrNames: function(name){
-		// summary:
-		//		Helper function for get() and set().
-		//		Caches attribute name values so we don't do the string ops every time.
-		// tags:
-		//		private
+		postCreate: function(){
+			// summary:
+			//		Processing after the DOM fragment is created
+			// description:
+			//		Called after the DOM fragment has been created, but not necessarily
+			//		added to the document.  Do not include any operations which rely on
+			//		node dimensions or placement.
+			// tags:
+			//		protected
+		},
 
-		var apn = this._attrPairNames;
-		if(apn[name]){ return apn[name]; }
-		var uc = name.replace(/^[a-z]|-[a-zA-Z]/g, function(c){ return c.charAt(c.length-1).toUpperCase(); });
-		return (apn[name] = {
-			n: name+"Node",
-			s: "_set"+uc+"Attr",	// converts dashes to camel case, ex: accept-charset --> _setAcceptCharsetAttr
-			g: "_get"+uc+"Attr",
-			l: uc.toLowerCase()		// lowercase name w/out dashes, ex: acceptcharset
-		});
-	},
-
-	_set: function(/*String*/ name, /*anything*/ value){
-		// summary:
-		//		Helper function to set new value for specified attribute, and call handlers
-		//		registered with watch() if the value has changed.
-		var oldValue = this[name];
-		this[name] = value;
-		if(this._created && value !== oldValue){
-			if(this._watchCallbacks){
-				this._watchCallbacks(name, oldValue, value);
+		startup: function(){
+			// summary:
+			//		Processing after the DOM fragment is added to the document
+			// description:
+			//		Called after a widget and its children have been created and added to the page,
+			//		and all related widgets have finished their create() cycle, up through postCreate().
+			//
+			//		Note that startup() may be called while the widget is still hidden, for example if the widget is
+			//		inside a hidden dijit/Dialog or an unselected tab of a dijit/layout/TabContainer.
+			//		For widgets that need to do layout, it's best to put that layout code inside resize(), and then
+			//		extend dijit/layout/_LayoutWidget so that resize() is called when the widget is visible.
+			if(this._started){
+				return;
 			}
-			this.emit("attrmodified-" + name, {
-				detail: {
-					prevValue: oldValue,
-					newValue: value
+			this._started = true;
+			array.forEach(this.getChildren(), function(obj){
+				if(!obj._started && !obj._destroyed && lang.isFunction(obj.startup)){
+					obj.startup();
+					obj._started = true;
 				}
 			});
-		}
-	},
+		},
 
-	emit: function(/*String*/ type, /*Object?*/ eventObj, /*Array?*/ callbackArgs){
-		// summary:
-		//		Used by widgets to signal that a synthetic event occurred, ex:
-		//	|	myWidget.emit("attrmodified-selectedChildWidget", {}).
-		//
-		//		Emits an event on this.domNode named type.toLowerCase(), based on eventObj.
-		//		Also calls onType() method, if present, and returns value from that method.
-		//		By default passes eventObj to callback, but will pass callbackArgs instead, if specified.
-		//		Modifies eventObj by adding missing parameters (bubbles, cancelable, widget).
-		// tags:
-		//		protected
+		//////////// DESTROY FUNCTIONS ////////////////////////////////
 
-		// Specify fallback values for bubbles, cancelable in case they are not set in eventObj.
-		// Also set pointer to widget, although since we can't add a pointer to the widget for native events
-		// (see #14729), maybe we shouldn't do it here?
-		eventObj = eventObj || {};
-		if(eventObj.bubbles === undefined){ eventObj.bubbles = true; }
-		if(eventObj.cancelable === undefined){ eventObj.cancelable = true; }
-		if(!eventObj.detail){ eventObj.detail = {}; }
-		eventObj.detail.widget = this;
+		destroyRecursive: function(/*Boolean?*/ preserveDom){
+			// summary:
+			//		Destroy this widget and its descendants
+			// description:
+			//		This is the generic "destructor" function that all widget users
+			//		should call to cleanly discard with a widget. Once a widget is
+			//		destroyed, it is removed from the manager object.
+			// preserveDom:
+			//		If true, this method will leave the original DOM structure
+			//		alone of descendant Widgets. Note: This will NOT work with
+			//		dijit._TemplatedMixin widgets.
 
-		var ret, callback = this["on"+type];
-		if(callback){
-			ret = callback.apply(this, callbackArgs ? callbackArgs : [eventObj]);
-		}
+			this._beingDestroyed = true;
+			this.destroyDescendants(preserveDom);
+			this.destroy(preserveDom);
+		},
 
-		// Emit event, but avoid spurious emit()'s as parent sets properties on child during startup/destroy
-		if(this._started && !this._beingDestroyed){
-			on.emit(this.domNode, type.toLowerCase(), eventObj);
-		}
+		destroy: function(/*Boolean*/ preserveDom){
+			// summary:
+			//		Destroy this widget, but not its descendants.  Descendants means widgets inside of
+			//		this.containerNode.   Will also destroy any resources (including widgets) registered via this.own().
+			//
+			//		This method will also destroy internal widgets such as those created from a template,
+			//		assuming those widgets exist inside of this.domNode but outside of this.containerNode.
+			//
+			//		For 2.0 it's planned that this method will also destroy descendant widgets, so apps should not
+			//		depend on the current ability to destroy a widget without destroying its descendants.   Generally
+			//		they should use destroyRecursive() for widgets with children.
+			// preserveDom: Boolean
+			//		If true, this method will leave the original DOM structure alone.
+			//		Note: This will not yet work with _TemplatedMixin widgets
 
-		return ret;
-	},
+			this._beingDestroyed = true;
+			this.uninitialize();
 
-	on: function(/*String|Function*/ type, /*Function*/ func){
-		// summary:
-		//		Call specified function when event occurs, ex: myWidget.on("click", function(){ ... }).
-		// type:
-		//		Name of event (ex: "click") or extension event like touch.press.
-		// description:
-		//		Call specified function when event `type` occurs, ex: `myWidget.on("click", function(){ ... })`.
-		//		Note that the function is not run in any particular scope, so if (for example) you want it to run in the
-		//		widget's scope you must do `myWidget.on("click", lang.hitch(myWidget, func))`.
-
-		// For backwards compatibility, if there's an onType() method in the widget then connect to that.
-		// Remove in 2.0.
-		var widgetMethod = this._onMap(type);
-		if(widgetMethod){
-			return aspect.after(this, widgetMethod, func, true);
-		}
-
-		// Otherwise, just listen for the event on this.domNode.
-		return this.own(on(this.domNode, type, func))[0];
-	},
-
-	_onMap: function(/*String|Function*/ type){
-		// summary:
-		//		Maps on() type parameter (ex: "mousemove") to method name (ex: "onMouseMove").
-		//		If type is a synthetic event like touch.press then returns undefined.
-		var ctor = this.constructor, map = ctor._onMap;
-		if(!map){
-			map = (ctor._onMap = {});
-			for(var attr in ctor.prototype){
-				if(/^on/.test(attr)){
-					map[attr.replace(/^on/, "").toLowerCase()] = attr;
+			function destroy(w){
+				if(w.destroyRecursive){
+					w.destroyRecursive(preserveDom);
+				}else if(w.destroy){
+					w.destroy(preserveDom);
 				}
 			}
-		}
-		return map[typeof type == "string" && type.toLowerCase()];	// String
-	},
 
-	toString: function(){
-		// summary:
-		//		Returns a string that represents the widget
-		// description:
-		//		When a widget is cast to a string, this method will be used to generate the
-		//		output. Currently, it does not implement any sort of reversible
-		//		serialization.
-		return '[Widget ' + this.declaredClass + ', ' + (this.id || 'NO ID') + ']'; // String
-	},
+			// Back-compat, remove for 2.0
+			array.forEach(this._connects, lang.hitch(this, "disconnect"));
+			array.forEach(this._supportingWidgets, destroy);
 
-	getChildren: function(){
-		// summary:
-		//		Returns all the widgets contained by this, i.e., all widgets underneath this.containerNode.
-		//		Does not return nested widgets, nor widgets that are part of this widget's template.
-		return this.containerNode ? registry.findWidgets(this.containerNode) : []; // dijit/_WidgetBase[]
-	},
-
-	getParent: function(){
-		// summary:
-		//		Returns the parent widget of this widget
-		return registry.getEnclosingWidget(this.domNode.parentNode);
-	},
-
-	connect: function(
-			/*Object|null*/ obj,
-			/*String|Function*/ event,
-			/*String|Function*/ method){
-		// summary:
-		//		Deprecated, will be removed in 2.0, use this.own(on(...)) or this.own(aspect.after(...)) instead.
-		//
-		//		Connects specified obj/event to specified method of this object
-		//		and registers for disconnect() on widget destroy.
-		//
-		//		Provide widget-specific analog to dojo.connect, except with the
-		//		implicit use of this widget as the target object.
-		//		Events connected with `this.connect` are disconnected upon
-		//		destruction.
-		// returns:
-		//		A handle that can be passed to `disconnect` in order to disconnect before
-		//		the widget is destroyed.
-		// example:
-		//	|	var btn = new Button();
-		//	|	// when foo.bar() is called, call the listener we're going to
-		//	|	// provide in the scope of btn
-		//	|	btn.connect(foo, "bar", function(){
-		//	|		console.debug(this.toString());
-		//	|	});
-		// tags:
-		//		protected
-
-		return this.own(connect.connect(obj, event, this, method))[0];	// handle
-	},
-
-	disconnect: function(handle){
-		// summary:
-		//		Deprecated, will be removed in 2.0, use handle.remove() instead.
-		//
-		//		Disconnects handle created by `connect`.
-		// tags:
-		//		protected
-
-		handle.remove();
-	},
-
-	subscribe: function(t, method){
-		// summary:
-		//		Deprecated, will be removed in 2.0, use this.own(topic.subscribe()) instead.
-		//
-		//		Subscribes to the specified topic and calls the specified method
-		//		of this object and registers for unsubscribe() on widget destroy.
-		//
-		//		Provide widget-specific analog to dojo.subscribe, except with the
-		//		implicit use of this widget as the target object.
-		// t: String
-		//		The topic
-		// method: Function
-		//		The callback
-		// example:
-		//	|	var btn = new Button();
-		//	|	// when /my/topic is published, this button changes its label to
-		//	|	// be the parameter of the topic.
-		//	|	btn.subscribe("/my/topic", function(v){
-		//	|		this.set("label", v);
-		//	|	});
-		// tags:
-		//		protected
-		return this.own(topic.subscribe(t, lang.hitch(this, method)))[0];	// handle
-	},
-
-	unsubscribe: function(/*Object*/ handle){
-		// summary:
-		//		Deprecated, will be removed in 2.0, use handle.remove() instead.
-		//
-		//		Unsubscribes handle created by this.subscribe.
-		//		Also removes handle from this widget's list of subscriptions
-		// tags:
-		//		protected
-
-		handle.remove();
-	},
-
-	isLeftToRight: function(){
-		// summary:
-		//		Return this widget's explicit or implicit orientation (true for LTR, false for RTL)
-		// tags:
-		//		protected
-		return this.dir ? (this.dir == "ltr") : domGeometry.isBodyLtr(this.ownerDocument); //Boolean
-	},
-
-	isFocusable: function(){
-		// summary:
-		//		Return true if this widget can currently be focused
-		//		and false if not
-		return this.focus && (domStyle.get(this.domNode, "display") != "none");
-	},
-
-	placeAt: function(/* String|DomNode|_Widget */ reference, /* String|Int? */ position){
-		// summary:
-		//		Place this widget somewhere in the DOM based
-		//		on standard domConstruct.place() conventions.
-		// description:
-		//		A convenience function provided in all _Widgets, providing a simple
-		//		shorthand mechanism to put an existing (or newly created) Widget
-		//		somewhere in the dom, and allow chaining.
-		// reference:
-		//		Widget, DOMNode, or id of widget or DOMNode
-		// position:
-		//		If reference is a widget (or id of widget), and that widget has an ".addChild" method,
-		//		it will be called passing this widget instance into that method, supplying the optional
-		//		position index passed.  In this case position (if specified) should be an integer.
-		//
-		//		If reference is a DOMNode (or id matching a DOMNode but not a widget),
-		//		the position argument can be a numeric index or a string
-		//		"first", "last", "before", or "after", same as dojo/dom-construct::place().
-		// returns: dijit/_WidgetBase
-		//		Provides a useful return of the newly created dijit._Widget instance so you
-		//		can "chain" this function by instantiating, placing, then saving the return value
-		//		to a variable.
-		// example:
-		//	|	// create a Button with no srcNodeRef, and place it in the body:
-		//	|	var button = new Button({ label:"click" }).placeAt(win.body());
-		//	|	// now, 'button' is still the widget reference to the newly created button
-		//	|	button.on("click", function(e){ console.log('click'); }));
-		// example:
-		//	|	// create a button out of a node with id="src" and append it to id="wrapper":
-		//	|	var button = new Button({},"src").placeAt("wrapper");
-		// example:
-		//	|	// place a new button as the first element of some div
-		//	|	var button = new Button({ label:"click" }).placeAt("wrapper","first");
-		// example:
-		//	|	// create a contentpane and add it to a TabContainer
-		//	|	var tc = dijit.byId("myTabs");
-		//	|	new ContentPane({ href:"foo.html", title:"Wow!" }).placeAt(tc)
-
-		var refWidget = !reference.tagName && registry.byId(reference);
-		if(refWidget && refWidget.addChild && (!position || typeof position === "number")){
-			// Adding this to refWidget and can use refWidget.addChild() to handle everything.
-			refWidget.addChild(this, position);
-		}else{
-			// "reference" is a plain DOMNode, or we can't use refWidget.addChild().   Use domConstruct.place() and
-			// target refWidget.containerNode for nested placement (position==number, "first", "last", "only"), and
-			// refWidget.domNode otherwise ("after"/"before"/"replace").  (But not supported officially, see #14946.)
-			var ref = refWidget ?
-				(refWidget.containerNode && !/after|before|replace/.test(position||"") ?
-					refWidget.containerNode : refWidget.domNode) : dom.byId(reference, this.ownerDocument);
-			domConstruct.place(this.domNode, ref, position);
-
-			// Start this iff it has a parent widget that's already started.
-			if(!this._started && (this.getParent() || {})._started){
-				this.startup();
+			// Destroy supporting widgets, but not child widgets under this.containerNode (for 2.0, destroy child widgets
+			// here too).   if() statement is to guard against exception if destroy() called multiple times (see #15815).
+			if(this.domNode){
+				array.forEach(registry.findWidgets(this.domNode, this.containerNode), destroy);
 			}
-		}
-		return this;
-	},
 
-	getTextDir: function(/*String*/ text,/*String*/ originalDir){
-		// summary:
-		//		Return direction of the text.
-		//		The function overridden in the _BidiSupport module,
-		//		its main purpose is to calculate the direction of the
-		//		text, if was defined by the programmer through textDir.
-		// tags:
-		//		protected.
-		return originalDir;
-	},
+			this.destroyRendering(preserveDom);
+			registry.remove(this.id);
+			this._destroyed = true;
+		},
 
-	applyTextDir: function(/*===== element, text =====*/){
-		// summary:
-		//		The function overridden in the _BidiSupport module,
-		//		originally used for setting element.dir according to this.textDir.
-		//		In this case does nothing.
-		// element: DOMNode
-		// text: String?
-		// tags:
-		//		protected.
-	},
+		destroyRendering: function(/*Boolean?*/ preserveDom){
+			// summary:
+			//		Destroys the DOM nodes associated with this widget.
+			// preserveDom:
+			//		If true, this method will leave the original DOM structure alone
+			//		during tear-down. Note: this will not work with _Templated
+			//		widgets yet.
+			// tags:
+			//		protected
 
-	defer: function(fcn, delay){ 
-		// summary:
-		//		Wrapper to setTimeout to avoid deferred functions executing
-		//		after the originating widget has been destroyed.
-		//		Returns an object handle with a remove method (that returns null) (replaces clearTimeout).
-		// fcn: function reference
-		// delay: Optional number (defaults to 0)
-		// tags:
-		//		protected.
-		var timer = setTimeout(lang.hitch(this, 
-			function(){ 
-				timer = null;
-				if(!this._destroyed){ 
-					lang.hitch(this, fcn)(); 
-				} 
-			}),
-			delay || 0
-		);
-		return {
-			remove:	function(){
+			if(this.bgIframe){
+				this.bgIframe.destroy(preserveDom);
+				delete this.bgIframe;
+			}
+
+			if(this.domNode){
+				if(preserveDom){
+					domAttr.remove(this.domNode, "widgetId");
+				}else{
+					domConstruct.destroy(this.domNode);
+				}
+				delete this.domNode;
+			}
+
+			if(this.srcNodeRef){
+				if(!preserveDom){
+					domConstruct.destroy(this.srcNodeRef);
+				}
+				delete this.srcNodeRef;
+			}
+		},
+
+		destroyDescendants: function(/*Boolean?*/ preserveDom){
+			// summary:
+			//		Recursively destroy the children of this widget and their
+			//		descendants.
+			// preserveDom:
+			//		If true, the preserveDom attribute is passed to all descendant
+			//		widget's .destroy() method. Not for use with _Templated
+			//		widgets.
+
+			// get all direct descendants and destroy them recursively
+			array.forEach(this.getChildren(), function(widget){
+				if(widget.destroyRecursive){
+					widget.destroyRecursive(preserveDom);
+				}
+			});
+		},
+
+		uninitialize: function(){
+			// summary:
+			//		Deprecated. Override destroy() instead to implement custom widget tear-down
+			//		behavior.
+			// tags:
+			//		protected
+			return false;
+		},
+
+		////////////////// GET/SET, CUSTOM SETTERS, ETC. ///////////////////
+
+		_setStyleAttr: function(/*String||Object*/ value){
+			// summary:
+			//		Sets the style attribute of the widget according to value,
+			//		which is either a hash like {height: "5px", width: "3px"}
+			//		or a plain string
+			// description:
+			//		Determines which node to set the style on based on style setting
+			//		in attributeMap.
+			// tags:
+			//		protected
+
+			var mapNode = this.domNode;
+
+			// Note: technically we should revert any style setting made in a previous call
+			// to his method, but that's difficult to keep track of.
+
+			if(lang.isObject(value)){
+				domStyle.set(mapNode, value);
+			}else{
+				if(mapNode.style.cssText){
+					mapNode.style.cssText += "; " + value;
+				}else{
+					mapNode.style.cssText = value;
+				}
+			}
+
+			this._set("style", value);
+		},
+
+		_attrToDom: function(/*String*/ attr, /*String*/ value, /*Object?*/ commands){
+			// summary:
+			//		Reflect a widget attribute (title, tabIndex, duration etc.) to
+			//		the widget DOM, as specified by commands parameter.
+			//		If commands isn't specified then it's looked up from attributeMap.
+			//		Note some attributes like "type"
+			//		cannot be processed this way as they are not mutable.
+			// attr:
+			//		Name of member variable (ex: "focusNode" maps to this.focusNode) pointing
+			//		to DOMNode inside the widget, or alternately pointing to a subwidget
+			// tags:
+			//		private
+
+			commands = arguments.length >= 3 ? commands : this.attributeMap[attr];
+
+			array.forEach(lang.isArray(commands) ? commands : [commands], function(command){
+
+				// Get target node and what we are doing to that node
+				var mapNode = this[command.node || command || "domNode"];	// DOM node
+				var type = command.type || "attribute";	// class, innerHTML, innerText, or attribute
+
+				switch(type){
+					case "attribute":
+						if(lang.isFunction(value)){ // functions execute in the context of the widget
+							value = lang.hitch(this, value);
+						}
+
+						// Get the name of the DOM node attribute; usually it's the same
+						// as the name of the attribute in the widget (attr), but can be overridden.
+						// Also maps handler names to lowercase, like onSubmit --> onsubmit
+						var attrName = command.attribute ? command.attribute :
+							(/^on[A-Z][a-zA-Z]*$/.test(attr) ? attr.toLowerCase() : attr);
+
+						if(mapNode.tagName){
+							// Normal case, mapping to a DOMNode.  Note that modern browsers will have a mapNode.set()
+							// method, but for consistency we still call domAttr
+							domAttr.set(mapNode, attrName, value);
+						}else{
+							// mapping to a sub-widget
+							mapNode.set(attrName, value);
+						}
+						break;
+					case "innerText":
+						mapNode.innerHTML = "";
+						mapNode.appendChild(this.ownerDocument.createTextNode(value));
+						break;
+					case "innerHTML":
+						mapNode.innerHTML = value;
+						break;
+					case "class":
+						domClass.replace(mapNode, value, this[attr]);
+						break;
+				}
+			}, this);
+		},
+
+		get: function(name){
+			// summary:
+			//		Get a property from a widget.
+			// name:
+			//		The property to get.
+			// description:
+			//		Get a named property from a widget. The property may
+			//		potentially be retrieved via a getter method. If no getter is defined, this
+			//		just retrieves the object's property.
+			//
+			//		For example, if the widget has properties `foo` and `bar`
+			//		and a method named `_getFooAttr()`, calling:
+			//		`myWidget.get("foo")` would be equivalent to calling
+			//		`widget._getFooAttr()` and `myWidget.get("bar")`
+			//		would be equivalent to the expression
+			//		`widget.bar2`
+			var names = this._getAttrNames(name);
+			return this[names.g] ? this[names.g]() : this._get(name);
+		},
+
+		set: function(name, value){
+			// summary:
+			//		Set a property on a widget
+			// name:
+			//		The property to set.
+			// value:
+			//		The value to set in the property.
+			// description:
+			//		Sets named properties on a widget which may potentially be handled by a
+			//		setter in the widget.
+			//
+			//		For example, if the widget has properties `foo` and `bar`
+			//		and a method named `_setFooAttr()`, calling
+			//		`myWidget.set("foo", "Howdy!")` would be equivalent to calling
+			//		`widget._setFooAttr("Howdy!")` and `myWidget.set("bar", 3)`
+			//		would be equivalent to the statement `widget.bar = 3;`
+			//
+			//		set() may also be called with a hash of name/value pairs, ex:
+			//
+			//	|	myWidget.set({
+			//	|		foo: "Howdy",
+			//	|		bar: 3
+			//	|	});
+			//
+			//	This is equivalent to calling `set(foo, "Howdy")` and `set(bar, 3)`
+
+			if(typeof name === "object"){
+				for(var x in name){
+					this.set(x, name[x]);
+				}
+				return this;
+			}
+			var names = this._getAttrNames(name),
+				setter = this[names.s];
+			if(lang.isFunction(setter)){
+				// use the explicit setter
+				var result = setter.apply(this, Array.prototype.slice.call(arguments, 1));
+			}else{
+				// Mapping from widget attribute to DOMNode/subwidget attribute/value/etc.
+				// Map according to:
+				//		1. attributeMap setting, if one exists (TODO: attributeMap deprecated, remove in 2.0)
+				//		2. _setFooAttr: {...} type attribute in the widget (if one exists)
+				//		3. apply to focusNode or domNode if standard attribute name, excluding funcs like onClick.
+				// Checks if an attribute is a "standard attribute" by whether the DOMNode JS object has a similar
+				// attribute name (ex: accept-charset attribute matches jsObject.acceptCharset).
+				// Note also that Tree.focusNode() is a function not a DOMNode, so test for that.
+				var defaultNode = this.focusNode && !lang.isFunction(this.focusNode) ? "focusNode" : "domNode",
+					tag = this[defaultNode] && this[defaultNode].tagName,
+					attrsForTag = tag && (tagAttrs[tag] || (tagAttrs[tag] = getAttrs(this[defaultNode]))),
+					map = name in this.attributeMap ? this.attributeMap[name] :
+						names.s in this ? this[names.s] :
+							((attrsForTag && names.l in attrsForTag && typeof value != "function") ||
+								/^aria-|^data-|^role$/.test(name)) ? defaultNode : null;
+				if(map != null){
+					this._attrToDom(name, value, map);
+				}
+				this._set(name, value);
+			}
+			return result || this;
+		},
+
+		_attrPairNames: {}, // shared between all widgets
+		_getAttrNames: function(name){
+			// summary:
+			//		Helper function for get() and set().
+			//		Caches attribute name values so we don't do the string ops every time.
+			// tags:
+			//		private
+
+			var apn = this._attrPairNames;
+			if(apn[name]){
+				return apn[name];
+			}
+			var uc = name.replace(/^[a-z]|-[a-zA-Z]/g, function(c){
+				return c.charAt(c.length - 1).toUpperCase();
+			});
+			return (apn[name] = {
+				n: name + "Node",
+				s: "_set" + uc + "Attr", // converts dashes to camel case, ex: accept-charset --> _setAcceptCharsetAttr
+				g: "_get" + uc + "Attr",
+				l: uc.toLowerCase()        // lowercase name w/out dashes, ex: acceptcharset
+			});
+		},
+
+		_set: function(/*String*/ name, /*anything*/ value){
+			// summary:
+			//		Helper function to set new value for specified property, and call handlers
+			//		registered with watch() if the value has changed.
+			var oldValue = this[name];
+			this[name] = value;
+			if(this._created && value !== oldValue){
+				if(this._watchCallbacks){
+					this._watchCallbacks(name, oldValue, value);
+				}
+				this.emit("attrmodified-" + name, {
+					detail: {
+						prevValue: oldValue,
+						newValue: value
+					}
+				});
+			}
+		},
+
+		_get: function(/*String*/ name){
+			// summary:
+			//		Helper function to get value for specified property stored by this._set(),
+			//		i.e. for properties with custom setters.  Used mainly by custom getters.
+			//
+			//		For example, CheckBox._getValueAttr() calls this._get("value").
+
+			// future: return name in this.props ? this.props[name] : this[name];
+			return this[name];
+		},
+
+		emit: function(/*String*/ type, /*Object?*/ eventObj, /*Array?*/ callbackArgs){
+			// summary:
+			//		Used by widgets to signal that a synthetic event occurred, ex:
+			//	|	myWidget.emit("attrmodified-selectedChildWidget", {}).
+			//
+			//		Emits an event on this.domNode named type.toLowerCase(), based on eventObj.
+			//		Also calls onType() method, if present, and returns value from that method.
+			//		By default passes eventObj to callback, but will pass callbackArgs instead, if specified.
+			//		Modifies eventObj by adding missing parameters (bubbles, cancelable, widget).
+			// tags:
+			//		protected
+
+			// Specify fallback values for bubbles, cancelable in case they are not set in eventObj.
+			// Also set pointer to widget, although since we can't add a pointer to the widget for native events
+			// (see #14729), maybe we shouldn't do it here?
+			eventObj = eventObj || {};
+			if(eventObj.bubbles === undefined){
+				eventObj.bubbles = true;
+			}
+			if(eventObj.cancelable === undefined){
+				eventObj.cancelable = true;
+			}
+			if(!eventObj.detail){
+				eventObj.detail = {};
+			}
+			eventObj.detail.widget = this;
+
+			var ret, callback = this["on" + type];
+			if(callback){
+				ret = callback.apply(this, callbackArgs ? callbackArgs : [eventObj]);
+			}
+
+			// Emit event, but avoid spurious emit()'s as parent sets properties on child during startup/destroy
+			if(this._started && !this._beingDestroyed){
+				on.emit(this.domNode, type.toLowerCase(), eventObj);
+			}
+
+			return ret;
+		},
+
+		on: function(/*String|Function*/ type, /*Function*/ func){
+			// summary:
+			//		Call specified function when event occurs, ex: myWidget.on("click", function(){ ... }).
+			// type:
+			//		Name of event (ex: "click") or extension event like touch.press.
+			// description:
+			//		Call specified function when event `type` occurs, ex: `myWidget.on("click", function(){ ... })`.
+			//		Note that the function is not run in any particular scope, so if (for example) you want it to run in the
+			//		widget's scope you must do `myWidget.on("click", lang.hitch(myWidget, func))`.
+
+			// For backwards compatibility, if there's an onType() method in the widget then connect to that.
+			// Remove in 2.0.
+			var widgetMethod = this._onMap(type);
+			if(widgetMethod){
+				return aspect.after(this, widgetMethod, func, true);
+			}
+
+			// Otherwise, just listen for the event on this.domNode.
+			return this.own(on(this.domNode, type, func))[0];
+		},
+
+		_onMap: function(/*String|Function*/ type){
+			// summary:
+			//		Maps on() type parameter (ex: "mousemove") to method name (ex: "onMouseMove").
+			//		If type is a synthetic event like touch.press then returns undefined.
+			var ctor = this.constructor, map = ctor._onMap;
+			if(!map){
+				map = (ctor._onMap = {});
+				for(var attr in ctor.prototype){
+					if(/^on/.test(attr)){
+						map[attr.replace(/^on/, "").toLowerCase()] = attr;
+					}
+				}
+			}
+			return map[typeof type == "string" && type.toLowerCase()];	// String
+		},
+
+		toString: function(){
+			// summary:
+			//		Returns a string that represents the widget.
+			// description:
+			//		When a widget is cast to a string, this method will be used to generate the
+			//		output. Currently, it does not implement any sort of reversible
+			//		serialization.
+			return '[Widget ' + this.declaredClass + ', ' + (this.id || 'NO ID') + ']'; // String
+		},
+
+		getChildren: function(){
+			// summary:
+			//		Returns all direct children of this widget, i.e. all widgets underneath this.containerNode whose parent
+			//		is this widget.   Note that it does not return all descendants, but rather just direct children.
+			//		Analogous to [Node.childNodes](https://developer.mozilla.org/en-US/docs/DOM/Node.childNodes),
+			//		except containing widgets rather than DOMNodes.
+			//
+			//		The result intentionally excludes internally created widgets (a.k.a. supporting widgets)
+			//		outside of this.containerNode.
+			//
+			//		Note that the array returned is a simple array.  Application code should not assume
+			//		existence of methods like forEach().
+
+			return this.containerNode ? registry.findWidgets(this.containerNode) : []; // dijit/_WidgetBase[]
+		},
+
+		getParent: function(){
+			// summary:
+			//		Returns the parent widget of this widget.
+
+			return registry.getEnclosingWidget(this.domNode.parentNode);
+		},
+
+		connect: function(/*Object|null*/ obj, /*String|Function*/ event, /*String|Function*/ method){
+			// summary:
+			//		Deprecated, will be removed in 2.0, use this.own(on(...)) or this.own(aspect.after(...)) instead.
+			//
+			//		Connects specified obj/event to specified method of this object
+			//		and registers for disconnect() on widget destroy.
+			//
+			//		Provide widget-specific analog to dojo.connect, except with the
+			//		implicit use of this widget as the target object.
+			//		Events connected with `this.connect` are disconnected upon
+			//		destruction.
+			// returns:
+			//		A handle that can be passed to `disconnect` in order to disconnect before
+			//		the widget is destroyed.
+			// example:
+			//	|	var btn = new Button();
+			//	|	// when foo.bar() is called, call the listener we're going to
+			//	|	// provide in the scope of btn
+			//	|	btn.connect(foo, "bar", function(){
+			//	|		console.debug(this.toString());
+			//	|	});
+			// tags:
+			//		protected
+
+			return this.own(connect.connect(obj, event, this, method))[0];	// handle
+		},
+
+		disconnect: function(handle){
+			// summary:
+			//		Deprecated, will be removed in 2.0, use handle.remove() instead.
+			//
+			//		Disconnects handle created by `connect`.
+			// tags:
+			//		protected
+
+			handle.remove();
+		},
+
+		subscribe: function(t, method){
+			// summary:
+			//		Deprecated, will be removed in 2.0, use this.own(topic.subscribe()) instead.
+			//
+			//		Subscribes to the specified topic and calls the specified method
+			//		of this object and registers for unsubscribe() on widget destroy.
+			//
+			//		Provide widget-specific analog to dojo.subscribe, except with the
+			//		implicit use of this widget as the target object.
+			// t: String
+			//		The topic
+			// method: Function
+			//		The callback
+			// example:
+			//	|	var btn = new Button();
+			//	|	// when /my/topic is published, this button changes its label to
+			//	|	// be the parameter of the topic.
+			//	|	btn.subscribe("/my/topic", function(v){
+			//	|		this.set("label", v);
+			//	|	});
+			// tags:
+			//		protected
+			return this.own(topic.subscribe(t, lang.hitch(this, method)))[0];	// handle
+		},
+
+		unsubscribe: function(/*Object*/ handle){
+			// summary:
+			//		Deprecated, will be removed in 2.0, use handle.remove() instead.
+			//
+			//		Unsubscribes handle created by this.subscribe.
+			//		Also removes handle from this widget's list of subscriptions
+			// tags:
+			//		protected
+
+			handle.remove();
+		},
+
+		isLeftToRight: function(){
+			// summary:
+			//		Return this widget's explicit or implicit orientation (true for LTR, false for RTL)
+			// tags:
+			//		protected
+			return this.dir ? (this.dir == "ltr") : domGeometry.isBodyLtr(this.ownerDocument); //Boolean
+		},
+
+		isFocusable: function(){
+			// summary:
+			//		Return true if this widget can currently be focused
+			//		and false if not
+			return this.focus && (domStyle.get(this.domNode, "display") != "none");
+		},
+
+		placeAt: function(/* String|DomNode|_Widget */ reference, /* String|Int? */ position){
+			// summary:
+			//		Place this widget somewhere in the DOM based
+			//		on standard domConstruct.place() conventions.
+			// description:
+			//		A convenience function provided in all _Widgets, providing a simple
+			//		shorthand mechanism to put an existing (or newly created) Widget
+			//		somewhere in the dom, and allow chaining.
+			// reference:
+			//		Widget, DOMNode, or id of widget or DOMNode
+			// position:
+			//		If reference is a widget (or id of widget), and that widget has an ".addChild" method,
+			//		it will be called passing this widget instance into that method, supplying the optional
+			//		position index passed.  In this case position (if specified) should be an integer.
+			//
+			//		If reference is a DOMNode (or id matching a DOMNode but not a widget),
+			//		the position argument can be a numeric index or a string
+			//		"first", "last", "before", or "after", same as dojo/dom-construct::place().
+			// returns: dijit/_WidgetBase
+			//		Provides a useful return of the newly created dijit._Widget instance so you
+			//		can "chain" this function by instantiating, placing, then saving the return value
+			//		to a variable.
+			// example:
+			//	|	// create a Button with no srcNodeRef, and place it in the body:
+			//	|	var button = new Button({ label:"click" }).placeAt(win.body());
+			//	|	// now, 'button' is still the widget reference to the newly created button
+			//	|	button.on("click", function(e){ console.log('click'); }));
+			// example:
+			//	|	// create a button out of a node with id="src" and append it to id="wrapper":
+			//	|	var button = new Button({},"src").placeAt("wrapper");
+			// example:
+			//	|	// place a new button as the first element of some div
+			//	|	var button = new Button({ label:"click" }).placeAt("wrapper","first");
+			// example:
+			//	|	// create a contentpane and add it to a TabContainer
+			//	|	var tc = dijit.byId("myTabs");
+			//	|	new ContentPane({ href:"foo.html", title:"Wow!" }).placeAt(tc)
+
+			var refWidget = !reference.tagName && registry.byId(reference);
+			if(refWidget && refWidget.addChild && (!position || typeof position === "number")){
+				// Adding this to refWidget and can use refWidget.addChild() to handle everything.
+				refWidget.addChild(this, position);
+			}else{
+				// "reference" is a plain DOMNode, or we can't use refWidget.addChild().   Use domConstruct.place() and
+				// target refWidget.containerNode for nested placement (position==number, "first", "last", "only"), and
+				// refWidget.domNode otherwise ("after"/"before"/"replace").  (But not supported officially, see #14946.)
+				var ref = refWidget ?
+					(refWidget.containerNode && !/after|before|replace/.test(position || "") ?
+						refWidget.containerNode : refWidget.domNode) : dom.byId(reference, this.ownerDocument);
+				domConstruct.place(this.domNode, ref, position);
+
+				// Start this iff it has a parent widget that's already started.
+				// TODO: for 2.0 maybe it should also start the widget when this.getParent() returns null??
+				if(!this._started && (this.getParent() || {})._started){
+					this.startup();
+				}
+			}
+			return this;
+		},
+
+		defer: function(fcn, delay){
+			// summary:
+			//		Wrapper to setTimeout to avoid deferred functions executing
+			//		after the originating widget has been destroyed.
+			//		Returns an object handle with a remove method (that returns null) (replaces clearTimeout).
+			// fcn: Function
+			//		Function reference.
+			// delay: Number?
+			//		Delay, defaults to 0.
+			// tags:
+			//		protected
+
+			var timer = setTimeout(lang.hitch(this,
+				function(){
+					if(!timer){
+						return;
+					}
+					timer = null;
+					if(!this._destroyed){
+						lang.hitch(this, fcn)();
+					}
+				}),
+				delay || 0
+			);
+			return {
+				remove: function(){
 					if(timer){
 						clearTimeout(timer);
 						timer = null;
 					}
 					return null; // so this works well: handle = handle.remove();
 				}
-		};
-	}
-});
+			};
+		}
+	});
 
+	if(has("dojo-bidi")){
+		_WidgetBase.extend(_BidiMixin);
+	}
+
+	return _WidgetBase;
 });
 
 },
@@ -21491,69 +21764,66 @@ define([
 	"dojo/_base/declare"
 ], function(array, aspect, declare){
 
-// module:
-//		dijit/Destroyable
+	// module:
+	//		dijit/Destroyable
 
-return declare("dijit.Destroyable", null, {
-	// summary:
-	//		Mixin to track handles and release them when instance is destroyed.
-	// description:
-	//		Call this.own(...) on list of handles (returned from dojo/aspect, dojo/on,
-	//		dojo/Stateful::watch, or any class (including widgets) with a destroyRecursive() or destroy() method.
-	//		Then call destroy() later to destroy this instance and release the resources.
-
-	destroy: function(/*Boolean*/ preserveDom){
+	return declare("dijit.Destroyable", null, {
 		// summary:
-		//		Destroy this class, releasing any resources registered via own().
-		this._destroyed = true;
-	},
+		//		Mixin to track handles and release them when instance is destroyed.
+		// description:
+		//		Call this.own(...) on list of handles (returned from dojo/aspect, dojo/on,
+		//		dojo/Stateful::watch, or any class (including widgets) with a destroyRecursive() or destroy() method.
+		//		Then call destroy() later to destroy this instance and release the resources.
 
-	own: function(){
-		// summary:
-		//		Track specified handles and remove/destroy them when this instance is destroyed, unless they were
-		//		already removed/destroyed manually.
-		// tags:
-		//		protected
-		// returns:
-		//		The array of specified handles, so you can do for example:
-		//	|		var handle = this.own(on(...))[0];
+		destroy: function(/*Boolean*/ preserveDom){
+			// summary:
+			//		Destroy this class, releasing any resources registered via own().
+			this._destroyed = true;
+		},
 
-		array.forEach(arguments, function(handle){
-			var destroyMethodName =
-				"destroyRecursive" in handle ? "destroyRecursive" :	// remove "destroyRecursive" for 2.0
-				"destroy" in handle ? "destroy" :
-				"remove";
+		own: function(){
+			// summary:
+			//		Track specified handles and remove/destroy them when this instance is destroyed, unless they were
+			//		already removed/destroyed manually.
+			// tags:
+			//		protected
+			// returns:
+			//		The array of specified handles, so you can do for example:
+			//	|		var handle = this.own(on(...))[0];
 
-			// When this.destroy() is called, destroy handle.  Since I'm using aspect.before(),
-			// the handle will be destroyed before a subclass's destroy() method starts running, before it calls
-			// this.inherited() or even if it doesn't call this.inherited() at all.  If that's an issue, make an
-			// onDestroy() method and connect to that instead.
-			var odh = aspect.before(this, "destroy", function(preserveDom){
-				handle[destroyMethodName](preserveDom);
-			});
+			array.forEach(arguments, function(handle){
+				var destroyMethodName =
+					"destroyRecursive" in handle ? "destroyRecursive" : // remove "destroyRecursive" for 2.0
+						"destroy" in handle ? "destroy" :
+							"remove";
 
-			// If handle is destroyed manually before this.destroy() is called, remove the listener set directly above.
-			var hdh = aspect.after(handle, destroyMethodName, function(){
-				odh.remove();
-				hdh.remove();
-			}, true);
-		}, this);
+				// When this.destroy() is called, destroy handle.  Since I'm using aspect.before(),
+				// the handle will be destroyed before a subclass's destroy() method starts running, before it calls
+				// this.inherited() or even if it doesn't call this.inherited() at all.  If that's an issue, make an
+				// onDestroy() method and connect to that instead.
+				var odh = aspect.before(this, "destroy", function(preserveDom){
+					handle[destroyMethodName](preserveDom);
+				});
 
-		return arguments;		// handle
-	}
-});
+				// If handle is destroyed manually before this.destroy() is called, remove the listener set directly above.
+				var hdh = aspect.after(handle, destroyMethodName, function(){
+					odh.remove();
+					hdh.remove();
+				}, true);
+			}, this);
 
+			return arguments;		// handle
+		}
+	});
 });
 
 },
 'mijit/registry':function(){
 define([
 	"dojo/_base/array", // array.forEach array.map
-	"dojo/sniff", // has("ie")
-	"dojo/_base/unload", // unload.addOnWindowUnload
 	"dojo/_base/window", // win.body
 	"./main"	// dijit._scopeName
-], function(array, has, unload, win, dijit){
+], function(array, win, dijit){
 
 	// module:
 	//		dijit/registry
@@ -21690,7 +21960,7 @@ define([
 			//		Returns the widget whose DOM tree contains the specified DOMNode, or null if
 			//		the node is not contained within the DOM tree of any widget
 			while(node){
-				var id = node.getAttribute && node.getAttribute("widgetId");
+				var id = node.nodeType == 1 && node.getAttribute("widgetId");
 				if(id){
 					return hash[id];
 				}
@@ -21731,10 +22001,12 @@ return {
 },
 'mijit/_WidgetsInTemplateMixin':function(){
 define([
-	"dojo/_base/array", // array.forEach
-	"dojo/_base/declare", // declare
-	"dojo/parser" // parser.parse
-], function(array, declare, parser){
+	"dojo/_base/array", // forEach()
+	"dojo/aspect", // after()
+	"dojo/_base/declare", // declare()
+	"dojo/_base/lang",	// hitch()
+	"dojo/parser" // parse()
+], function(array, aspect, declare, lang, parser){
 
 	// module:
 	//		dijit/_WidgetsInTemplateMixin
@@ -21757,32 +22029,74 @@ define([
 		//		declared in markup inside it?  (Remove for 2.0 and assume true)
 		widgetsInTemplate: true,
 
+		// contextRequire: Function
+		//		Used to provide a context require to the dojo/parser in order to be
+		//		able to use relative MIDs (e.g. `./Widget`) in the widget's template.
+		contextRequire: null,
+
 		_beforeFillContent: function(){
 			if(this.widgetsInTemplate){
 				// Before copying over content, instantiate widgets in template
 				var node = this.domNode;
 
-				var cw = (this._startupWidgets = parser.parse(node, {
+				if(this.containerNode && !this.searchContainerNode){
+					// Tell parse call below not to look for widgets inside of this.containerNode
+					this.containerNode.stopParser = true;
+				}
+
+				parser.parse(node, {
 					noStart: !this._earlyTemplatedStartup,
 					template: true,
 					inherited: {dir: this.dir, lang: this.lang, textDir: this.textDir},
 					propsThis: this,	// so data-dojo-props of widgets in the template can reference "this" to refer to me
+					contextRequire: this.contextRequire,
 					scope: "dojo"	// even in multi-version mode templates use dojoType/data-dojo-type
+				}).then(lang.hitch(this, function(widgets){
+					this._startupWidgets = widgets;
+
+					// _WidgetBase::destroy() will destroy any supporting widgets under this.domNode.
+					// If we wanted to, we could call this.own() on anything in this._startupWidgets that was moved outside
+					// of this.domNode (like Dialog, which is moved to <body>).
+
+					// Hook up attach points and events for nodes that were converted to widgets
+					for(var i = 0; i < widgets.length; i++){
+						this._processTemplateNode(widgets[i], function(n,p){
+							// callback to get a property of a widget
+							return n[p];
+						}, function(widget, type, callback){
+							// callback to do data-dojo-attach-event to a widget
+							if(type in widget){
+								// back-compat, remove for 2.0
+								return widget.connect(widget, type, callback);
+							}else{
+								// 1.x may never hit this branch, but it's the default for 2.0
+								return widget.on(type, callback, true);
+							}
+						});
+					}
+
+					// Cleanup flag set above, just in case
+					if(this.containerNode && this.containerNode.stopParser){
+						delete this.containerNode.stopParser;
+					}
 				}));
 
-				if(!cw.isFulfilled()){
+				if(!this._startupWidgets){
 					throw new Error(this.declaredClass + ": parser returned unfilled promise (probably waiting for module auto-load), " +
 						"unsupported by _WidgetsInTemplateMixin.   Must pre-load all supporting widgets before instantiation.");
 				}
-
-				// _WidgetBase::destroy() will destroy any supporting widgets under this.domNode.
-				// If we wanted to, we could call this.own() on anything in this._startupWidgets that was moved outside
-				// of this.domNode (like Dialog, which is moved to <body>).
-
-				this._attachTemplateNodes(cw, function(n,p){
-					return n[p];
-				});
 			}
+		},
+
+		_processTemplateNode: function(/*DOMNode|Widget*/ baseNode, getAttrFunc, attachFunc){
+			// Override _AttachMixin._processNode to skip DOMNodes with data-dojo-type set.   They are handled separately
+			// in the _beforeFillContent() code above.
+
+			if(getAttrFunc(baseNode, "dojoType") || getAttrFunc(baseNode, "data-dojo-type")){
+				return true;
+			}
+
+			return this.inherited(arguments);
 		},
 
 		startup: function(){
@@ -21791,6 +22105,7 @@ define([
 					w.startup();
 				}
 			});
+			this._startupWidgets = null;
 			this.inherited(arguments);
 		}
 	});
@@ -24499,7 +24814,7 @@ define([
         type: "checkbox",
         value: "on",
         checked: false,
-        templateString: '<input ${!nameAttr} type="${type}" value="${value}" ${checkedAttr}/>',
+        templateString: '<input ${!nameAttr} type="${type}" value="${value}" ${checkedAttr}>',
         
         postMixInProperties: function() {
             this.inherited(arguments);
@@ -24834,7 +25149,7 @@ define([
         // summary:
         //      Provide widget functionality for an HTML <input type="text"> control
         
-        templateString: '<input ${!nameAttr} type="text" value="${value}" />',
+        templateString: '<input ${!nameAttr} type="text" value="${value}">',
         
         postCreate: function () {
             this.own(on(this.domNode, 'change', lang.hitch(this, function (ev) {
@@ -24954,27 +25269,22 @@ define([], function () {
     "use strict";
     
     return {
-        // Source: https://github.com/xsokev/Dojo-Bootstrap
         transition: (function () {
-            var transitionEnd = (function () {
-                var el = document.createElement('bootstrap'),
-                    transEndEventNames = {
-                        WebkitTransition: 'webkitTransitionEnd',
-                        MozTransition: 'transitionend',
-                        OTransition: 'oTransitionEnd',
-                        transition: 'transitionend'
-                    };
+            // summary:
+            //      Get name transition-end event
+            var el = document.createElement('bootstrap'),
+                transEndEventNames = {
+                    WebkitTransition: 'webkitTransitionEnd',
+                    MozTransition: 'transitionend',
+                    OTransition: 'oTransitionEnd',
+                    transition: 'transitionend'
+                };
 
-                for (var name in transEndEventNames) {
-                    if (el.style[name] !== undefined) {
-                        return transEndEventNames[name];
-                    }
+            for (var name in transEndEventNames) {
+                if (el.style[name] !== undefined) {
+                    return { end: transEndEventNames[name] };
                 }
-            })();
-
-            return transitionEnd && {
-                end: transitionEnd
-            };
+            }
         })(),
         
         // Source: https://github.com/phiggins42/plugd
@@ -25199,7 +25509,7 @@ define([
 ) {
     return declare([_WidgetBase, _TemplatedMixin], {
         
-        templateString: '<input type="text" data-dojo-attach-point="containerNode"/>',
+        templateString: '<input type="text" data-dojo-attach-point="containerNode">',
         name: '',
         valueNode: null, // <input type="hidden"> holding the serialized value
         
@@ -25556,7 +25866,7 @@ define(["./query", "./_base/lang", "./_base/array"], function(dquery, lang, arra
 /*=====
 return function(){
 	// summary:
-	//		Adds chainable methods to dojo.query() / NodeList instances for traversing the DOM
+	//		Adds chainable methods to dojo/query() / NodeList instances for traversing the DOM
 };
 =====*/
 
@@ -25586,7 +25896,7 @@ lang.extend(NodeList, {
 		var ary = [];
 		//Using for loop for better speed.
 		for(var i = 0, node; node = nodes[i]; i++){
-			//Should be a faster way to do this. dojo.query has a private
+			//Should be a faster way to do this. dojo/query has a private
 			//_zip function that may be inspirational, but there are pathways
 			//in query that force nozip?
 			if(node.nodeType == 1 && array.indexOf(ary, node) == -1){
@@ -25635,7 +25945,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".container").children();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".container").children();
+		//	|	});
 		//		returns the four divs that are children of the container div.
 		//		Running this code:
 		//	|	dojo.query(".container").children(".red");
@@ -25669,7 +25982,10 @@ lang.extend(NodeList, {
 		//	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".red").closest(".container");
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".red").closest(".container");
+		//	|	});
 		//		returns the div with class "container".
 		return this._getRelatedUniqueNodes(null, function(node, ary){
 			do{
@@ -25701,10 +26017,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue"><span class="text">Blue Two</span></div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".text").parent();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".text").parent();
+		//	|	});
 		//		returns the two divs with class "blue".
 		//		Running this code:
-		//	|	dojo.query(".text").parent(".first");
+		//	|		query(".text").parent(".first");
 		//		returns the one div with class "blue" and "first".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			return node.parentNode;
@@ -25731,11 +26050,14 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue"><span class="text">Blue Two</span></div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".text").parents();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".text").parents();
+		//	|	});
 		//		returns the two divs with class "blue", the div with class "container",
 		// 	|	the body element and the html element.
 		//		Running this code:
-		//	|	dojo.query(".text").parents(".container");
+		//	|		query(".text").parents(".container");
 		//		returns the one div with class "container".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -25768,11 +26090,14 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").siblings();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").siblings();
+		//	|	});
 		//		returns the two divs with class "red" and the other div
 		// 	|	with class "blue" that does not have "first".
 		//		Running this code:
-		//	|	dojo.query(".first").siblings(".red");
+		//	|		query(".first").siblings(".red");
 		//		returns the two div with class "red".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -25807,7 +26132,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue last">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").next();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").next();
+		//	|	});
 		//		returns the div with class "red" and has innerHTML of "Red Two".
 		//		Running this code:
 		//	|	dojo.query(".last").next(".red");
@@ -25842,10 +26170,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue next">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").nextAll();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").nextAll();
+		//	|	});
 		//		returns the two divs with class of "next".
 		//		Running this code:
-		//	|	dojo.query(".first").nextAll(".red");
+		//	|		query(".first").nextAll(".red");
 		//		returns the one div with class "red" and innerHTML "Red Two".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -25880,10 +26211,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".first").prev();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".first").prev();
+		//	|	});
 		//		returns the div with class "red" and has innerHTML of "Red One".
 		//		Running this code:
-		//	|	dojo.query(".first").prev(".blue");
+		//	|		query(".first").prev(".blue");
 		//		does not return any elements.
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var prev = node.previousSibling;
@@ -25917,10 +26251,13 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".second").prevAll();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".second").prevAll();
+		//	|	});
 		//		returns the two divs with class of "prev".
 		//		Running this code:
-		//	|	dojo.query(".first").prevAll(".red");
+		//	|		query(".first").prevAll(".red");
 		//		returns the one div with class "red prev" and innerHTML "Red One".
 		return this._getRelatedUniqueNodes(query, function(node, ary){
 			var pary = [];
@@ -25950,7 +26287,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".second").prevAll().andSelf();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".second").prevAll().andSelf();
+		//	|	});
 		//		returns the two divs with class of "prev", as well as the div with class "second".
 		return this.concat(this._parent);	// dojo/NodeList
 	},
@@ -25973,7 +26313,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue last">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".blue").first();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".blue").first();
+		//	|	});
 		//		returns the div with class "blue" and "first".
 		return this._wrap(((this[0] && [this[0]]) || []), this); // dojo/NodeList
 	},
@@ -25995,7 +26338,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="blue last">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".blue").last();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|	query(".blue").last();
+		//	|	});
 		//		returns the last div with class "blue",
 		return this._wrap((this.length ? [this[this.length - 1]] : []), this); // dojo/NodeList
 	},
@@ -26017,7 +26363,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="interior blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".interior").even();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".interior").even();
+		//	|	});
 		//		returns the two divs with class "blue"
 		return this.filter(function(item, i){
 			return i % 2 != 0;
@@ -26041,7 +26390,10 @@ lang.extend(NodeList, {
 		// 	|		<div class="interior blue">Blue Two</div>
 		//	|	</div>
 		//		Running this code:
-		//	|	dojo.query(".interior").odd();
+		//	|	require(["dojo/query", "dojo/NodeList-traverse"
+		//	|	], function(query){
+		//	|		query(".interior").odd();
+		//	|	});
 		//		returns the two divs with class "red"
 		return this.filter(function(item, i){
 			return i % 2 == 0;
@@ -26211,7 +26563,7 @@ define([], forDocument = function(doc, newFragmentFasterHeuristic){
 						// fragment doesn't exist yet, check to see if we really want to create it 
 						(fragment = fragmentFasterHeuristic.test(argument) && doc.createDocumentFragment()))
 							// any of the above fails just use the referenceElement  
-							|| referenceElement).
+							 ? fragment : referenceElement).
 								insertBefore(current, nextSibling || null); // do the actual insertion
 			}
 		}
@@ -26569,15 +26921,36 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 		if(this._started){ this.resize(); }
 	};
 	
-	return declare(TouchScroll ? TouchScroll : null, {
+	// Desktop versions of functions, deferred to when there is no touch support,
+	// or when the useTouchScroll instance property is set to false
+	
+	function desktopGetScrollPosition(){
+		return {
+			x: this.bodyNode.scrollLeft,
+			y: this.bodyNode.scrollTop
+		};
+	}
+	
+	function desktopScrollTo(options){
+		if(typeof options.x !== "undefined"){
+			this.bodyNode.scrollLeft = options.x;
+		}
+		if(typeof options.y !== "undefined"){
+			this.bodyNode.scrollTop = options.y;
+		}
+	}
+	
+	return declare(has("touch") ? TouchScroll : null, {
 		tabableHeader: false,
 		// showHeader: Boolean
 		//		Whether to render header (sub)rows.
 		showHeader: false,
+		
 		// showFooter: Boolean
 		//		Whether to render footer area.  Extensions which display content
 		//		in the footer area should set this to true.
 		showFooter: false,
+		
 		// maintainOddEven: Boolean
 		//		Whether to maintain the odd/even classes when new rows are inserted.
 		//		This can be disabled to improve insertion performance if odd/even styling is not employed.
@@ -26588,6 +26961,21 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 		//		when the list is destroyed.  Note this is effective at the time of
 		//		the call to addCssRule, not at the time of destruction.
 		cleanAddedRules: true,
+		
+		// useTouchScroll: Boolean
+		//		If touch support is available, this determines whether to
+		//		incorporate logic from the TouchScroll module (at the expense of
+		//		normal desktop/mouse or native mobile scrolling functionality).
+		useTouchScroll: true,
+
+		// cleanEmptyObservers: Boolean
+		//		Whether to clean up observers for empty result sets.
+		cleanEmptyObservers: true,
+
+		// highlightDuration: Integer
+		//		The amount of time (in milliseconds) that a row should remain
+		//		highlighted after it has been updated.
+		highlightDuration: 250,
 		
 		postscript: function(params, srcNodeRef){
 			// perform setup and invoke create in postScript to allow descendants to
@@ -26624,7 +27012,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				// Check for initial class or className in params or on domNode
 				cls = params["class"] || params.className || domNode.className;
 				
-				// handle sort param - TODO: revise @ 1.0 when _sort -> sort
+				// handle sort param - TODO: revise @ 0.4 when _sort -> sort
 				this._sort = params.sort || [];
 				delete this.sort; // ensure back-compat method isn't shadowed
 			}else{
@@ -26633,6 +27021,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			
 			// ensure arrays and hashes are initialized
 			this.observers = [];
+			this._numObservers = 0;
 			this._listeners = [];
 			this._rowIdToObject = {};
 			
@@ -26646,7 +27035,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			this.buildRendering();
 			if(cls){ setClass.call(this, cls); }
 			
-			this.postCreate && this.postCreate();
+			this.postCreate();
 			
 			// remove srcNodeRef instance property post-create
 			delete this.srcNodeRef;
@@ -26711,6 +27100,13 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			this._listeners.push(this._resizeHandle = listen(window, "resize",
 				miscUtil.throttleDelayed(winResizeHandler, this)));
 		},
+		
+		postCreate: has("touch") ? function(){
+			if(this.useTouchScroll){
+				this.inherited(arguments);
+			}
+		} : function(){},
+		
 		startup: function(){
 			// summary:
 			//		Called automatically after postCreate if the component is already
@@ -26830,6 +27226,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				observer && observer.cancel();
 			}
 			this.observers = [];
+			this._numObservers = 0;
 			this.preload = null;
 		},
 		destroy: function(){
@@ -26847,6 +27244,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			this.cleanup();
 			// destroy DOM
 			put(this.domNode, "!");
+			this.inherited(arguments);
 		},
 		refresh: function(){
 			// summary:
@@ -26867,26 +27265,26 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				put(row, ".ui-state-highlight");
 				setTimeout(function(){
 					put(row, "!ui-state-highlight");
-				}, 250);
+				}, this.highlightDuration);
 				return row;
 			}
 		},
 		adjustRowIndices: function(firstRow){
-			if(this.maintainOddEven){
-				// this traverses through rows to maintain odd/even classes on the rows when indexes shift;
-				var next = firstRow;
-				var rowIndex = next.rowIndex;
-				if(rowIndex > -1){ // make sure we have a real number in case this is called on a non-row
-					do{
-						if(next.rowIndex > -1){
-							// skip non-numeric, non-rows
+			// this traverses through rows to maintain odd/even classes on the rows when indexes shift;
+			var next = firstRow;
+			var rowIndex = next.rowIndex;
+			if(rowIndex > -1){ // make sure we have a real number in case this is called on a non-row
+				do{
+					// Skip non-numeric, non-rows
+					if(next.rowIndex > -1){
+						if(this.maintainOddEven){
 							if((next.className + ' ').indexOf("dgrid-row ") > -1){
 								put(next, '.' + (rowIndex % 2 == 1 ? oddClass : evenClass) + '!' + (rowIndex % 2 == 0 ? oddClass : evenClass));
 							}
-							next.rowIndex = rowIndex++;
 						}
-					}while((next = next.nextSibling) && next.rowIndex != rowIndex && !next.blockRowIndex);
-				}
+						next.rowIndex = rowIndex++;
+					}
+				}while((next = next.nextSibling) && next.rowIndex != rowIndex);
 			}
 		},
 		renderArray: function(results, beforeNode, options){
@@ -26897,15 +27295,22 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			options = options || {};
 			var self = this,
 				start = options.start || 0,
-				row, rows, container;
+				observers = this.observers,
+				rows, container, observerIndex;
 			
 			if(!beforeNode){
 				this._lastCollection = results;
 			}
 			if(results.observe){
 				// observe the results for changes
-				var observerIndex = this.observers.push(results.observe(function(object, from, to){
-					var firstRow, nextNode, parentNode;
+				self._numObservers++;
+				observerIndex = observers.push(results.observe(function(object, from, to){
+					var row, firstRow, nextNode, parentNode;
+					
+					function advanceNext() {
+						nextNode = (nextNode.connected || nextNode).nextSibling;
+					}
+					
 					// a change in the data took place
 					if(from > -1 && rows[from]){
 						// remove from old slot
@@ -26928,14 +27333,29 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 					if(to > -1){
 						// Add to new slot (either before an existing row, or at the end)
 						// First determine the DOM node that this should be placed before.
-						nextNode = rows[to];
-						if(!nextNode){
-							nextNode = rows[to - 1];
-							if(nextNode){
-								// Make sure to skip connected nodes, so we don't accidentally
-								// insert a row in between a parent and its children.
-								nextNode = (nextNode.connected || nextNode).nextSibling;
+						if(rows.length){
+							nextNode = rows[to];
+							if(!nextNode){
+								nextNode = rows[to - 1];
+								if(nextNode){
+									// Make sure to skip connected nodes, so we don't accidentally
+									// insert a row in between a parent and its children.
+									advanceNext();
+								}
 							}
+						}else{
+							// There are no rows.  Allow for subclasses to insert new rows somewhere other than
+							// at the end of the parent node.
+							nextNode = self._getFirstRowSibling && self._getFirstRowSibling(container);
+						}
+						// Make sure we don't trip over a stale reference to a
+						// node that was removed, or try to place a node before
+						// itself (due to overlapped queries)
+						if(row && nextNode && row.id === nextNode.id){
+							advanceNext();
+						}
+						if(nextNode && !nextNode.parentNode){
+							nextNode = byId(nextNode.id);
 						}
 						parentNode = (beforeNode && beforeNode.parentNode) ||
 							(nextNode && nextNode.parentNode) || self.contentNode;
@@ -26958,12 +27378,44 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 					self._onNotification(rows, object, from, to);
 				}, true)) - 1;
 			}
-			var rowsFragment = document.createDocumentFragment();
+			var rowsFragment = document.createDocumentFragment(),
+				lastRow;
+			
+			function mapEach(object){
+				lastRow = self.insertRow(object, rowsFragment, null, start++, options);
+				lastRow.observerIndex = observerIndex;
+				return lastRow;
+			}
+			function whenError(error){
+				if(typeof observerIndex !== "undefined"){
+					observers[observerIndex].cancel();
+					observers[observerIndex] = 0;
+					self._numObservers--;
+				}
+				if(error){
+					throw error;
+				}
+			}
+			function whenDone(resolvedRows){
+				container = beforeNode ? beforeNode.parentNode : self.contentNode;
+				if(container && container.parentNode &&
+						(container !== self.contentNode || resolvedRows.length)){
+					container.insertBefore(rowsFragment, beforeNode || null);
+					lastRow = resolvedRows[resolvedRows.length - 1];
+					lastRow && self.adjustRowIndices(lastRow);
+				}else if(observers[observerIndex] && self.cleanEmptyObservers){
+					// Remove the observer and don't bother inserting;
+					// rows are already out of view or there were none to track
+					whenError();
+				}
+				return (rows = resolvedRows);
+			}
+			
 			// now render the results
 			if(results.map){
 				rows = results.map(mapEach, console.error);
 				if(rows.then){
-					return rows.then(whenDone);
+					return rows.then(whenDone, whenError);
 				}
 			}else{
 				rows = [];
@@ -26971,21 +27423,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 					rows[i] = mapEach(results[i]);
 				}
 			}
-			var lastRow;
-			function mapEach(object){
-				lastRow = self.insertRow(object, rowsFragment, null, start++, options);
-				lastRow.observerIndex = observerIndex;
-				return lastRow;
-			}
-			function whenDone(resolvedRows){
-				container = beforeNode ? beforeNode.parentNode : self.contentNode;
-				if(container){
-					container.insertBefore(rowsFragment, beforeNode || null);
-					lastRow = resolvedRows[resolvedRows.length - 1];
-					lastRow && self.adjustRowIndices(lastRow);
-				}
-				return (rows = resolvedRows);
-			}
+			
 			return whenDone(rows);
 		},
 
@@ -27013,7 +27451,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 						this.store.getIdentity(object) : this._autoId++),
 				row = byId(id),
 				previousRow = row && row.previousSibling;
-		
+			
 			if(row){// if it existed elsewhere in the DOM, we will remove it, so we can recreate it
 				this.removeRow(row);
 			}
@@ -27163,29 +27601,17 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			return this.row(this._move(row, steps || 1, "dgrid-row", visible));
 		},
 		
-		scrollTo: has("touch") ? function(){
+		scrollTo: has("touch") ? function(options){
 			// If TouchScroll is the superclass, defer to its implementation.
-			return this.inherited(arguments);
-		} : function(options){
-			// No TouchScroll; simple implementation which sets scrollLeft/Top.
-			if(typeof options.x !== "undefined"){
-				this.bodyNode.scrollLeft = options.x;
-			}
-			if(typeof options.y !== "undefined"){
-				this.bodyNode.scrollTop = options.y;
-			}
-		},
+			return this.useTouchScroll ? this.inherited(arguments) :
+				desktopScrollTo.call(this, options);
+		} : desktopScrollTo,
 		
 		getScrollPosition: has("touch") ? function(){
 			// If TouchScroll is the superclass, defer to its implementation.
-			return this.inherited(arguments);
-		} : function(){
-			// No TouchScroll; return based on scrollLeft/Top.
-			return {
-				x: this.bodyNode.scrollLeft,
-				y: this.bodyNode.scrollTop
-			};
-		},
+			return this.useTouchScroll ? this.inherited(arguments) :
+				desktopGetScrollPosition.call(this);
+		} : desktopGetScrollPosition,
 		
 		get: function(/*String*/ name /*, ... */){
 			// summary:
@@ -27298,9 +27724,9 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 				this.renderArray(this._lastCollection);
 			}
 		},
-		// TODO: remove the following two (and rename _sort to sort) in 1.0
+		// TODO: remove the following two (and rename _sort to sort) in 0.4
 		sort: function(property, descending){
-			kernel.deprecated("sort(...)", 'use set("sort", ...) instead', "dgrid 1.0");
+			kernel.deprecated("sort(...)", 'use set("sort", ...) instead', "dgrid 0.4");
 			this.set("sort", property, descending);
 		},
 		_getSort: function(){
@@ -27328,7 +27754,7 @@ function(kernel, declare, listen, has, miscUtil, TouchScroll, hasClass, put){
 			}
 		},
 		setShowHeader: function(show){
-			kernel.deprecated("setShowHeader(...)", 'use set("showHeader", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setShowHeader(...)", 'use set("showHeader", ...) instead', "dgrid 0.4");
 			this.set("showHeader", show);
 		},
 		
@@ -27380,6 +27806,8 @@ define(["put-selector/put"], function(put){
 	}
 	
 	var util = {
+		// Throttle/debounce functions
+		
 		defaultDelay: 15,
 		throttle: function(cb, context, delay){
 			// summary:
@@ -27427,6 +27855,34 @@ define(["put-selector/put"], function(put){
 				}, delay);
 			};
 		},
+		
+		// Iterative functions
+		
+		each: function(arrayOrObject, callback, context){
+			// summary:
+			//		Given an array or object, iterates through its keys.
+			//		Does not use hasOwnProperty (since even Dojo does not
+			//		consistently use it), but will iterate using a for or for-in
+			//		loop as appropriate.
+			
+			var i, len;
+			
+			if(!arrayOrObject){
+				return;
+			}
+			
+			if(typeof arrayOrObject.length === "number"){
+				for(i = 0, len = arrayOrObject.length; i < len; i++){
+					callback.call(context, arrayOrObject[i], i, arrayOrObject);
+				}
+			}else{
+				for(i in arrayOrObject){
+					callback.call(context, arrayOrObject[i], i, arrayOrObject);
+				}
+			}
+		},
+		
+		// CSS-related functions
 		
 		addCssRule: function(selector, css){
 			// summary:
@@ -27626,7 +28082,8 @@ return declare([List, _StoreMixin], {
 		// Establish query options, mixing in our own.
 		// (The getter returns a delegated object, so simply using mixin is safe.)
 		options = lang.mixin(this.get("queryOptions"), options, 
-			{start: 0, count: this.minRowsPerPage, query: query});
+			{ start: 0, count: this.minRowsPerPage },
+			"level" in query ? { queryLevel: query.level } : null);
 		
 		// Protect the query within a _trackError call, but return the QueryResults
 		this._trackError(function(){ return results = query(options); });
@@ -27642,13 +28099,23 @@ return declare([List, _StoreMixin], {
 			var total = typeof results.total === "undefined" ?
 				results.length : results.total;
 			return Deferred.when(total, function(total){
-				// remove loading node
+				var trCount = trs.length,
+					parentNode = preloadNode.parentNode,
+					noDataNode = self.noDataNode;
+				
 				put(loadingNode, "!");
+				if(!("queryLevel" in options)){
+					self._total = total;
+				}
 				// now we need to adjust the height and total count based on the first result set
-				var trCount = trs.length;
 				if(total === 0){
-					self.noDataNode = put(self.contentNode, "div.dgrid-no-data");
-					self.noDataNode.innerHTML = self.noDataMessage;
+					if(noDataNode){
+						put(noDataNode, "!");
+						delete self.noDataNode;
+					}
+					self.noDataNode = noDataNode = put("div.dgrid-no-data");
+					parentNode.insertBefore(noDataNode, self._getFirstRowSibling(parentNode));
+					noDataNode.innerHTML = self.noDataMessage;
 				}
 				var height = 0;
 				for(var i = 0; i < trCount; i++){
@@ -27757,6 +28224,15 @@ return declare([List, _StoreMixin], {
 		this.inherited(arguments);
 		this._processScroll();
 	},
+
+	_getFirstRowSibling: function(container){
+		// summary:
+		//		Returns the DOM node that a new row should be inserted before
+		//		when there are no other rows in the current result set.
+		//		In the case of OnDemandList, this will always be the last child
+		//		of the container (which will be a trailing preload node).
+		return container.lastChild;
+	},
 	
 	_calcRowHeight: function(rowElement){
 		// summary:
@@ -27764,8 +28240,14 @@ return declare([List, _StoreMixin], {
 		//		plugins that add connected elements to a row, like the tree
 		
 		var sibling = rowElement.previousSibling;
-		return sibling && sibling.offsetTop != rowElement.offsetTop ?
-			rowElement.offsetHeight : 0;
+		sibling = sibling && !/\bdgrid-preload\b/.test(sibling.className) && sibling;
+		
+		// If a previous row exists, compare the top of this row with the
+		// previous one (in case "rows" are actually rendering side-by-side).
+		// If no previous row exists, this is either the first or only row,
+		// in which case we count its own height.
+		return sibling ? rowElement.offsetTop - sibling.offsetTop :
+			rowElement.offsetHeight;
 	},
 	
 	lastScrollTop: 0,
@@ -27785,7 +28267,8 @@ return declare([List, _StoreMixin], {
 			// References related to emitting dgrid-refresh-complete if applicable
 			refreshDfd,
 			lastResults,
-			lastRows;
+			lastRows,
+			preloadSearchNext = true;
 		
 		// XXX: I do not know why this happens.
 		// munging the actual location of the viewport relative to the preload node by a few pixels in either
@@ -27819,17 +28302,8 @@ return declare([List, _StoreMixin], {
 						break;
 					}
 					var nextRow = row[traversal]; // have to do this before removing it
-					var lastObserverIndex, currentObserverIndex = row.observerIndex;
-					if(currentObserverIndex != lastObserverIndex && lastObserverIndex > -1){
-						// we have gathered a whole page of observed rows, we can delete them now
-						var observers = grid.observers; 
-						var observer = observers[lastObserverIndex]; 
-						observer && observer.cancel();
-						observers[lastObserverIndex] = 0; // remove it so we don't call cancel twice
-					}
 					reclaimedHeight += rowHeight;
 					count += row.count || 1;
-					lastObserverIndex = currentObserverIndex;
 					// we just do cleanup here, as we will do a more efficient node destruction in the setTimeout below
 					grid.removeRow(row, true);
 					toDelete.push(row);
@@ -27855,6 +28329,12 @@ return declare([List, _StoreMixin], {
 		function adjustHeight(preload, noMax){
 			preload.node.style.height = Math.min(preload.count * grid.rowHeight, noMax ? Infinity : grid.maxEmptySpace) + "px";
 		}
+		function traversePreload(preload, moveNext){
+			do{
+				preload = moveNext ? preload.next : preload.previous;
+			}while(preload && !preload.node.offsetWidth);// skip past preloads that are not currently connected
+			return preload;
+		}
 		while(preload && !preload.node.offsetWidth){
 			// skip past preloads that are not currently connected
 			preload = preload.previous;
@@ -27871,14 +28351,10 @@ return declare([List, _StoreMixin], {
 			
 			if(visibleBottom + mungeAmount + searchBuffer < preloadTop){
 				// the preload is below the line of sight
-				do{
-					preload = preload.previous;
-				}while(preload && !preload.node.offsetWidth); // skip past preloads that are not currently connected
+				preload = traversePreload(preload, (preloadSearchNext = false));
 			}else if(visibleTop - mungeAmount - searchBuffer > (preloadTop + (preloadHeight = preloadNode.offsetHeight))){
 				// the preload is above the line of sight
-				do{
-					preload = preload.next;
-				}while(preload && !preload.node.offsetWidth);// skip past preloads that are not currently connected
+				preload = traversePreload(preload, (preloadSearchNext = true));
 			}else{
 				// the preload node is visible, or close to visible, better show it
 				var offset = ((preloadNode.rowIndex ? visibleTop - requestBuffer : visibleBottom) - preloadTop) / grid.rowHeight;
@@ -27898,9 +28374,12 @@ return declare([List, _StoreMixin], {
 				}
 				count = Math.min(Math.max(count, grid.minRowsPerPage),
 									grid.maxRowsPerPage, preload.count);
+				
 				if(count == 0){
-					return;
+					preload = traversePreload(preload, preloadSearchNext);
+					continue;
 				}
+				
 				count = Math.ceil(count);
 				offset = Math.min(Math.floor(offset), preload.count - count);
 				var options = lang.mixin(grid.get("queryOptions"), preload.options);
@@ -27926,7 +28405,8 @@ return declare([List, _StoreMixin], {
 						preload.count -= offset;
 					}
 					options.start = preloadNode.rowIndex - queryRowsOverlap;
-					preloadNode.rowIndex += count;
+					options.count = Math.min(count + queryRowsOverlap, grid.maxRowsPerPage);
+					preloadNode.rowIndex = options.start + options.count;
 				}else{
 					// add new rows above
 					if(preload.next){
@@ -27946,8 +28426,8 @@ return declare([List, _StoreMixin], {
 						
 					}
 					options.start = preload.count;
+					options.count = Math.min(count + queryRowsOverlap, grid.maxRowsPerPage);
 				}
-				options.count = Math.min(count + queryRowsOverlap, grid.maxRowsPerPage);
 				if(keepScrollTo && beforeNode && beforeNode.offsetWidth){
 					keepScrollTo = beforeNode.offsetTop;
 				}
@@ -27958,9 +28438,16 @@ return declare([List, _StoreMixin], {
 					innerNode = put(loadingNode, "div.dgrid-" + (below ? "below" : "above"));
 				innerNode.innerHTML = grid.loadingMessage;
 				loadingNode.count = count;
-				loadingNode.blockRowIndex = true;
 				// use the query associated with the preload node to get the next "page"
-				options.query = preload.query;
+				if("level" in preload.query){
+					options.queryLevel = preload.query.level;
+				}
+				
+				// Avoid spurious queries (ideally this should be unnecessary...)
+				if(!("queryLevel" in options) && (options.start > grid._total || options.count < 0)){
+					continue;
+				}
+				
 				// Query now to fill in these rows.
 				// Keep _trackError-wrapped results separate, since if results is a
 				// promise, it will lose QueryResults functions when chained by `when`
@@ -27996,17 +28483,23 @@ return declare([List, _StoreMixin], {
 								preserveMomentum: true
 							});
 						}
-						if(below){
-							// if it is below, we will use the total from the results to update
-							// the count of the last preload in case the total changes as later pages are retrieved
-							// (not uncommon when total counts are estimated for db perf reasons)
-							Deferred.when(results.total || results.length, function(total){
+						
+						Deferred.when(results.total || results.length, function(total){
+							if(!("queryLevel" in options)){
+								grid._total = total;
+							}
+							if(below){
+								// if it is below, we will use the total from the results to update
+								// the count of the last preload in case the total changes as later pages are retrieved
+								// (not uncommon when total counts are estimated for db perf reasons)
+								
 								// recalculate the count
 								below.count = total - below.node.rowIndex;
 								// readjust the height
 								adjustHeight(below);
-							});
-						}
+							}
+						});
+						
 						// make sure we have covered the visible area
 						grid._processScroll();
 						return rows;
@@ -28027,6 +28520,43 @@ return declare([List, _StoreMixin], {
 				refreshDfd.resolve(lastResults);
 			});
 		}
+	},
+
+	removeRow: function(rowElement, justCleanup){
+		function chooseIndex(index1, index2){
+			return index1 != null ? index1 : index2;
+		}
+
+		if(rowElement){
+			// Clean up observers that need to be cleaned up.
+			var previousNode = rowElement.previousSibling,
+				nextNode = rowElement.nextSibling,
+				prevIndex = previousNode && chooseIndex(previousNode.observerIndex, previousNode.previousObserverIndex),
+				nextIndex = nextNode && chooseIndex(nextNode.observerIndex, nextNode.nextObserverIndex),
+				thisIndex = rowElement.observerIndex;
+
+			// Clear the observerIndex on the node being removed so it will not be considered any longer.
+			rowElement.observerIndex = undefined;
+			if(justCleanup){
+				// Save the indexes from the siblings for future calls to removeRow.
+				rowElement.nextObserverIndex = nextIndex;
+				rowElement.previousObserverIndex = prevIndex;
+			}
+
+			// Is this row's observer index different than those on either side?
+			if(this.cleanEmptyObservers && thisIndex > -1 && thisIndex !== prevIndex && thisIndex !== nextIndex){
+				// This is the last row that references the observer index.  Cancel the observer.
+				var observers = this.observers;
+				var observer = observers[thisIndex];
+				if(observer){
+					observer.cancel();
+					this._numObservers--;
+					observers[thisIndex] = 0; // remove it so we don't call cancel twice
+				}
+			}
+		}
+		// Finish the row removal.
+		this.inherited(arguments);
 	}
 });
 
@@ -28048,8 +28578,12 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		if(typeof err !== "object"){
 			// Ensure we actually have an error object, so we can attach a reference.
 			err = new Error(err);
+		}else if(err.dojoType === "cancel"){
+			// Don't fire dgrid-error events for errors due to canceled requests
+			// (unfortunately, the Deferred instrumentation will still log them)
+			return;
 		}
-		// TODO: remove this @ 1.0 (prefer grid property directly on event object)
+		// TODO: remove this @ 0.4 (prefer grid property directly on event object)
 		err.grid = this;
 		
 		if(listen.emit(this.domNode, "dgrid-error", {
@@ -28106,6 +28640,20 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			}));
 		},
 		
+		postCreate: function(){
+			this.inherited(arguments);
+			if(this.store){
+				this._updateNotifyHandle(this.store);
+			}
+		},
+		
+		destroy: function(){
+			this.inherited(arguments);
+			if(this._notifyHandle){
+				this._notifyHandle.remove();
+			}
+		},
+		
 		_configColumn: function(column){
 			// summary:
 			//		Implements extension point provided by Grid to store references to
@@ -28115,10 +28663,29 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			}
 		},
 		
+		_updateNotifyHandle: function(store){
+			// summary:
+			//		Unhooks any previously-existing store.notify handle, and
+			//		hooks up a new one for the given store.
+			
+			if(this._notifyHandle){
+				// Unhook notify handler from previous store
+				this._notifyHandle.remove();
+				delete this._notifyHandle;
+			}
+			if(store && typeof store.notify === "function"){
+				this._notifyHandle = aspect.after(store, "notify",
+					lang.hitch(this, "_onNotify"), true);
+			}
+		},
+		
 		_setStore: function(store, query, queryOptions){
 			// summary:
 			//		Assigns a new store (and optionally query/queryOptions) to the list,
 			//		and tells it to refresh.
+			
+			this._updateNotifyHandle(store);
+			
 			this.store = store;
 			this.dirty = {}; // discard dirty map, as it applied to a previous store
 			this.set("query", query, queryOptions);
@@ -28139,11 +28706,11 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			sort ? this.set("sort", sort) : this.refresh();
 		},
 		setStore: function(store, query, queryOptions){
-			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 0.4");
 			this.set("store", store, query, queryOptions);
 		},
 		setQuery: function(query, queryOptions){
-			kernel.deprecated("setQuery(...)", 'use set("query", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setQuery(...)", 'use set("query", ...) instead', "dgrid 0.4");
 			this.set("query", query, queryOptions);
 		},
 		
@@ -28176,6 +28743,20 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.inherited(arguments);
 		},
 		
+		_onNotify: function(object, existingId){
+			// summary:
+			//		Method called when the store's notify method is called.
+			
+			// Call inherited in case anything was mixed in earlier
+			this.inherited(arguments);
+			
+			// For adds/puts, check whether any observers are hooked up;
+			// if not, force a refresh to properly hook one up now that there is data
+			if(object && this._numObservers < 1){
+				this.refresh({ keepScrollPosition: true });
+			}
+		},
+		
 		insertRow: function(object, parent, beforeNode, i, options){
 			var store = this.store,
 				dirty = this.dirty,
@@ -28203,7 +28784,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			dirtyObj[field] = value;
 		},
 		setDirty: function(id, field, value){
-			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 1.0");
+			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 0.4");
 			this.updateDirty(id, field, value);
 		},
 		
@@ -28229,11 +28810,16 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 					var colsWithSet = self._columnsWithSet,
 						updating = self._updating,
 						key, data;
-					// Copy dirty props to the original, applying setters if applicable
-					for(key in dirtyObj){
-						object[key] = dirtyObj[key];
+
+					if (typeof object.set === "function") {
+						object.set(dirtyObj);
+					} else {
+						// Copy dirty props to the original, applying setters if applicable
+						for(key in dirtyObj){
+							object[key] = dirtyObj[key];
+						}
 					}
-					
+
 					// Apply any set methods in column definitions.
 					// Note that while in the most common cases column.set is intended
 					// to return transformed data for the key in question, it is also
@@ -28306,11 +28892,14 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		
 		newRow: function(){
 			// Override to remove no data message when a new row appears.
+			// Run inherited logic first to prevent confusion due to noDataNode
+			// no longer being present as a sibling.
+			var row = this.inherited(arguments);
 			if(this.noDataNode){
 				put(this.noDataNode, "!");
 				delete this.noDataNode;
 			}
-			return this.inherited(arguments);
+			return row;
 		},
 		removeRow: function(rowElement, justCleanup){
 			var row = {element: rowElement};
@@ -28356,7 +28945,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		column: function(target){
 			// summary:
 			//		Get the column object by node, or event, or a columnId
-			if(typeof target == "string"){
+			if(typeof target != "object"){
 				return this.columns[target];
 			}else{
 				return this.cell(target).column;
@@ -28391,7 +28980,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 			}
 			if(!element && typeof columnId != "undefined"){
 				var row = this.row(target),
-					rowElement = row.element;
+					rowElement = row && row.element;
 				if(rowElement){
 					var elements = rowElement.getElementsByTagName("td");
 					for(var i = 0; i < elements.length; i++){
@@ -28532,8 +29121,9 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				// allow for custom header content manipulation
 				if(column.renderHeaderCell){
 					appendIfNode(contentNode, column.renderHeaderCell(contentNode));
-				}else if(column.label || column.field){
-					contentNode.appendChild(document.createTextNode(column.label || column.field));
+				}else if("label" in column || column.field){
+					contentNode.appendChild(document.createTextNode(
+						"label" in column ? column.label : column.field));
 				}
 				if(column.sortable !== false && field && field != "_item"){
 					th.sortable = true;
@@ -28573,7 +29163,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 								sort: newSort
 							};
 							
-							if (listen.emit(target, "dgrid-sort", eventObj)){
+							if (listen.emit(event.target, "dgrid-sort", eventObj)){
 								// Stash node subject to DOM manipulations,
 								// to be referenced then removed by sort()
 								grid._sortNode = target;
@@ -28708,10 +29298,9 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		_configColumns: function(prefix, rowColumns){
 			// configure the current column
 			var subRow = [],
-				isArray = rowColumns instanceof Array,
-				columnId, column;
-			for(columnId in rowColumns){
-				column = rowColumns[columnId];
+				isArray = rowColumns instanceof Array;
+			
+			function configColumn(column, columnId){
 				if(typeof column == "string"){
 					rowColumns[columnId] = column = {label:column};
 				}
@@ -28732,6 +29321,8 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				
 				subRow.push(column); // make sure it can be iterated on
 			}
+			
+			miscUtil.each(rowColumns, configColumn, this);
 			return isArray ? rowColumns : subRow;
 		},
 		
@@ -28800,11 +29391,11 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		},
 		
 		setColumns: function(columns){
-			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 0.4");
 			this.set("columns", columns);
 		},
 		setSubRows: function(subrows){
-			kernel.deprecated("setSubRows(...)", 'use set("subRows", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setSubRows(...)", 'use set("subRows", ...) instead', "dgrid 0.4");
 			this.set("subRows", subrows);
 		},
 		
@@ -28857,6 +29448,10 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
 function(kernel, declare, Deferred, on, has, aspect, List, touchUtil, put){
 
+has.add("mspointer", function(global, doc, element){
+	return "onmspointerdown" in element;
+});
+
 // Add feature test for user-select CSS property for optionally disabling
 // text selection.
 // (Can't use dom.setSelectable prior to 1.8.2 because of bad sniffs, see #15990)
@@ -28883,7 +29478,9 @@ has.add("css-user-select", function(global, doc, element){
 has.add("dom-selectstart", typeof document.onselectstart !== "undefined");
 
 var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey",
-	hasUserSelect = has("css-user-select");
+	hasUserSelect = has("css-user-select"),
+	downType = has("mspointer") ? "MSPointerDown" : "mousedown",
+	upType = has("mspointer") ? "MSPointerUp" : "mouseup";
 
 function makeUnselectable(node, unselectable){
 	// Utility function used in fallback path for recursively setting unselectable
@@ -28959,7 +29556,7 @@ return declare(null, {
 	// selectionEvents: String
 	//		Event (or events, comma-delimited) to listen on to trigger select logic.
 	//		Note: this is ignored in the case of touch devices.
-	selectionEvents: "mousedown,mouseup,dgrid-cellfocusin",
+	selectionEvents: downType + "," + upType + ",dgrid-cellfocusin",
 	
 	// deselectOnRefresh: Boolean
 	//		If true, the selection object will be cleared when refresh is called.
@@ -29004,9 +29601,10 @@ return declare(null, {
 	destroy: function(){
 		this.inherited(arguments);
 		
-		// Remove any handles added for cross-browser text selection prevention.
+		// Remove any extra handles added by Selection.
 		if(this._selectstartHandle){ this._selectstartHandle.remove(); }
 		if(this._unselectableHandle){ this._unselectableHandle.remove(); }
+		if(this._removeDeselectSignals){ this._removeDeselectSignals(); }
 	},
 	
 	_setSelectionMode: function(mode){
@@ -29027,7 +29625,7 @@ return declare(null, {
 		this._setAllowTextSelection(this.allowTextSelection);
 	},
 	setSelectionMode: function(mode){
-		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 1.0");
+		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 0.4");
 		this.set("selectionMode", mode);
 	},
 	
@@ -29044,8 +29642,8 @@ return declare(null, {
 		// Don't run if selection mode doesn't have a handler (incl. "none"),
 		// or if coming from a dgrid-cellfocusin from a mousedown
 		if(!this[this._selectionHandlerName] ||
-				(event.type == "dgrid-cellfocusin" && event.parentType == "mousedown") ||
-				(event.type == "mouseup" && target != this._waitForMouseUp)){
+				(event.type === "dgrid-cellfocusin" && event.parentType === "mousedown") ||
+				(event.type === upType && target != this._waitForMouseUp)){
 			return;
 		}
 		this._waitForMouseUp = null;
@@ -29055,7 +29653,7 @@ return declare(null, {
 		if(!event.keyCode || !event.ctrlKey || event.keyCode == 32){
 			// If clicking a selected item, wait for mouseup so that drag n' drop
 			// is possible without losing our selection
-			if(!event.shiftKey && event.type == "mousedown" && this.isSelected(target)){
+			if(!event.shiftKey && event.type === downType && this.isSelected(target)){
 				this._waitForMouseUp = target;
 			}else{
 				this[this._selectionHandlerName](event, target);
@@ -29135,7 +29733,7 @@ return declare(null, {
 		var grid = this,
 			selector = this.selectionDelegate;
 		
-		if(has("touch")){
+		if(has("touch") && !has("mspointer")){
 			// listen for touch taps if available
 			on(this.contentNode, touchUtil.selector(selector, touchUtil.tap), function(evt){
 				grid._handleSelect(evt, this);
@@ -29154,26 +29752,93 @@ return declare(null, {
 			});
 		}
 		
-		// If allowSelectAll is true, allow ctrl/cmd+A to (de)select all rows.
+		// If allowSelectAll is true, bind ctrl/cmd+A to (de)select all rows,
+		// unless the event was received from an editor component.
 		// (Handler further checks against _allowSelectAll, which may be updated
 		// if selectionMode is changed post-init.)
 		if(this.allowSelectAll){
 			this.on("keydown", function(event) {
-				if (event[ctrlEquiv] && event.keyCode == 65) {
+				if(event[ctrlEquiv] && event.keyCode == 65 &&
+						!/\bdgrid-input\b/.test(event.target.className)){
 					event.preventDefault();
 					grid[grid.allSelected ? "clearSelection" : "selectAll"]();
 				}
 			});
 		}
 		
-		aspect.before(this, "removeRow", function(rowElement, justCleanup){
-			var row;
-			if(!justCleanup){
-				row = this.row(rowElement);
-				// if it is a real row removal for a selected item, deselect it
-				if(row && (row.id in this.selection)){ this.deselect(rowElement); }
+		// Update aspects if there is a store change
+		if(this._setStore){
+			aspect.after(this, "_setStore", function(){
+				grid._updateDeselectionAspect();
+			});
+		}
+		this._updateDeselectionAspect();
+	},
+	
+	_updateDeselectionAspect: function(){
+		// summary:
+		//		Hooks up logic to handle deselection of removed items.
+		//		Aspects to an observable store's notify method if applicable,
+		//		or to the list/grid's removeRow method otherwise.
+		
+		var self = this,
+			store = this.store,
+			beforeSignal,
+			afterSignal;
+
+		function ifSelected(object, idToUpdate, methodName){
+			// Calls a method if the row corresponding to the object is selected.
+			var id = idToUpdate || (object && object[self.idProperty || "id"]);
+			if(id != null){
+				var row = self.row(id),
+					selection = row && self.selection[row.id];
+				// Is the row currently in the selection list.
+				if(selection){
+					self[methodName](row, null, selection);
+				}
 			}
-		});
+		}
+		
+		// Remove anything previously configured
+		if(this._removeDeselectSignals){
+			this._removeDeselectSignals();
+		}
+
+		// Is there currently an observable store?
+		if(store && store.notify){
+			beforeSignal = aspect.before(store, "notify", function(object, idToUpdate){
+				if(!object){
+					// Call deselect on the row if the object is being removed.  This allows the
+					// deselect event to reference the row element while it still exists in the DOM.
+					ifSelected(object, idToUpdate, "deselect");
+				}
+			});
+			afterSignal = aspect.after(store, "notify", function(object, idToUpdate){
+				// When List updates an item, the row element is removed and a new one inserted.
+				// If at this point the object is still in grid.selection, then call select on the row so the
+				// element's CSS is updated.  If the object was removed then the aspect-before has already deselected it.
+				ifSelected(object, idToUpdate, "select");
+			}, true);
+			
+			this._removeDeselectSignals = function(){
+				beforeSignal.remove();
+				afterSignal.remove();
+			};
+		}else{
+			beforeSignal = aspect.before(this, "removeRow", function(rowElement, justCleanup){
+				var row;
+				if(!justCleanup){
+					row = this.row(rowElement);
+					// if it is a real row removal for a selected item, deselect it
+					if(row && (row.id in this.selection)){
+						this.deselect(row);
+					}
+				}
+			});
+			this._removeDeselectSignals = function(){
+				beforeSignal.remove();
+			};
+		}
 	},
 	
 	allowSelect: function(row){
@@ -29189,7 +29854,7 @@ return declare(null, {
 			rows = this[event], // current event queue (actually cells for CellSelection)
 			trigger = this._selectionTriggerEvent;
 		
-		if (trigger) {
+		if(trigger) {
 			// If selection was triggered by another event, we want to know its type
 			// to report later.  Grab it ahead of the timeout to avoid
 			// "member not found" errors in IE < 9.
@@ -29224,7 +29889,12 @@ return declare(null, {
 		if(!row.element){
 			row = this.row(row);
 		}
-		if(!value || this.allowSelect(row)){
+		
+		// Check whether we're allowed to select the given row before proceeding.
+		// If a deselect operation is being performed, this check is skipped,
+		// to avoid errors when changing column definitions, and since disabled
+		// rows shouldn't ever be selected anyway.
+		if(value === false || this.allowSelect(row)){
 			var selection = this.selection;
 			var previousValue = selection[row.id];
 			if(value === null){
@@ -29353,13 +30023,15 @@ define([
 	"dojo/on",
 	"dojo/aspect",
 	"dojo/has",
+	"dojo/query",
 	"./Grid",
 	"put-selector/put",
 	"dojo/_base/sniff"
-], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, Grid, put){
+], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, Grid, put){
 
-// Variables to track info for cell currently being edited (editOn only).
-var activeCell, activeValue, activeOptions;
+// Variables to track info for cell currently being edited
+// (active* variables are for editOn editors only)
+var activeCell, activeValue, activeOptions, focusedCell;
 
 function updateInputValue(input, value){
 	// common code for updating value of a standard input
@@ -29424,6 +30096,9 @@ function setProperty(grid, cellElement, oldValue, value, triggerEvent){
 					// perform auto-save (if applicable) in next tick to avoid
 					// unintentional mishaps due to order of handler execution
 					column.autoSave && setTimeout(function(){ grid._trackError("save"); }, 0);
+				}else{
+					// update store-less grid
+					row.data[column.field] = value;
 				}
 			}else{
 				// Otherwise keep the value the same
@@ -29449,7 +30124,7 @@ function setProperty(grid, cellElement, oldValue, value, triggerEvent){
 
 // intermediary frontend to setProperty for HTML and widget editors
 function setPropertyFromEditor(grid, column, cmp, triggerEvent) {
-	var value;
+	var value, id, editedRow;
 	if(!cmp.isValid || cmp.isValid()){
 		value = setProperty(grid, (cmp.domNode || cmp).parentNode,
 			activeCell ? activeValue : cmp._dgridLastValue,
@@ -29459,6 +30134,33 @@ function setPropertyFromEditor(grid, column, cmp, triggerEvent) {
 			activeValue = value;
 		}else{ // for always-on editors, update _dgridLastValue immediately
 			cmp._dgridLastValue = value;
+		}
+
+		if(cmp.type === "radio" && cmp.name && !column.editOn && column.field){
+			editedRow = grid.row(cmp);
+			
+			// Update all other rendered radio buttons in the group
+			query("input[type=radio][name=" + cmp.name + "]", grid.contentNode).forEach(function(radioBtn){
+				var row = grid.row(radioBtn);
+				// Only update _dgridLastValue and the dirty data if it exists
+				// and is not already false
+				if(radioBtn !== cmp && radioBtn._dgridLastValue){
+					radioBtn._dgridLastValue = false;
+					if(grid.updateDirty){
+						grid.updateDirty(row.id, column.field, false);
+					}else{
+						// update store-less grid
+						row.data[column.field] = false;
+					}
+				}
+			});
+			
+			// Also update dirty data for rows that are not currently rendered
+			for(id in grid.dirty){
+				if(editedRow.id !== id && grid.dirty[id][column.field]){
+					grid.updateDirty(id, column.field, false);
+				}
+			}
 		}
 	}
 }
@@ -29551,6 +30253,21 @@ function createSharedEditor(column, originalRenderCell){
 			},
 		keyHandle;
 	
+	function blur(){
+		var element = activeCell;
+		focusNode.blur();
+		
+		if(typeof grid.focus === "function"){
+			// Dijit form widgets don't end up dismissed until the next turn,
+			// so wait before calling focus (otherwise Keyboard will focus the
+			// input again).  IE<9 needs to wait longer, otherwise the cell loses
+			// focus after we've set it.
+			setTimeout(function(){
+				grid.focus(element);
+			}, isWidget && has("ie") < 9 ? 15 : 0);
+		}
+	}
+	
 	function onblur(){
 		var parentNode = node.parentNode,
 			i = parentNode.children.length - 1,
@@ -29566,6 +30283,7 @@ function createSharedEditor(column, originalRenderCell){
 			bubbles: true,
 			cancelable: false
 		});
+		column._editorBlurHandle.pause();
 		// Remove the editor from the cell, to be reused later.
 		parentNode.removeChild(node);
 		
@@ -29579,7 +30297,6 @@ function createSharedEditor(column, originalRenderCell){
 		
 		// reset state now that editor is deactivated
 		activeCell = activeValue = activeOptions = null;
-		column._editorBlurHandle.pause();
 	}
 	
 	function dismissOnKey(evt){
@@ -29590,10 +30307,10 @@ function createSharedEditor(column, originalRenderCell){
 		if(key == 27){ // escape: revert + dismiss
 			reset();
 			activeValue = cmp._dgridLastValue;
-			focusNode.blur();
+			blur();
 		}else if(key == 13 && column.dismissOnEnter !== false){ // enter: dismiss
 			// FIXME: Opera is "reverting" even in this case
-			focusNode.blur();
+			blur();
 		}
 	}
 	
@@ -29715,6 +30432,48 @@ return function(column, editor, editOn){
 		listeners = [],
 		isWidget;
 	
+	function commonInit(column) {
+		// Common initialization logic for both editOn and always-on editors
+		var grid = column.grid,
+			focusoutHandle;
+		if(!grid.edit){
+			// Only perform this logic once on a given grid
+			grid.edit = edit;
+			
+			listeners.push(on(grid.domNode, '.dgrid-input:focusin', function () {
+				focusedCell = grid.cell(this);
+			}));
+			focusoutHandle = grid._editorFocusoutHandle =
+				on.pausable(grid.domNode, '.dgrid-input:focusout', function () {
+					focusedCell = null;
+				});
+			listeners.push(focusoutHandle);
+			
+			listeners.push(aspect.before(grid, 'removeRow', function (row) {
+				row = grid.row(row);
+				if (focusedCell && focusedCell.row.id === row.id) {
+					// Pause the focusout handler until after this row has had
+					// time to re-render, if this removal is part of an update.
+					// A setTimeout is used here instead of resuming in the
+					// insertRow aspect below, since if a row were actually
+					// removed (not updated) while editing, the handler would
+					// not be properly hooked up again for future occurrences.
+					focusoutHandle.pause();
+					setTimeout(function () {
+						focusoutHandle.resume();
+					}, 0);
+				}
+			}));
+			listeners.push(aspect.after(grid, 'insertRow', function (rowElement) {
+				var row = grid.row(rowElement);
+				if (focusedCell && focusedCell.row.id === row.id) {
+					grid.edit(grid.cell(row, focusedCell.column.id));
+				}
+				return rowElement;
+			}));
+		}
+	}
+
 	if(!column){ column = {}; }
 	
 	// accept arguments as parameters to editor function, or from column def,
@@ -29724,30 +30483,32 @@ return function(column, editor, editOn){
 	
 	isWidget = typeof editor != "string";
 	
-	// warn for widgetArgs -> editorArgs; TODO: remove @ 1.0
+	// warn for widgetArgs -> editorArgs; TODO: remove @ 0.4
 	if(column.widgetArgs){
 		kernel.deprecated("column.widgetArgs", "use column.editorArgs instead",
-			"dgrid 1.0");
+			"dgrid 0.4");
 		column.editorArgs = column.widgetArgs;
 	}
 	
 	aspect.after(column, "init", editOn ? function(){
-		var grid = column.grid;
-		if(!grid.edit){ grid.edit = edit; }
-		
+		commonInit(column);
 		// Create one shared widget/input to be swapped into the active cell.
 		column.editorInstance = createSharedEditor(column, originalRenderCell);
 	} : function(){
 		var grid = column.grid;
-		if(!grid.edit){ grid.edit = edit; }
+		commonInit(column);
 		
 		if(isWidget){
 			// add advice for cleaning up widgets in this column
 			listeners.push(aspect.before(grid, "removeRow", function(rowElement){
-				// destroy our widget during the row removal operation
+				// destroy our widget during the row removal operation,
+				// but don't trip over loading nodes from incomplete requests
 				var cellElement = grid.cell(rowElement, column.id).element,
-					widget = (cellElement.contents || cellElement).widget;
-				if(widget){ widget.destroyRecursive(); }
+					widget = cellElement && (cellElement.contents || cellElement).widget;
+				if(widget){
+					grid._editorFocusoutHandle.pause();
+					widget.destroyRecursive();
+				}
 			}));
 		}
 	});
@@ -29757,6 +30518,10 @@ return function(column, editor, editOn){
 		if(column._editorBlurHandle){ column._editorBlurHandle.remove(); }
 		
 		if(editOn && isWidget){ column.editorInstance.destroyRecursive(); }
+		
+		// Remove the edit function, so that it (and other one-time listeners)
+		// will be re-added if editor columns are re-initialized
+		column.grid.edit = null;
 	});
 	
 	column.renderCell = editOn ? function(object, value, cell, options){
@@ -30127,14 +30892,14 @@ define([
             this.inherited(arguments);
             
             var playlist = this.session.get('playlist'),
-                playIconNode = query('i', this.playNode)[0],
+                playIconNode = query('span', this.playNode)[0],
                 setPlayIcon = function () {
-                    domClass.remove(playIconNode, 'icon-pause');
-                    domClass.add(playIconNode, 'icon-play');
+                    domClass.remove(playIconNode, 'glyphicon-pause');
+                    domClass.add(playIconNode, 'glyphicon-play');
                 },
                 setPauseIcon = function () {
-                    domClass.remove(playIconNode, 'icon-play');
-                    domClass.add(playIconNode, 'icon-pause');
+                    domClass.remove(playIconNode, 'glyphicon-play');
+                    domClass.add(playIconNode, 'glyphicon-pause');
                 },
                 setTrackInfo = function () {
                     this.trackNrNode.innerHTML = playlist.getCurrentPosition();
@@ -30163,13 +30928,8 @@ define([
                     
                     if(seconds < 3600) { return m + ':' + ss; }
                     return h + ':' + mm + ':' + ss;
-                }
-            ;
-            
-            if (!playlist) {
-                playlist = new Playlist();
-                
-                playlist.onready(function () {
+                },
+                addTracksToPlaylist = function (playlist) {
                     playlist.addTrack({
                             title: 'Pachanga Voice',
                             artist: 'Pachanga Boys',
@@ -30205,40 +30965,20 @@ define([
                             id: 'fiestaForever',
                             url: 'http://media.kompakt.fm/dojorama/pachanga-boys-fiesta-forever.mp3'
                     });
-                    /*
-                    playlist.addTrack({
-                            title: 'The River',
-                            artist: 'Pachanga Boys',
-                            cover: ''
-                        }, {
-                            id: 'theRiver',
-                            url: 'http://sirprize.me/chrigu/dojorama/pachanga-boys-the-river.mp3'
-                    });
-                    
-                    playlist.addTrack({
-                            title: 'Is this power',
-                            artist: 'The Field',
-                            cover: ''
-                        }, {
-                            id: 'isThisPower',
-                            url: 'http://sirprize.me/chrigu/dojorama/the-field-is-this-power.mp3'
-                    });
-                    
-                    playlist.addTrack({
-                            title: 'Geffen (Philipp Gorbatchev Remix)',
-                            artist: 'Barnt',
-                            cover: ''
-                        }, {
-                            id: 'geffen',
-                            url: 'http://sirprize.me/chrigu/dojorama/barnt-geffen-philipp-gorbatchev-remix.mp3'
-                    });
-                    */
-                });
-                
-                this.session.set('playlist', playlist);
+                }
+            ;
+            
+            if (!playlist) {
+                playlist = new Playlist();
             }
+
+            this.session.set('playlist', playlist);
             
             playlist.onready(lang.hitch(this, function () {
+                if(!playlist.getTracks().length) {
+                    addTracksToPlaylist(playlist);
+                }
+
                 if (playlist.isPlaying()) {
                     lang.hitch(this, setPauseIcon)();
                     lang.hitch(this, showPlayInfo)();
@@ -30247,23 +30987,23 @@ define([
                 }
 
                 lang.hitch(this, setTrackInfo)();
-            }));
-            
-            array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
-                this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
-                    lang.hitch(this, showPlayInfo)();
-                    lang.hitch(this, resetPlayInfo)();
-                })));
-                
-                this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
-                    playlist.next();
-                    lang.hitch(this, setPauseIcon)();
-                    lang.hitch(this, setTrackInfo)();
-                })));
-                
-                this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
-                    lang.hitch(this, setPlayInfo)();
-                })));
+
+                array.forEach(playlist.getTracks(), lang.hitch(this, function (track) {
+                    this.own(on(track, 'onplay', lang.hitch(this, function (ev) {
+                        lang.hitch(this, showPlayInfo)();
+                        lang.hitch(this, resetPlayInfo)();
+                    })));
+                    
+                    this.own(on(track, 'onfinish', lang.hitch(this, function (ev) {
+                        playlist.next();
+                        lang.hitch(this, setPauseIcon)();
+                        lang.hitch(this, setTrackInfo)();
+                    })));
+                    
+                    this.own(on(track, 'whileplaying', lang.hitch(this, function (ev) {
+                        lang.hitch(this, setPlayInfo)();
+                    })));
+                }));
             }));
             
             this.own(on(this.playNode, 'click', lang.hitch(this, function (ev) {
@@ -30383,12 +31123,7 @@ define([
 ) {
     return declare([_WidgetBase, _TemplatedMixin, _StateAware, _ToggleMixin], {
 
-        divider: '/',
         templateString: template,
-        
-        constructor: function (params) {
-            this.divider = params.divider || this.divider;
-        },
 
         postCreate: function () {
             this.inherited(arguments);
@@ -30402,15 +31137,8 @@ define([
                         aNode = domConstruct.create('a', {
                             href: item.url,
                             innerHTML: item.label
-                        }, liNode, 'last'),
-                        spaceNode = document.createTextNode(' '),
-                        spanNode = domConstruct.create('span', {
-                            'class': 'divider',
-                            innerHTML: this.divider
                         }, liNode, 'last')
                     ;
-
-                    domConstruct.place(spaceNode, aNode, 'after');
 
                     this.own(on(aNode, 'click', lang.hitch(this, function (ev) {
                         ev.preventDefault();
@@ -30420,7 +31148,7 @@ define([
             ;
             
             // create item nodes:
-            // <li><a href="/some-url">Some label</a> <span class="divider">//</span></li>
+            // <li><a href="/some-url">Some label</a></li>
             for (i = 0; i < items.length - 1; i = i + 1) {
                 lang.hitch(this, addItem)(items[i]);
             }
@@ -30492,8 +31220,8 @@ define([
 
         _setErrorAttr: function (error) {
             var method = (error) ? 'add' : 'remove';
-            domClass[method](this.domNode, 'error');
-            this.inlineHelpNode.innerHTML = error;
+            domClass[method](this.domNode, 'has-error');
+            this.blockHelpNode.innerHTML = error;
             this._set("error", error);
         }
     });
@@ -30527,13 +31255,13 @@ define([
 });
 },
 'url:dobolo/templates/Alert.html':"<div class=\"alert\" data-dojo-attach-point=\"containerNode\">\n    <button data-dojo-attach-point=\"closeNode\" class=\"close\">&times;</button>\n    <div data-dojo-attach-point=\"contentNode\"></div>\n</div>",
-'url:dobolo/templates/Calendar.html':"<div class=\"calendar dropdown-menu\">\n    <div class=\"calendar-days\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody></tbody>\n        </table>\n    </div>\n    <div class=\"calendar-months\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n    <div class=\"calendar-years\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"icon-arrow-left\"/></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"icon-arrow-right\"/></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n</div>",
-'url:dojorama/ui/_global/widget/template/FooterWidget.html':"<div class=\"footer\">\n    <div class=\"container\">\n        <!--<p class=\"pull-right\"><a href=\"#\">Back to top</a></p>-->\n        <p>Dojorama is written by <a href=\"http://sirprize.me\">sirprize</a>, hosted on <a href=\"http://github.com/sirprize/dojorama\">Github</a> and released under the <a href=\"http://opensource.org/licenses/mit-license.php\">MIT license</a>.</p>\n        <!--\n        <ul class=\"footer-links\">\n            <li><a href=\"\">aaa</a></li>\n            <li><a href=\"\">bbb</a></li>\n        </ul>\n        -->\n    </div>\n</div>",
-'url:dojorama/ui/_global/widget/template/NavigationWidget.html':"<div class=\"navbar navbar-inverse navbar-fixed-top\">\n    <div class=\"navbar-inner\">\n        <div class=\"container\">\n            <!-- Be sure to leave the brand out there if you want it shown -->\n            <a class=\"brand\" href=\"#\" data-dojo-attach-point=\"homeNode\"></a>\n            \n            <ul class=\"nav\">\n                <li><a href=\"#\" data-dojo-attach-point=\"releaseIndexNode\"></a></li>\n                <li><a href=\"#\" data-dojo-attach-point=\"storageNode\"></a></li>\n            </ul>\n\n            <!-- Everything you want hidden at 940px or less, place within here -->\n            <div class=\"nav-collapse\">\n            <!-- .nav, .navbar-search, .navbar-form, etc -->\n            </div>\n            <!--\n            <ul class=\"nav pull-right\">\n                <li>asdf</li>\n            </ul>\n            -->\n        </div>\n    </div>\n</div>",
-'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-large player\">\n    <h2>Play &amp; Browse</h2>\n    \n    <div class=\"btn-group\">\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><i class=\"icon-backward\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><i class=\"icon-play\"></i></a>\n        <a class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><i class=\"icon-forward\"></i></a>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\" class=\"info\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <!--<p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>-->\n    </div>\n    \n    <p><a href=\"http://www.kompakt.fm/releases/we_are_really_sorry_880319606335\">We are really sorry</a>! That's right, thanks <a href=\"http://www.facebook.com/pages/Pachanga-Boys-Hippie-Dance/315216318504660\">Pachanga Boys</a></p>\n</div>",
+'url:dobolo/templates/Calendar.html':"<div class=\"calendar dropdown-menu\">\n    <div class=\"calendar-days\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"glyphicon glyphicon-arrow-left\"></i></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"glyphicon glyphicon-arrow-right\"></i></th>\n                </tr>\n            </thead>\n            <tbody></tbody>\n        </table>\n    </div>\n    <div class=\"calendar-months\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"glyphicon glyphicon-arrow-left\"></i></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"glyphicon glyphicon-arrow-right\"></i></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n    <div class=\"calendar-years\">\n        <table class=\"table-condensed\">\n            <thead>\n                <tr>\n                    <th class=\"prev\"><i class=\"glyphicon glyphicon-arrow-left\"></i></th>\n                    <th colspan=\"5\" class=\"switch\"></th>\n                    <th class=\"next\"><i class=\"glyphicon glyphicon-arrow-right\"></i></th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td colspan=\"7\"></td>\n                </tr>\n            </tbody>\n        </table>\n    </div>\n</div>",
+'url:dojorama/ui/_global/widget/template/FooterWidget.html':"<footer class=\"footer\">\n    <div class=\"container\">\n        <p>Dojorama is written by <a href=\"http://sirprize.me\">sirprize</a>, hosted on <a href=\"http://github.com/sirprize/dojorama\">Github</a> and released under the <a href=\"http://opensource.org/licenses/mit-license.php\">MIT license</a>.</p>\n    </div>\n</footer>",
+'url:dojorama/ui/_global/widget/template/NavigationWidget.html':"<header class=\"navbar navbar-inverse navbar-fixed-top\" role=\"banner\">\n    <div class=\"container\">\n        <div class=\"navbar-header\">\n            <button class=\"navbar-toggle\" type=\"button\">\n                <span class=\"sr-only\">Toggle navigation</span>\n                <span class=\"icon-bar\"></span>\n                <span class=\"icon-bar\"></span>\n                <span class=\"icon-bar\"></span>\n            </button>\n            <a class=\"navbar-brand\" href=\"#\" data-dojo-attach-point=\"homeNode\"></a>\n        </div>\n        <nav class=\"collapse navbar-collapse\" role=\"navigation\">\n            <ul class=\"nav navbar-nav\">\n                <li><a href=\"#\" data-dojo-attach-point=\"releaseIndexNode\"></a></li>\n                <li><a href=\"#\" data-dojo-attach-point=\"storageNode\"></a></li>\n            </ul>\n        </nav>\n    </div>\n</header>",
+'url:dojorama/ui/_global/widget/template/PlayerWidget.html':"<div class=\"well well-lg player\">\n    <p>Play &amp; Browse</p>\n    \n    <div class=\"btn-group\">\n        <button class=\"btn\" href=\"#\" data-dojo-attach-point=\"prevNode\"><span class=\"glyphicon glyphicon-backward\"></span></button>\n        <button class=\"btn\" href=\"#\" data-dojo-attach-point=\"playNode\"><span class=\"glyphicon glyphicon-play\"></span></button>\n        <button class=\"btn\" href=\"#\" data-dojo-attach-point=\"nextNode\"><span class=\"glyphicon glyphicon-forward\"></span></button>\n    </div>\n    \n    <div data-dojo-attach-point=\"infoNode\" class=\"info\">\n        Track <span data-dojo-attach-point=\"trackNrNode\"></span> of <span data-dojo-attach-point=\"numTracksNode\"></span>\n        <span data-dojo-attach-point=\"positionOuterNode\" style=\"display:none\">\n            // <span data-dojo-attach-point=\"positionNode\"></span>\n        </span>\n        <h2 class=\"track-title\" data-dojo-attach-point=\"trackTitleNode\">Title</h2>\n        <!--<p class=\"track-artist\" data-dojo-attach-point=\"trackArtistNode\">Artist</p>-->\n    </div>\n    \n    <p><a href=\"http://www.kompakt.fm/releases/we_are_really_sorry_880319606335\">We are really sorry</a>! That's right, thanks <a href=\"http://www.facebook.com/pages/Pachanga-Boys-Hippie-Dance/315216318504660\">Pachanga Boys</a></p>\n</div>",
 'url:dojorama/ui/_global/widget/template/ActionsWidget.html':"<ul class=\"nav nav-pills\"></ul>",
-'url:dojorama/ui/_global/widget/template/BreadcrumbsWidget.html':"<ul class=\"breadcrumb\"></ul>",
-'url:dojorama/ui/_global/widget/template/ControlGroupWidget.html':"<div class=\"control-group\">\n    <label class=\"control-label\" for=\"inputEmail\" data-dojo-attach-point=\"labelNode\"></label>\n    <div class=\"controls\">\n        <span data-dojo-attach-point=\"inputNode\"></span>\n        <span class=\"help-inline\" data-dojo-attach-point=\"inlineHelpNode\"></span>\n        <span class=\"help-block\" data-dojo-attach-point=\"blockHelpNode\"></span>\n    </div>\n</div>",
+'url:dojorama/ui/_global/widget/template/BreadcrumbsWidget.html':"<ol class=\"breadcrumb\"></ol>",
+'url:dojorama/ui/_global/widget/template/ControlGroupWidget.html':"<div class=\"form-group\">\n    <label class=\"control-label\" data-dojo-attach-point=\"labelNode\"></label>\n    <span data-dojo-attach-point=\"inputNode\"></span>\n    <span class=\"help-block\" data-dojo-attach-point=\"blockHelpNode\"></span>\n</div>",
 'url:dojorama/ui/_global/widget/template/ProgressWidget.html':"<div class=\"progress-widget\">\n    <div class=\"animation\"></div>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*dojo/nls/dojo*["ar","ca","cs","da","de","el","en-gb","en-us","es-es","fi-fi","fr-fr","he-il","hu","it-it","ja-jp","ko-kr","nl-nl","nb","pl","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh-tw","zh-cn","ROOT"]']);}
 }});

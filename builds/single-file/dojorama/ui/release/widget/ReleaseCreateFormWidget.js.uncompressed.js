@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr>\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/release/widget/ReleaseCreateFormWidget", [
@@ -66,5 +68,4 @@ define("dojorama/ui/release/widget/ReleaseCreateFormWidget", [
             this.formSnippet.show();
         }
     });
-});require({cache:{
-'url:dojorama/ui/release/widget/template/ReleaseCreateFormWidget.html':"<div>\n    <h2 data-dojo-attach-point=\"titleNode\"></h2><hr />\n    <div data-dojo-attach-point=\"formNode\"></div>\n</div>"}});
+});

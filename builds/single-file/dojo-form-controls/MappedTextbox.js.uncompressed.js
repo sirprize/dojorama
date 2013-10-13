@@ -11,7 +11,7 @@ define("dojo-form-controls/MappedTextbox", [
 ) {
     return declare([_WidgetBase, _TemplatedMixin], {
         
-        templateString: '<input type="text" data-dojo-attach-point="containerNode"/>',
+        templateString: '<input type="text" data-dojo-attach-point="containerNode">',
         name: '',
         valueNode: null, // <input type="hidden"> holding the serialized value
         

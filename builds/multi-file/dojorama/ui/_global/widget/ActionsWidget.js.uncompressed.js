@@ -1,3 +1,5 @@
+require({cache:{
+'url:dojorama/ui/_global/widget/template/ActionsWidget.html':"<ul class=\"nav nav-pills\"></ul>"}});
 /*jshint strict:false */
 
 define("dojorama/ui/_global/widget/ActionsWidget", [
@@ -52,5 +54,4 @@ define("dojorama/ui/_global/widget/ActionsWidget", [
             }));
         }
     });
-});require({cache:{
-'url:dojorama/ui/_global/widget/template/ActionsWidget.html':"<ul class=\"nav nav-pills\"></ul>"}});
+});

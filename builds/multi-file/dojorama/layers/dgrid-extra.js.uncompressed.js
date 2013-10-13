@@ -27,7 +27,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		column: function(target){
 			// summary:
 			//		Get the column object by node, or event, or a columnId
-			if(typeof target == "string"){
+			if(typeof target != "object"){
 				return this.columns[target];
 			}else{
 				return this.cell(target).column;
@@ -62,7 +62,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 			}
 			if(!element && typeof columnId != "undefined"){
 				var row = this.row(target),
-					rowElement = row.element;
+					rowElement = row && row.element;
 				if(rowElement){
 					var elements = rowElement.getElementsByTagName("td");
 					for(var i = 0; i < elements.length; i++){
@@ -203,8 +203,9 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				// allow for custom header content manipulation
 				if(column.renderHeaderCell){
 					appendIfNode(contentNode, column.renderHeaderCell(contentNode));
-				}else if(column.label || column.field){
-					contentNode.appendChild(document.createTextNode(column.label || column.field));
+				}else if("label" in column || column.field){
+					contentNode.appendChild(document.createTextNode(
+						"label" in column ? column.label : column.field));
 				}
 				if(column.sortable !== false && field && field != "_item"){
 					th.sortable = true;
@@ -244,7 +245,7 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 								sort: newSort
 							};
 							
-							if (listen.emit(target, "dgrid-sort", eventObj)){
+							if (listen.emit(event.target, "dgrid-sort", eventObj)){
 								// Stash node subject to DOM manipulations,
 								// to be referenced then removed by sort()
 								grid._sortNode = target;
@@ -379,10 +380,9 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		_configColumns: function(prefix, rowColumns){
 			// configure the current column
 			var subRow = [],
-				isArray = rowColumns instanceof Array,
-				columnId, column;
-			for(columnId in rowColumns){
-				column = rowColumns[columnId];
+				isArray = rowColumns instanceof Array;
+			
+			function configColumn(column, columnId){
 				if(typeof column == "string"){
 					rowColumns[columnId] = column = {label:column};
 				}
@@ -403,6 +403,8 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 				
 				subRow.push(column); // make sure it can be iterated on
 			}
+			
+			miscUtil.each(rowColumns, configColumn, this);
 			return isArray ? rowColumns : subRow;
 		},
 		
@@ -471,11 +473,11 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 		},
 		
 		setColumns: function(columns){
-			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setColumns(...)", 'use set("columns", ...) instead', "dgrid 0.4");
 			this.set("columns", columns);
 		},
 		setSubRows: function(subrows){
-			kernel.deprecated("setSubRows(...)", 'use set("subRows", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setSubRows(...)", 'use set("subRows", ...) instead', "dgrid 0.4");
 			this.set("subRows", subrows);
 		},
 		
@@ -528,6 +530,10 @@ function(kernel, declare, listen, has, put, List, miscUtil){
 define(["dojo/_base/kernel", "dojo/_base/declare", "dojo/_base/Deferred", "dojo/on", "dojo/has", "dojo/aspect", "./List", "dojo/has!touch?./util/touch", "put-selector/put", "dojo/query", "dojo/_base/sniff"],
 function(kernel, declare, Deferred, on, has, aspect, List, touchUtil, put){
 
+has.add("mspointer", function(global, doc, element){
+	return "onmspointerdown" in element;
+});
+
 // Add feature test for user-select CSS property for optionally disabling
 // text selection.
 // (Can't use dom.setSelectable prior to 1.8.2 because of bad sniffs, see #15990)
@@ -554,7 +560,9 @@ has.add("css-user-select", function(global, doc, element){
 has.add("dom-selectstart", typeof document.onselectstart !== "undefined");
 
 var ctrlEquiv = has("mac") ? "metaKey" : "ctrlKey",
-	hasUserSelect = has("css-user-select");
+	hasUserSelect = has("css-user-select"),
+	downType = has("mspointer") ? "MSPointerDown" : "mousedown",
+	upType = has("mspointer") ? "MSPointerUp" : "mouseup";
 
 function makeUnselectable(node, unselectable){
 	// Utility function used in fallback path for recursively setting unselectable
@@ -630,7 +638,7 @@ return declare(null, {
 	// selectionEvents: String
 	//		Event (or events, comma-delimited) to listen on to trigger select logic.
 	//		Note: this is ignored in the case of touch devices.
-	selectionEvents: "mousedown,mouseup,dgrid-cellfocusin",
+	selectionEvents: downType + "," + upType + ",dgrid-cellfocusin",
 	
 	// deselectOnRefresh: Boolean
 	//		If true, the selection object will be cleared when refresh is called.
@@ -675,9 +683,10 @@ return declare(null, {
 	destroy: function(){
 		this.inherited(arguments);
 		
-		// Remove any handles added for cross-browser text selection prevention.
+		// Remove any extra handles added by Selection.
 		if(this._selectstartHandle){ this._selectstartHandle.remove(); }
 		if(this._unselectableHandle){ this._unselectableHandle.remove(); }
+		if(this._removeDeselectSignals){ this._removeDeselectSignals(); }
 	},
 	
 	_setSelectionMode: function(mode){
@@ -698,7 +707,7 @@ return declare(null, {
 		this._setAllowTextSelection(this.allowTextSelection);
 	},
 	setSelectionMode: function(mode){
-		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 1.0");
+		kernel.deprecated("setSelectionMode(...)", 'use set("selectionMode", ...) instead', "dgrid 0.4");
 		this.set("selectionMode", mode);
 	},
 	
@@ -715,8 +724,8 @@ return declare(null, {
 		// Don't run if selection mode doesn't have a handler (incl. "none"),
 		// or if coming from a dgrid-cellfocusin from a mousedown
 		if(!this[this._selectionHandlerName] ||
-				(event.type == "dgrid-cellfocusin" && event.parentType == "mousedown") ||
-				(event.type == "mouseup" && target != this._waitForMouseUp)){
+				(event.type === "dgrid-cellfocusin" && event.parentType === "mousedown") ||
+				(event.type === upType && target != this._waitForMouseUp)){
 			return;
 		}
 		this._waitForMouseUp = null;
@@ -726,7 +735,7 @@ return declare(null, {
 		if(!event.keyCode || !event.ctrlKey || event.keyCode == 32){
 			// If clicking a selected item, wait for mouseup so that drag n' drop
 			// is possible without losing our selection
-			if(!event.shiftKey && event.type == "mousedown" && this.isSelected(target)){
+			if(!event.shiftKey && event.type === downType && this.isSelected(target)){
 				this._waitForMouseUp = target;
 			}else{
 				this[this._selectionHandlerName](event, target);
@@ -806,7 +815,7 @@ return declare(null, {
 		var grid = this,
 			selector = this.selectionDelegate;
 		
-		if(has("touch")){
+		if(has("touch") && !has("mspointer")){
 			// listen for touch taps if available
 			on(this.contentNode, touchUtil.selector(selector, touchUtil.tap), function(evt){
 				grid._handleSelect(evt, this);
@@ -825,26 +834,93 @@ return declare(null, {
 			});
 		}
 		
-		// If allowSelectAll is true, allow ctrl/cmd+A to (de)select all rows.
+		// If allowSelectAll is true, bind ctrl/cmd+A to (de)select all rows,
+		// unless the event was received from an editor component.
 		// (Handler further checks against _allowSelectAll, which may be updated
 		// if selectionMode is changed post-init.)
 		if(this.allowSelectAll){
 			this.on("keydown", function(event) {
-				if (event[ctrlEquiv] && event.keyCode == 65) {
+				if(event[ctrlEquiv] && event.keyCode == 65 &&
+						!/\bdgrid-input\b/.test(event.target.className)){
 					event.preventDefault();
 					grid[grid.allSelected ? "clearSelection" : "selectAll"]();
 				}
 			});
 		}
 		
-		aspect.before(this, "removeRow", function(rowElement, justCleanup){
-			var row;
-			if(!justCleanup){
-				row = this.row(rowElement);
-				// if it is a real row removal for a selected item, deselect it
-				if(row && (row.id in this.selection)){ this.deselect(rowElement); }
+		// Update aspects if there is a store change
+		if(this._setStore){
+			aspect.after(this, "_setStore", function(){
+				grid._updateDeselectionAspect();
+			});
+		}
+		this._updateDeselectionAspect();
+	},
+	
+	_updateDeselectionAspect: function(){
+		// summary:
+		//		Hooks up logic to handle deselection of removed items.
+		//		Aspects to an observable store's notify method if applicable,
+		//		or to the list/grid's removeRow method otherwise.
+		
+		var self = this,
+			store = this.store,
+			beforeSignal,
+			afterSignal;
+
+		function ifSelected(object, idToUpdate, methodName){
+			// Calls a method if the row corresponding to the object is selected.
+			var id = idToUpdate || (object && object[self.idProperty || "id"]);
+			if(id != null){
+				var row = self.row(id),
+					selection = row && self.selection[row.id];
+				// Is the row currently in the selection list.
+				if(selection){
+					self[methodName](row, null, selection);
+				}
 			}
-		});
+		}
+		
+		// Remove anything previously configured
+		if(this._removeDeselectSignals){
+			this._removeDeselectSignals();
+		}
+
+		// Is there currently an observable store?
+		if(store && store.notify){
+			beforeSignal = aspect.before(store, "notify", function(object, idToUpdate){
+				if(!object){
+					// Call deselect on the row if the object is being removed.  This allows the
+					// deselect event to reference the row element while it still exists in the DOM.
+					ifSelected(object, idToUpdate, "deselect");
+				}
+			});
+			afterSignal = aspect.after(store, "notify", function(object, idToUpdate){
+				// When List updates an item, the row element is removed and a new one inserted.
+				// If at this point the object is still in grid.selection, then call select on the row so the
+				// element's CSS is updated.  If the object was removed then the aspect-before has already deselected it.
+				ifSelected(object, idToUpdate, "select");
+			}, true);
+			
+			this._removeDeselectSignals = function(){
+				beforeSignal.remove();
+				afterSignal.remove();
+			};
+		}else{
+			beforeSignal = aspect.before(this, "removeRow", function(rowElement, justCleanup){
+				var row;
+				if(!justCleanup){
+					row = this.row(rowElement);
+					// if it is a real row removal for a selected item, deselect it
+					if(row && (row.id in this.selection)){
+						this.deselect(row);
+					}
+				}
+			});
+			this._removeDeselectSignals = function(){
+				beforeSignal.remove();
+			};
+		}
 	},
 	
 	allowSelect: function(row){
@@ -860,7 +936,7 @@ return declare(null, {
 			rows = this[event], // current event queue (actually cells for CellSelection)
 			trigger = this._selectionTriggerEvent;
 		
-		if (trigger) {
+		if(trigger) {
 			// If selection was triggered by another event, we want to know its type
 			// to report later.  Grab it ahead of the timeout to avoid
 			// "member not found" errors in IE < 9.
@@ -895,7 +971,12 @@ return declare(null, {
 		if(!row.element){
 			row = this.row(row);
 		}
-		if(!value || this.allowSelect(row)){
+		
+		// Check whether we're allowed to select the given row before proceeding.
+		// If a deselect operation is being performed, this check is skipped,
+		// to avoid errors when changing column definitions, and since disabled
+		// rows shouldn't ever be selected anyway.
+		if(value === false || this.allowSelect(row)){
 			var selection = this.selection;
 			var previousValue = selection[row.id];
 			if(value === null){
@@ -1169,6 +1250,99 @@ var Keyboard = declare(null, {
 		enableNavigation(this.contentNode);
 	},
 	
+	removeRow: function(rowElement){
+		if(!this._focusedNode){
+			// Nothing special to do if we have no record of anything focused
+			return this.inherited(arguments);
+		}
+		
+		var self = this,
+			isActive = document.activeElement === this._focusedNode,
+			focusedTarget = this[this.cellNavigation ? "cell" : "row"](this._focusedNode),
+			focusedRow = focusedTarget.row || focusedTarget,
+			sibling;
+		rowElement = rowElement.element || rowElement;
+		
+		// If removed row previously had focus, temporarily store information
+		// to be handled in an immediately-following insertRow call, or next turn
+		if(rowElement === focusedRow.element){
+			sibling = this.down(focusedRow, true);
+			
+			// Check whether down call returned the same row, or failed to return
+			// any (e.g. during a partial unrendering)
+			if (!sibling || sibling.element === rowElement) {
+				sibling = this.up(focusedRow, true);
+			}
+			
+			this._removedFocus = {
+				active: isActive,
+				rowId: focusedRow.id,
+				columnId: focusedTarget.column && focusedTarget.column.id,
+				siblingId: !sibling || sibling.element === rowElement ? undefined : sibling.id
+			};
+			
+			// Call _restoreFocus on next turn, to restore focus to sibling
+			// if no replacement row was immediately inserted.
+			// Pass original row's id in case it was re-inserted in a renderArray
+			// call (and thus was found, but couldn't be focused immediately)
+			setTimeout(function() {
+				if(self._removedFocus){
+					self._restoreFocus(focusedRow.id);
+				}
+			}, 0);
+			
+			// Clear _focusedNode until _restoreFocus is called, to avoid
+			// needlessly re-running this logic
+			this._focusedNode = null;
+		}
+		
+		this.inherited(arguments);
+	},
+	
+	insertRow: function(object){
+		var rowElement = this.inherited(arguments);
+		if(this._removedFocus && !this._removedFocus.wait){
+			this._restoreFocus(rowElement);
+		}
+		return rowElement;
+	},
+	
+	_restoreFocus: function(row) {
+		// summary:
+		//		Restores focus to the newly inserted row if it matches the
+		//		previously removed row, or to the nearest sibling otherwise.
+		
+		var focusInfo = this._removedFocus,
+			newTarget;
+		
+		row = row && this.row(row);
+		newTarget = row && row.element && row.id === focusInfo.rowId ? row :
+			typeof focusInfo.siblingId !== "undefined" && this.row(focusInfo.siblingId);
+		
+		if(newTarget && newTarget.element){
+			if(!newTarget.element.parentNode.parentNode){
+				// This was called from renderArray, so the row hasn't
+				// actually been placed in the DOM yet; handle it on the next
+				// turn (called from removeRow).
+				focusInfo.wait = true;
+				return;
+			}
+			newTarget = typeof focusInfo.columnId !== "undefined" ?
+				this.cell(newTarget, focusInfo.columnId) : newTarget;
+			if(focusInfo.active){
+				// Row/cell was previously focused, so focus the new one immediately
+				this.focus(newTarget);
+			}else{
+				// Row/cell was not focused, but we still need to update tabIndex
+				// and the element's class to be consistent with the old one
+				put(newTarget.element, ".dgrid-focus");
+				newTarget.element.tabIndex = this.tabIndex;
+			}
+		}
+		
+		delete this._removedFocus;
+	},
+	
 	addKeyHandler: function(key, callback, isHeader){
 		// summary:
 		//		Adds a handler to the keyMap on the instance.
@@ -1440,13 +1614,15 @@ define([
 	"dojo/on",
 	"dojo/aspect",
 	"dojo/has",
+	"dojo/query",
 	"./Grid",
 	"put-selector/put",
 	"dojo/_base/sniff"
-], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, Grid, put){
+], function(kernel, lang, arrayUtil, Deferred, on, aspect, has, query, Grid, put){
 
-// Variables to track info for cell currently being edited (editOn only).
-var activeCell, activeValue, activeOptions;
+// Variables to track info for cell currently being edited
+// (active* variables are for editOn editors only)
+var activeCell, activeValue, activeOptions, focusedCell;
 
 function updateInputValue(input, value){
 	// common code for updating value of a standard input
@@ -1511,6 +1687,9 @@ function setProperty(grid, cellElement, oldValue, value, triggerEvent){
 					// perform auto-save (if applicable) in next tick to avoid
 					// unintentional mishaps due to order of handler execution
 					column.autoSave && setTimeout(function(){ grid._trackError("save"); }, 0);
+				}else{
+					// update store-less grid
+					row.data[column.field] = value;
 				}
 			}else{
 				// Otherwise keep the value the same
@@ -1536,7 +1715,7 @@ function setProperty(grid, cellElement, oldValue, value, triggerEvent){
 
 // intermediary frontend to setProperty for HTML and widget editors
 function setPropertyFromEditor(grid, column, cmp, triggerEvent) {
-	var value;
+	var value, id, editedRow;
 	if(!cmp.isValid || cmp.isValid()){
 		value = setProperty(grid, (cmp.domNode || cmp).parentNode,
 			activeCell ? activeValue : cmp._dgridLastValue,
@@ -1546,6 +1725,33 @@ function setPropertyFromEditor(grid, column, cmp, triggerEvent) {
 			activeValue = value;
 		}else{ // for always-on editors, update _dgridLastValue immediately
 			cmp._dgridLastValue = value;
+		}
+
+		if(cmp.type === "radio" && cmp.name && !column.editOn && column.field){
+			editedRow = grid.row(cmp);
+			
+			// Update all other rendered radio buttons in the group
+			query("input[type=radio][name=" + cmp.name + "]", grid.contentNode).forEach(function(radioBtn){
+				var row = grid.row(radioBtn);
+				// Only update _dgridLastValue and the dirty data if it exists
+				// and is not already false
+				if(radioBtn !== cmp && radioBtn._dgridLastValue){
+					radioBtn._dgridLastValue = false;
+					if(grid.updateDirty){
+						grid.updateDirty(row.id, column.field, false);
+					}else{
+						// update store-less grid
+						row.data[column.field] = false;
+					}
+				}
+			});
+			
+			// Also update dirty data for rows that are not currently rendered
+			for(id in grid.dirty){
+				if(editedRow.id !== id && grid.dirty[id][column.field]){
+					grid.updateDirty(id, column.field, false);
+				}
+			}
 		}
 	}
 }
@@ -1638,6 +1844,21 @@ function createSharedEditor(column, originalRenderCell){
 			},
 		keyHandle;
 	
+	function blur(){
+		var element = activeCell;
+		focusNode.blur();
+		
+		if(typeof grid.focus === "function"){
+			// Dijit form widgets don't end up dismissed until the next turn,
+			// so wait before calling focus (otherwise Keyboard will focus the
+			// input again).  IE<9 needs to wait longer, otherwise the cell loses
+			// focus after we've set it.
+			setTimeout(function(){
+				grid.focus(element);
+			}, isWidget && has("ie") < 9 ? 15 : 0);
+		}
+	}
+	
 	function onblur(){
 		var parentNode = node.parentNode,
 			i = parentNode.children.length - 1,
@@ -1653,6 +1874,7 @@ function createSharedEditor(column, originalRenderCell){
 			bubbles: true,
 			cancelable: false
 		});
+		column._editorBlurHandle.pause();
 		// Remove the editor from the cell, to be reused later.
 		parentNode.removeChild(node);
 		
@@ -1666,7 +1888,6 @@ function createSharedEditor(column, originalRenderCell){
 		
 		// reset state now that editor is deactivated
 		activeCell = activeValue = activeOptions = null;
-		column._editorBlurHandle.pause();
 	}
 	
 	function dismissOnKey(evt){
@@ -1677,10 +1898,10 @@ function createSharedEditor(column, originalRenderCell){
 		if(key == 27){ // escape: revert + dismiss
 			reset();
 			activeValue = cmp._dgridLastValue;
-			focusNode.blur();
+			blur();
 		}else if(key == 13 && column.dismissOnEnter !== false){ // enter: dismiss
 			// FIXME: Opera is "reverting" even in this case
-			focusNode.blur();
+			blur();
 		}
 	}
 	
@@ -1802,6 +2023,48 @@ return function(column, editor, editOn){
 		listeners = [],
 		isWidget;
 	
+	function commonInit(column) {
+		// Common initialization logic for both editOn and always-on editors
+		var grid = column.grid,
+			focusoutHandle;
+		if(!grid.edit){
+			// Only perform this logic once on a given grid
+			grid.edit = edit;
+			
+			listeners.push(on(grid.domNode, '.dgrid-input:focusin', function () {
+				focusedCell = grid.cell(this);
+			}));
+			focusoutHandle = grid._editorFocusoutHandle =
+				on.pausable(grid.domNode, '.dgrid-input:focusout', function () {
+					focusedCell = null;
+				});
+			listeners.push(focusoutHandle);
+			
+			listeners.push(aspect.before(grid, 'removeRow', function (row) {
+				row = grid.row(row);
+				if (focusedCell && focusedCell.row.id === row.id) {
+					// Pause the focusout handler until after this row has had
+					// time to re-render, if this removal is part of an update.
+					// A setTimeout is used here instead of resuming in the
+					// insertRow aspect below, since if a row were actually
+					// removed (not updated) while editing, the handler would
+					// not be properly hooked up again for future occurrences.
+					focusoutHandle.pause();
+					setTimeout(function () {
+						focusoutHandle.resume();
+					}, 0);
+				}
+			}));
+			listeners.push(aspect.after(grid, 'insertRow', function (rowElement) {
+				var row = grid.row(rowElement);
+				if (focusedCell && focusedCell.row.id === row.id) {
+					grid.edit(grid.cell(row, focusedCell.column.id));
+				}
+				return rowElement;
+			}));
+		}
+	}
+
 	if(!column){ column = {}; }
 	
 	// accept arguments as parameters to editor function, or from column def,
@@ -1811,30 +2074,32 @@ return function(column, editor, editOn){
 	
 	isWidget = typeof editor != "string";
 	
-	// warn for widgetArgs -> editorArgs; TODO: remove @ 1.0
+	// warn for widgetArgs -> editorArgs; TODO: remove @ 0.4
 	if(column.widgetArgs){
 		kernel.deprecated("column.widgetArgs", "use column.editorArgs instead",
-			"dgrid 1.0");
+			"dgrid 0.4");
 		column.editorArgs = column.widgetArgs;
 	}
 	
 	aspect.after(column, "init", editOn ? function(){
-		var grid = column.grid;
-		if(!grid.edit){ grid.edit = edit; }
-		
+		commonInit(column);
 		// Create one shared widget/input to be swapped into the active cell.
 		column.editorInstance = createSharedEditor(column, originalRenderCell);
 	} : function(){
 		var grid = column.grid;
-		if(!grid.edit){ grid.edit = edit; }
+		commonInit(column);
 		
 		if(isWidget){
 			// add advice for cleaning up widgets in this column
 			listeners.push(aspect.before(grid, "removeRow", function(rowElement){
-				// destroy our widget during the row removal operation
+				// destroy our widget during the row removal operation,
+				// but don't trip over loading nodes from incomplete requests
 				var cellElement = grid.cell(rowElement, column.id).element,
-					widget = (cellElement.contents || cellElement).widget;
-				if(widget){ widget.destroyRecursive(); }
+					widget = cellElement && (cellElement.contents || cellElement).widget;
+				if(widget){
+					grid._editorFocusoutHandle.pause();
+					widget.destroyRecursive();
+				}
 			}));
 		}
 	});
@@ -1844,6 +2109,10 @@ return function(column, editor, editOn){
 		if(column._editorBlurHandle){ column._editorBlurHandle.remove(); }
 		
 		if(editOn && isWidget){ column.editorInstance.destroyRecursive(); }
+		
+		// Remove the edit function, so that it (and other one-time listeners)
+		// will be re-added if editor columns are re-initialized
+		column.grid.edit = null;
 	});
 	
 	column.renderCell = editOn ? function(object, value, cell, options){

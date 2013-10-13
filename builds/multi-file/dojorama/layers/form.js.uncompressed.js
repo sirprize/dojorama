@@ -156,7 +156,7 @@ define([
         type: "checkbox",
         value: "on",
         checked: false,
-        templateString: '<input ${!nameAttr} type="${type}" value="${value}" ${checkedAttr}/>',
+        templateString: '<input ${!nameAttr} type="${type}" value="${value}" ${checkedAttr}>',
         
         postMixInProperties: function() {
             this.inherited(arguments);
@@ -491,7 +491,7 @@ define([
         // summary:
         //      Provide widget functionality for an HTML <input type="text"> control
         
-        templateString: '<input ${!nameAttr} type="text" value="${value}" />',
+        templateString: '<input ${!nameAttr} type="text" value="${value}">',
         
         postCreate: function () {
             this.own(on(this.domNode, 'change', lang.hitch(this, function (ev) {
