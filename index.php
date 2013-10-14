@@ -8,8 +8,10 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file/dojorama/styles/global.css">
+        <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file-v001/dojorama/styles/global.css">
         <title>Dojorama - Single page demo application based on Dojo 1.9, Twitter Bootstrap 3 and history API</title>
+        <meta http-equiv="cache-control" content="no-cache">
+        <meta http-equiv="pragma" content="no-cache">
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
         </script>
@@ -75,7 +77,7 @@
             };
         </script>
         
-        <script src="<?php echo $base; ?>/builds/single-file/dojo/dojo.js"></script>
+        <script src="<?php echo $base; ?>/builds/single-file-v001/dojo/dojo.js"></script>
 
         <script>
             require(['dojorama/App'], function (App) { new App(); });
