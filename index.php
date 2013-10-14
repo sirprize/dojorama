@@ -16,6 +16,26 @@
             document.write('<style media="all">#static { display: none; }</style>');
         </script>
 
+        <script>
+            (function () {
+                var key = 'TEST_NS_ERROR_FILE_CORRUPTED';
+
+                try {
+                    if (localStorage !== undefined && localStorage.setItem !== undefined) {
+                        localStorage.setItem(key, '');
+                        localStorage.removeItem(key);
+                    }
+                } catch(e) {
+                    if (e.name === 'NS_ERROR_FILE_CORRUPTED') {
+                        msg = 'Sorry, it looks like your browser storage has been corrupted.\n';
+                        msg += 'More info can be found at the Mozilla Developer Website:\n\n'; 
+                        msg += 'https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Storage#Storage_location_and_clearing_the_data';
+                        alert(msg);
+                    }
+                }
+            })();
+        </script>
+
         <!--[if lt IE 9]>
             <script src="<?php echo $base; ?>/vendor/aFarkas/html5shiv/dist/html5shiv.js"></script>
             <script src="<?php echo $base; ?>/vendor/scottjehl/Respond/respond.min.js"></script>
