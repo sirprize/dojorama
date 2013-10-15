@@ -8,7 +8,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file-v001/dojorama/styles/global.css">
+        <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file-v002/dojorama/styles/global.css">
         <title>Browse Build</title>
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
@@ -51,7 +51,7 @@
         </script>
         
         <script src="<?php echo $base; ?>/tests/config-services.js"></script>
-        <script src="<?php echo $base; ?>/builds/single-file-v001/dojo/dojo.js"></script>
+        <script src="<?php echo $base; ?>/builds/single-file-v002/dojo/dojo.js"></script>
 
         <script>
             require(['dojorama/App'], function (App) { new App({}, 'dojorama'); });

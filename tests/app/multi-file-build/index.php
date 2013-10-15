@@ -8,7 +8,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="<?php echo $base; ?>/builds/multi-file-v001/dojorama/styles/global.css">
+        <link rel="stylesheet" href="<?php echo $base; ?>/builds/multi-file-v002/dojorama/styles/global.css">
         <title>Browse Build</title>
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
@@ -54,24 +54,24 @@
         </script>
 
         <script src="<?php echo $base; ?>/tests/config-services.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojo/dojo.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d01.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d02.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d03.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d04.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d05.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d06.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d07.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d08.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/d09.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/mijit.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/app.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/model.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/form.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/dobolo.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/dgrid-common.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/dgrid-extra.js"></script>
-        <script src="<?php echo $base; ?>/builds/multi-file-v001/dojorama/layers/global-stuff.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojo/dojo.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d01.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d02.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d03.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d04.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d05.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d06.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d07.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d08.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/d09.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/mijit.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/app.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/model.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/form.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/dobolo.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/dgrid-common.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/dgrid-extra.js"></script>
+        <script src="<?php echo $base; ?>/builds/multi-file-v002/dojorama/layers/global-stuff.js"></script>
         
         <script>
             require(['dojorama/App'], function (App) { new App({}, 'dojorama'); });
