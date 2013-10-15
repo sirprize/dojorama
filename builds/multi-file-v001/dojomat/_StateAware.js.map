@@ -2,7 +2,7 @@
 "version":3,
 "file":"_StateAware.js",
 "lineCount":1,
-"mappings":"A,SAGAA,MAAA,2DAGG,QAAA,CACCC,CADD,CAECC,CAFD,QAMQD,EAAA,UACGE,QAAAA,CAAUC,CAAVD,EACFD,CAAAG,QAAA,uCAAuDD,CAAvD,EAEIE,SAAAC,KAAAC,UAHFL,GAIEG,QAAAC,KAAAC,UAJFL,GAOEG,SAAAG,gBAAAD,UAPFL,GAQEG,QAAAG,gBAAAD,UARFL,IADH,EANR,CAHH;",
+"mappings":"A,SAGAA,MAAA,2DAGG,QAAA,CACCC,CADD,CAECC,CAFD,QAMQD,EAAA,eACQE,QAAAA,CAAUC,CAAVD,EACPD,CAAAG,QAAA,uCAAuDD,CAAvD,EAEIE,SAAAC,KAAAC,UAHGL,GAIHG,QAAAC,KAAAC,UAJGL,GAOHG,SAAAG,gBAAAD,UAPGL,GAQHG,QAAAG,gBAAAD,UARGL,IADR,EANR,CAHH;",
 "sources":["_StateAware.js.uncompressed.js"],
-"names":["define","declare","topic","push","url","publish","document","body","scrollTop","documentElement"]
+"names":["define","declare","topic","pushState","url","publish","document","body","scrollTop","documentElement"]
 }

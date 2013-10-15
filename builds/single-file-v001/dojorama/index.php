@@ -10,8 +10,30 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="<?php echo $base; ?>/builds/single-file-v001/dojorama/styles/global.css">
         <title>Dojorama - Single page demo application based on Dojo 1.9, Twitter Bootstrap 3 and history API</title>
+        <meta http-equiv="cache-control" content="no-cache">
+        <meta http-equiv="pragma" content="no-cache">
         <script>
             document.write('<style media="all">#static { display: none; }</style>');
+        </script>
+
+        <script>
+            (function () {
+                var key = 'TEST_NS_ERROR_FILE_CORRUPTED';
+
+                try {
+                    if (localStorage !== undefined && localStorage.setItem !== undefined) {
+                        localStorage.setItem(key, '');
+                        localStorage.removeItem(key);
+                    }
+                } catch(e) {
+                    if (e.name === 'NS_ERROR_FILE_CORRUPTED') {
+                        msg = 'Sorry, it looks like your browser storage has been corrupted.\n';
+                        msg += 'More info can be found at the Mozilla Developer Website:\n\n'; 
+                        msg += 'https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Storage#Storage_location_and_clearing_the_data';
+                        alert(msg);
+                    }
+                }
+            })();
         </script>
 
         <!--[if lt IE 9]>
@@ -24,6 +46,8 @@
         <div id="static">
             Please enable JavaScript in your browser
         </div>
+
+        <div id="dojorama"></div>
         
         <?php if ($_SERVER['HTTP_HOST'] === 'dojorama.org'): ?>
             <script type="text/javascript">
@@ -78,7 +102,7 @@
         <script src="<?php echo $base; ?>/builds/single-file-v001/dojo/dojo.js"></script>
 
         <script>
-            require(['dojorama/App'], function (App) { new App(); });
+            require(['dojorama/App'], function (App) { new App({}, 'dojorama'); });
         </script>
     </body>
 </html>

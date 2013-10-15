@@ -29,7 +29,7 @@ define([
     };
     
     return declare([Application], {
-        
+
         constructor: function () {
             populateRouter(this, routingMap);
             this.run();
@@ -38,20 +38,19 @@ define([
         makeNotFoundPage: function () {
             var request = new Request(window.location.href),
                 makePage = function (Page) {
-                    this.setStylesheets();
-                    this.setCss();
-                    this.setPageNode();
+                    this.clearCss();
+                    this.prepareDomNode();
 
                     var page = new Page({
                         request: request,
                         router: this.router
-                    }, this.pageNodeId);
-                
+                    }, this.domNode);
+
                     page.startup();
                     this.notification.clear();
                 }
             ;
-            
+
             require(['./ui/error/NotFoundPage'], lang.hitch(this, makePage));
             trackPage(request);
         },
@@ -59,16 +58,15 @@ define([
         makeErrorPage: function (error) {
             var request = new Request(window.location.href),
                 makePage = function (Page) {
-                    this.setStylesheets();
-                    this.setCss();
-                    this.setPageNode();
+                    this.clearCss();
+                    this.prepareDomNode();
 
                     var page = new Page({
                         request: request,
                         router: this.router,
                         error: error
-                    }, this.pageNodeId);
-                
+                    }, this.domNode);
+
                     page.startup();
                     this.notification.clear();
                 }
@@ -77,7 +75,7 @@ define([
             require(['./ui/error/ErrorPage'], lang.hitch(this, makePage));
             trackPage(request);
         },
-        
+
         makePage: function (request, widget, layers, stylesheets) {
             this.inherited(arguments);
             trackPage(request);

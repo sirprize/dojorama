@@ -1,3 +1,3 @@
 //>>built
-define("dojomat/populateRouter",["routed/Route","dojo/_base/lang"],function(c,d){return function(e,b){var a=null,f=function(a,b,c){return function(d){e.makePage(d,a,b,c)}};for(a in b)b.hasOwnProperty(a)&&e.router.addRoute(a,new c(b[a].schema,d.hitch(e,f(b[a].widget,b[a].layers||[],b[a].stylesheets))))}});
+define("dojomat/populateRouter",["routed/Route","dojo/_base/lang"],function(c,e){return function(d,b){var a=null,f=function(a,b){return function(c){d.makePage(c,a,b)}};for(a in b)b.hasOwnProperty(a)&&d.router.addRoute(a,new c(b[a].schema,e.hitch(d,f(b[a].widget,b[a].layers||[]))))}});
 //@ sourceMappingURL=populateRouter.js.map

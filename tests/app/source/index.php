@@ -24,6 +24,8 @@
         <div id="static">
             Please enable JavaScript in your browser
         </div>
+
+        <div id="dojorama"></div>
         
         <!--<script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2.js"></script>-->
         <script src="<?php echo $base; ?>/vendor/scottschiller/SoundManager2/script/soundmanager2-nodebug-jsmin.js"></script>
@@ -50,7 +52,7 @@
         <script src="<?php echo $base; ?>/vendor/dojo/dojo/dojo.js"></script>
         
         <script>
-            require(['dojorama/App'], function (App) { new App(); });
+            require(['dojorama/App'], function (App) { new App({}, 'dojorama'); });
         </script>
     </body>
 </html>

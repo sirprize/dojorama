@@ -87,7 +87,7 @@ define([
                 this.setNotification(data.notification.message, data.notification.type);
                 setTimeout(lang.hitch(this, function () {
                     // give it a bit of time for destruction
-                    this.push(this.router.getRoute('releaseUpdate').assemble({ id: data.model.get('id') }));
+                    this.pushState(this.router.getRoute('releaseUpdate').assemble({ id: data.model.get('id') }));
                 }), 0);
             })));
         }

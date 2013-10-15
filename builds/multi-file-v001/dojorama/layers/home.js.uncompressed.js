@@ -60,7 +60,7 @@ define([
                 
                 this.own(on(node, 'click', lang.hitch(this, function (ev) {
                     ev.preventDefault();
-                    this.push(url);
+                    this.pushState(url);
                 })));
             }));
         },
@@ -152,7 +152,7 @@ define([
                 
                     this.own(on(node, 'click', lang.hitch(this, function (ev) {
                         ev.preventDefault();
-                        this.push(url);
+                        this.pushState(url);
                     })));
                 }
             ;

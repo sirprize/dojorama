@@ -11,7 +11,7 @@ define("dojomat/_StateAware", [
     "use strict";
 
     return declare([], {
-        push: function (url) {
+        pushState: function (url) {
             topic.publish('dojomat/_StateAware/push-state', { url: url });
             
             if (document.body.scrollTop) {

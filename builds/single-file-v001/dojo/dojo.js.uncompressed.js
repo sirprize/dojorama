@@ -23049,10 +23049,6 @@ define([
     "use strict";
 
     return declare([], {
-        setStylesheets: function (stylesheets) {
-            topic.publish('dojomat/_AppAware/stylesheets', stylesheets);
-        },
-        
         setCss: function (css, media) {
             topic.publish('dojomat/_AppAware/css', { css: css, media: media });
         },
@@ -23089,7 +23085,7 @@ define([
     "use strict";
 
     return declare([], {
-        push: function (url) {
+        pushState: function (url) {
             topic.publish('dojomat/_StateAware/push-state', { url: url });
             
             if (document.body.scrollTop) {
@@ -23112,10 +23108,10 @@ define([
     "routed/Router",
     "dojo/has!dijit?dijit/registry:mijit/registry",
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/has",
     "dojo/on",
+    "dojo/dom",
     "dojo/query",
     "dojo/topic",
     "dojo/dom-construct",
@@ -23127,10 +23123,10 @@ define([
     Router,
     registry,
     declare,
-    array,
     lang,
     has,
     on,
+    dom,
     query,
     topic,
     domConstruct,
@@ -23189,13 +23185,12 @@ define([
         router: new Router(),
         session: new Session(),
         notification: new Notification(),
-        stylesheetNodes: [],
-        cssNode: null,
-        pageNodeId: 'page',
-        refNode: null,
+        cssNodes: {},
+        domNode: null,
 
-        constructor: function(args) {
-            lang.mixin(this, args);
+        constructor: function(params, domNodeOrId) {
+            lang.mixin(this, params);
+            this.domNode = dom.byId(domNodeOrId);
         },
 
         run: function () {
@@ -23205,85 +23200,53 @@ define([
             this.registerPopState();
             this.handleState();
         },
+
+        clearCss: function () {
+            var media;
+
+            for (media in this.cssNodes) {
+                if (this.cssNodes.hasOwnProperty(media)) {
+                    domConstruct.destroy(this.cssNodes[media]);
+                }
+            }
+
+            this.cssNodes = {};
+        },
         
-        setStylesheets: function (stylesheets) {
-            var addStylesheet = function (stylesheetNodes, stylesheet) {
-                var tag = null,
-                    attributes = null,
-                    refNode = null,
-                    position = null,
-                    sn = query('head link[rel=stylesheet]');
-
-                if (!stylesheet || !stylesheet.href) {
-                    return;
-                }
-
-                if (sn.length) {
-                    // place it after the last <link rel="stylesheet">
-                    refNode = sn[sn.length - 1];
-                    position = 'after';
-                } else {
-                    // place it before the first <script>
-                    refNode = query('head script')[0];
-                    position = 'before';
-                }
-
-                attributes = {
-                    rel: 'stylesheet',
-                    media: stylesheet.media || 'all',
-                    href: stylesheet.href
-                };
-
-                stylesheetNodes[stylesheetNodes.length] = domConstruct.create('link', attributes, refNode, position);
-            };
-            
-            array.forEach(this.stylesheetNodes, function (node) {
-                domConstruct.destroy(node);
-            });
-            
-            this.stylesheetNodes  = [];
-            
-            if (stylesheets && stylesheets.length) {
-                array.forEach(stylesheets, lang.hitch(this, function (stylesheet) {
-                    addStylesheet(this.stylesheetNodes, stylesheet);
-                }));
-            } else {
-                addStylesheet(this.stylesheetNodes, stylesheets);
-            }
-        },
-
         setCss: function (css, media) {
-            var css = css || '',
-                tag = 'style',
-                attributes = { media: media || 'all' },
-                refNode = query('head script')[0],
-                position = 'before';
-                
-            if (this.cssNode) {
-                domConstruct.destroy(this.cssNode);
-            }
-            
-            // place it before the first <script>
-            this.cssNode = domConstruct.create(tag, attributes, refNode, position);
+            var css = css || '', media = media || 'all';
 
-            if (this.cssNode.styleSheet) {
-                this.cssNode.styleSheet.cssText = css; // IE
+            if (!this.cssNodes[media]) {
+                this.cssNodes[media] = domConstruct.create(
+                    'style',
+                    { media: media },
+                    query('head')[0],
+                    'last'
+                );
+            }
+
+            if (this.cssNodes[media].styleSheet) {
+                this.cssNodes[media].styleSheet.cssText = css; // IE
             } else {
-                this.cssNode.innerHTML = css; // the others
+                this.cssNodes[media].innerHTML = css; // the others
             }
         },
 
-        setPageNode: function () {
-            var tag = 'div',
-                attributes = { id: this.pageNodeId },
-                refNode = this.refNode || query('body')[0],
-                position = 'last';
-                
-            if (registry.byId(this.pageNodeId)) {
-                registry.byId(this.pageNodeId).destroyRecursive();
+        prepareDomNode: function () {
+            var newDomNode, domNodeId = this.domNode.id;
+
+            if (registry.byId(domNodeId)) {
+                newDomNode = domConstruct.create(
+                    'div',
+                    { id: 'new-dojomat-' + domNodeId + '-node' },
+                    registry.byId(domNodeId).domNode,
+                    'after'
+                );
+
+                registry.byId(domNodeId).destroyRecursive();
+                this.domNode = newDomNode;
+                this.domNode.id = domNodeId;
             }
-            
-            domConstruct.create(tag, attributes, refNode, position);
         },
 
         handleState: debounce(function () {
@@ -23311,18 +23274,17 @@ define([
             }));
         },
         
-        makePage: function (request, widget, layers, stylesheets) {
+        makePage: function (request, widget, layers) {
             var makePage = function (Page) {
-                this.setStylesheets(stylesheets);
-                this.setCss();
-                this.setPageNode();
+                this.clearCss();
+                this.prepareDomNode();
                 
                 var page = new Page({
                     request: request,
                     router: this.router,
                     session: this.session,
                     notification: this.notification.get()
-                }, this.pageNodeId);
+                }, this.domNode);
                 
                 this.notification.clear();
                 page.startup();
@@ -23349,10 +23311,6 @@ define([
         setSubscriptions: function () {
             topic.subscribe('dojomat/_AppAware/css', lang.hitch(this, function (args) {
                 this.setCss(args.css, args.media);
-            }));
-            
-            topic.subscribe('dojomat/_AppAware/stylesheets', lang.hitch(this, function (stylesheets) {
-                this.setStylesheets(stylesheets);
             }));
 
             topic.subscribe('dojomat/_AppAware/title', lang.hitch(this, function (args) {
@@ -23387,7 +23345,6 @@ define([
         }
     });
 });
-
 },
 'routed/Request':function(){
 /*global define: true */
@@ -23738,9 +23695,9 @@ define([
     
     return function (application, map) {
         var name = null,
-            makeCallback = function (widgetClass, layers, stylesheets) {
+            makeCallback = function (widgetClass, layers) {
                 return function (request) {
-                    application.makePage(request, widgetClass, layers, stylesheets);
+                    application.makePage(request, widgetClass, layers);
                 };
             };
 
@@ -23754,8 +23711,7 @@ define([
                             application,
                             makeCallback(
                                 map[name].widget,
-                                map[name].layers || [],
-                                map[name].stylesheets
+                                map[name].layers || []
                             )
                         )
                     )
@@ -23835,7 +23791,7 @@ define([
     };
     
     return declare([Application], {
-        
+
         constructor: function () {
             populateRouter(this, routingMap);
             this.run();
@@ -23844,20 +23800,19 @@ define([
         makeNotFoundPage: function () {
             var request = new Request(window.location.href),
                 makePage = function (Page) {
-                    this.setStylesheets();
-                    this.setCss();
-                    this.setPageNode();
+                    this.clearCss();
+                    this.prepareDomNode();
 
                     var page = new Page({
                         request: request,
                         router: this.router
-                    }, this.pageNodeId);
-                
+                    }, this.domNode);
+
                     page.startup();
                     this.notification.clear();
                 }
             ;
-            
+
             require(['./ui/error/NotFoundPage'], lang.hitch(this, makePage));
             trackPage(request);
         },
@@ -23865,16 +23820,15 @@ define([
         makeErrorPage: function (error) {
             var request = new Request(window.location.href),
                 makePage = function (Page) {
-                    this.setStylesheets();
-                    this.setCss();
-                    this.setPageNode();
+                    this.clearCss();
+                    this.prepareDomNode();
 
                     var page = new Page({
                         request: request,
                         router: this.router,
                         error: error
-                    }, this.pageNodeId);
-                
+                    }, this.domNode);
+
                     page.startup();
                     this.notification.clear();
                 }
@@ -23883,7 +23837,7 @@ define([
             require(['./ui/error/ErrorPage'], lang.hitch(this, makePage));
             trackPage(request);
         },
-        
+
         makePage: function (request, widget, layers, stylesheets) {
             this.inherited(arguments);
             trackPage(request);
@@ -30753,7 +30707,7 @@ define([
                 
                     this.own(on(node, 'click', lang.hitch(this, function (ev) {
                         ev.preventDefault();
-                        this.push(url);
+                        this.pushState(url);
                     })));
                 }
             ;
@@ -31101,7 +31055,7 @@ define([
                 
                 this.own(on(aNode, 'click', lang.hitch(this, function (ev) {
                     ev.preventDefault();
-                    this.push(action.url);
+                    this.pushState(action.url);
                 })));
             }));
         }
@@ -31155,7 +31109,7 @@ define([
 
                     this.own(on(aNode, 'click', lang.hitch(this, function (ev) {
                         ev.preventDefault();
-                        this.push(item.url);
+                        this.pushState(item.url);
                     })));
                 }
             ;

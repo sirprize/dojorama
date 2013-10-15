@@ -46,6 +46,8 @@
         <div id="static">
             Please enable JavaScript in your browser
         </div>
+
+        <div id="dojorama"></div>
         
         <?php if ($_SERVER['HTTP_HOST'] === 'dojorama.org'): ?>
             <script type="text/javascript">
@@ -100,7 +102,7 @@
         <script src="<?php echo $base; ?>/builds/single-file-v001/dojo/dojo.js"></script>
 
         <script>
-            require(['dojorama/App'], function (App) { new App(); });
+            require(['dojorama/App'], function (App) { new App({}, 'dojorama'); });
         </script>
     </body>
 </html>

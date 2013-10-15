@@ -12,9 +12,9 @@ define("dojomat/populateRouter", [
     
     return function (application, map) {
         var name = null,
-            makeCallback = function (widgetClass, layers, stylesheets) {
+            makeCallback = function (widgetClass, layers) {
                 return function (request) {
-                    application.makePage(request, widgetClass, layers, stylesheets);
+                    application.makePage(request, widgetClass, layers);
                 };
             };
 
@@ -28,8 +28,7 @@ define("dojomat/populateRouter", [
                             application,
                             makeCallback(
                                 map[name].widget,
-                                map[name].layers || [],
-                                map[name].stylesheets
+                                map[name].layers || []
                             )
                         )
                     )

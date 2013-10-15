@@ -498,7 +498,7 @@ define([
             
             this.own(on(this.filterFormNode, 'submit', lang.hitch(this, function (ev) {
                 ev.preventDefault();
-                this.push(this.router.getRoute('releaseIndex').assemble(null, { find: this.filterInputWidget.value }));
+                this.pushState(this.router.getRoute('releaseIndex').assemble(null, { find: this.filterInputWidget.value }));
             })));
         },
 
@@ -536,7 +536,7 @@ define([
                         
                             this.own(on(aNode, 'click', lang.hitch(this, function (ev) {
                                 ev.preventDefault();
-                                this.push(ev.target.href);
+                                this.pushState(ev.target.href);
                             })));
                         })
                     },

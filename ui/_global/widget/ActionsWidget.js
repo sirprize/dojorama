@@ -47,7 +47,7 @@ define([
                 
                 this.own(on(aNode, 'click', lang.hitch(this, function (ev) {
                     ev.preventDefault();
-                    this.push(action.url);
+                    this.pushState(action.url);
                 })));
             }));
         }

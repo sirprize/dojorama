@@ -100,7 +100,7 @@ The `_AppAware` mixin has a small set of methods to facilitate page-level error 
 
 ## _StateAware Mixin
 
-The `_StateAware` mixin simplifies the task of pushing to a new state. When clicked and if supported by the browser, the following widget will trigger `history.pushState()` by calling `this.push(url)`. If the history API is not supported, the requested URL is set to `window.location` which causes the browser to request the URL from the server.
+The `_StateAware` mixin simplifies the task of pushing to a new state. When clicked and if supported by the browser, the following widget will trigger `history.pushState()` by calling `this.pushState(url)`. If the history API is not supported, the requested URL is set to `window.location` which causes the browser to request the URL from the server.
 
     define([
         "dojo/_base/declare",
@@ -126,7 +126,7 @@ The `_StateAware` mixin simplifies the task of pushing to a new state. When clic
             postCreate: function () {
                 this.own(on(this, 'click', lang.hitch(this, function (ev) {
                     var url = this.router.getRoute('productDetail').assemble({ id: '123' });
-                    this.push(url);
+                    this.pushState(url);
                 })));
             }
         });
@@ -160,6 +160,16 @@ Dojomat tests for the availability of the history API and `LocalStorage` and reg
 
 + `native-history-state`
 + `native-localstorage`
+
+## Running The Application
+
+    <div id="my-page"></div>
+        
+    <script>
+        require(['my/App'], function (App) {
+            new App({}, 'my-page');
+        });
+    </script>
 
 ## License
 
